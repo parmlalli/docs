@@ -293,6 +293,11 @@
     "global": {
       "anchors": [
         {
+          "anchor": "Website",
+          "href": "https://planasonix.com",
+          "icon": "globe"
+        },
+        {
           "anchor": "Platform",
           "href": "https://app.planasonix.com",
           "icon": "browser"
@@ -309,7 +314,7 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:support@planasonix.com"
+        "href": "https://planasonix.com/support"
       }
     ],
     "primary": {
