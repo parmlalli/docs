@@ -1,0 +1,92 @@
+---
+title: "Azure AD SSO setup"
+description: "Configure Azure AD (Entra ID) as your SAML identity provider."
+---
+
+This guide walks you through registering Planasonix as an **enterprise application** in Microsoft Entra ID (formerly Azure AD) using **SAML-based single sign-on**. You need **Cloud Application Administrator** or **Application Administrator** (or a custom role that can manage enterprise apps) plus **organization admin** in Planasonix.
+
+<Info>
+  Entra ID labels and menus change over time. If a step does not match your portal exactly, search for **Enterprise applications** and **Single sign-on** within **Microsoft Entra admin center**.
+</Info>
+
+## Values you copy from Planasonix
+
+From **Settings → Security → SSO** in Planasonix, copy:
+
+- **Identifier (Entity ID)** — Azure calls this **Identifier** in basic SAML configuration.
+- **Reply URL (Assertion Consumer Service URL)** — Azure calls this **Reply URL**.
+
+## Create and configure the enterprise application
+
+<Steps>
+  <Step title="Create the enterprise application">
+    In **Microsoft Entra admin center**, go to **Identity → Applications → Enterprise applications → New application → Create your own application**. Name it (for example, `Planasonix`), choose **Integrate any other application you don’t find in the gallery**, and create the app.
+  </Step>
+  <Step title="Enable SAML single sign-on">
+    Open the new application → **Single sign-on** → select **SAML**.
+  </Step>
+  <Step title="Set Identifier and Reply URL">
+    Under **Basic SAML Configuration**, click **Edit**:
+
+    - **Identifier (Entity ID)**: paste the Planasonix **Entity ID** exactly. If Azure allows multiple values, keep a single entry unless your Planasonix admin gives you alternates.
+    - **Reply URL (Assertion Consumer Service URL)**: paste the Planasonix **ACS URL** exactly.
+
+    Save the configuration.
+  </Step>
+  <Step title="Download or copy IdP metadata">
+    In the **SAML Certificates** section, download **Federation Metadata XML** or copy **Login URL**, **Azure AD Identifier**, and the **Signing Certificate** for manual entry in Planasonix.
+  </Step>
+</Steps>
+
+## Identifier and reply URL: trailing slashes
+
+Azure AD compares **Identifier** and **Reply URL** strings literally. A trailing slash on the Planasonix **Entity ID** or **ACS URL** must match character-for-character in Entra ID.
+
+<Warning>
+  A common failure is copying `https://…/acs` into Azure while Planasonix shows `https://…/acs/` (or the reverse). The mismatch produces generic SAML errors in the browser. Copy from Planasonix without editing.
+</Warning>
+
+## User and group assignment
+
+Under **Enterprise application → Users and groups**, assign **users** or **groups** who may sign in. Unassigned users cannot start SSO even if the SAML configuration is correct.
+
+<Tip>
+  Prefer **group-based assignment** for production so you manage access through Entra ID group membership instead of per-user adds.
+</Tip>
+
+## Group claims for Planasonix
+
+If Planasonix maps **groups** to roles or projects:
+
+<Steps>
+  <Step title="Configure optional claims">
+    In the enterprise app, open **Single sign-on → Attributes & Claims → Edit**. Add a **groups** claim (or the claim name Planasonix documents) so the token includes security groups or **Groups assigned to the application**, depending on your design.
+  </Step>
+  <Step title="Limit token size">
+    Large group memberships can exceed SAML assertion limits. Use **Groups assigned to the application** scoped to this enterprise app, or filter groups, so only relevant groups are emitted.
+  </Step>
+</Steps>
+
+<AccordionGroup>
+  <Accordion title="Conditional Access">
+    Apply **Conditional Access** policies to the Planasonix enterprise application to require compliant devices, MFA at the IdP, or named locations. Test policies with a pilot group before broad rollout. Failed CA shows as access denied at Microsoft before Planasonix receives an assertion.
+  </Accordion>
+  <Accordion title="Certificate renewal">
+    When Entra ID rotates signing certificates, upload the new metadata or certificate in Planasonix before the old cert expires. Coordinate with your Planasonix admin if you use automatic rollover versus manual uploads.
+  </Accordion>
+</AccordionGroup>
+
+## Finish in Planasonix
+
+Upload the **Federation Metadata XML** or paste **SSO URL**, **issuer**, and **signing certificate** into Planasonix. Validate sign-in, then enable **Require SSO** when your change window allows.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="SSO overview" icon="shield-halved" href="/settings/sso">
+    End-to-end SAML setup and certificate rotation.
+  </Card>
+  <Card title="MFA" icon="mobile-screen" href="/settings/mfa">
+    Layering step-up auth with IdP policies.
+  </Card>
+</CardGroup>

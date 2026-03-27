@@ -1,0 +1,50 @@
+---
+title: "Observability overview"
+description: "Monitor pipeline health, data quality, and platform performance."
+---
+
+Observability gives you a single place to see whether data arrived on time, whether quality checks passed, and whether costs trend in the wrong direction. You move from reactive tickets to proactive fixes using dashboards, diagnostics, DLQ tooling, cost signals, and alerts.
+
+## Capabilities
+
+<CardGroup cols={2}>
+  <Card title="Dashboard" icon="gauge-high" href="/observability/dashboard">
+    Health summaries, run history, and quality signals at a glance.
+  </Card>
+  <Card title="Data diagnostics" icon="stethoscope" href="/observability/diagnostics">
+    Profile datasets and investigate anomalies.
+  </Card>
+  <Card title="Dead letter queue" icon="triangle-exclamation" href="/observability/dead-letter-queue">
+    Manage failed records across pipelines and syncs.
+  </Card>
+  <Card title="Cost insights" icon="coins" href="/observability/cost-insights">
+    Track spend drivers and optimization hints.
+  </Card>
+  <Card title="Alerts" icon="bell" href="/observability/alerts">
+    Notify the right people when behavior drifts.
+  </Card>
+</CardGroup>
+
+## How teams use observability together
+
+- **Data engineers** watch failure rates, duration regressions, and DLQ depth.
+- **Analytics engineers** monitor semantic freshness and schema monitors tied to dashboards.
+- **Finance** reviews cost insights against budget owners and pipeline tags.
+
+<Info>
+  Tag pipelines with `cost_center`, `product`, or `env` so reports roll up the way finance expects.
+</Info>
+
+## Getting started
+
+<Steps>
+  <Step title="Pin critical pipelines">
+    Mark top-tier pipelines as favorites or critical so they appear on the default dashboard.
+  </Step>
+  <Step title="Enable baseline alerts">
+    Start with failure notifications, then add duration and volume anomaly rules.
+  </Step>
+  <Step title="Review weekly">
+    Block 15 minutes for DLQ trends and cost outliers before they become month-end surprises.
+  </Step>
+</Steps>

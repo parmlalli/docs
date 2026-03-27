@@ -1,33 +1,111 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: "API reference"
+description: "Programmatically interact with Planasonix using the REST API."
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+The Planasonix **REST API** automates everything you do in the UI: manage connections, trigger pipeline runs, inspect history, configure schedules, and integrate with CI/CD. This reference describes how requests are shaped; endpoint paths match your workspace’s deployed API version.
 
-## Welcome
+## Base URL
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+Your workspace uses a region-specific host. The pattern is:
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+```text
+https://api.planasonix.com/v1
+```
+
+If your organization uses a **dedicated tenant hostname** or **private cell**, your admin provides the exact base URL (for example `https://acme.planasonixapis.com/v1`). Always use HTTPS.
+
+Prefix every path with the version segment (`/v1`) so upgrades remain predictable when new major versions ship.
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+Authenticate with an [API key](/settings/api-keys) you create under **Organization** settings. Send it on every request:
+
+```http
+GET /v1/pipelines HTTP/1.1
+Host: api.planasonix.com
+Authorization: Bearer plnx_live_xxxxxxxxxxxxxxxx
+Content-Type: application/json
+```
+
+Read [Authentication](/api-reference/authentication) for header variants, scopes, and service-account behavior.
+
+<Info>
+  Never commit API keys to Git. Load them from your secret manager in CI and local dev shells.
+</Info>
+
+## Rate limits
+
+Planasonix applies **per-workspace** and **per-key** rate limits to protect shared infrastructure:
+
+- **Standard burst** allowances for interactive automation
+- **Sustained** request-per-minute caps; heavy polling should batch or use webhooks
+
+Responses include rate-limit headers when your deployment supports them, for example:
+
+```http
+X-RateLimit-Limit: 1200
+X-RateLimit-Remaining: 1190
+X-RateLimit-Reset: 1712345678
+```
+
+When you exceed limits, the API returns **429 Too Many Requests** with a `Retry-After` hint. Back off exponentially and avoid tight loops on failure.
+
+## Response formats
+
+Successful responses use **JSON** with UTF-8 encoding. Common envelopes:
+
+**Single resource**
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
+{
+  "data": {
+    "id": "pl_01hqxyz",
+    "type": "pipeline",
+    "attributes": {
+      "name": "nightly_sales_sync",
+      "updated_at": "2025-03-27T12:00:00Z"
+    }
   }
-]
+}
 ```
+
+**Collection (paginated)**
+
+```json
+{
+  "data": [ /* ... */ ],
+  "meta": {
+    "page": { "limit": 50, "cursor": "eyJpZCI6InBsXzAxaHF4eXoifQ" }
+  }
+}
+```
+
+**Error**
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "Missing required field: connection_id",
+    "details": [{ "field": "connection_id", "issue": "blank" }]
+  }
+}
+```
+
+HTTP status codes follow conventional semantics: **2xx** success, **400** validation, **401** auth, **403** forbidden, **404** not found, **409** conflict, **429** rate limit, **5xx** server errors (retry with idempotency keys where documented).
+
+## OpenAPI and SDKs
+
+If your workspace publishes **OpenAPI 3** metadata, import it into Postman or generate clients in your language. When Mintlify is wired to that spec, endpoint pages appear under this tab automatically.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    Keys, scopes, and security practices.
+  </Card>
+  <Card title="Webhooks" icon="link" href="/orchestration/webhooks">
+    Complement pull-based API automation with push triggers.
+  </Card>
+</CardGroup>

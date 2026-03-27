@@ -1,0 +1,67 @@
+---
+title: "Cost insights"
+description: "Track and optimize data platform costs."
+---
+
+**Cost insights** attribute warehouse spend, compute minutes, and connector activity to pipelines and teams. You answer “what drove last month’s bill?” with evidence instead of guesses.
+
+## Cost tracking
+
+Costs roll up from:
+
+- **Warehouse queries** executed by Planasonix on your behalf (when telemetry is available from the warehouse)
+- **Managed compute** for Planasonix-hosted runners or integrated clusters
+- **Egress and API** charges where cloud billing APIs map usage to jobs
+
+Tag pipelines with `team`, `product`, and `env` so finance can allocate spend fairly.
+
+<Steps>
+  <Step title="Connect billing sources">
+    Admins link cloud billing exports or warehouse usage APIs in **Settings** → **Compute** / integrations (per deployment).
+  </Step>
+  <Step title="Validate attribution">
+    Run a known test job and confirm its cost appears under the expected pipeline within 24–48 hours.
+  </Step>
+  <Step title="Review monthly">
+    Compare top pipelines week over week; investigate new entrants after releases.
+  </Step>
+</Steps>
+
+## Usage analytics
+
+Usage charts show **CPU-hours**, **slot time**, **bytes scanned**, or **rows processed** depending on the engine. Slice by schedule vs ad-hoc runs to see whether automation or manual previews dominate.
+
+<Tabs>
+  <Tab title="Engineers">
+    Find expensive nodes or queries to refactor first (wide scans before selective filters).
+  </Tab>
+  <Tab title="Managers">
+    Compare teams’ relative usage against roadmap priorities.
+  </Tab>
+</Tabs>
+
+## Optimization recommendations
+
+Recommendations may suggest:
+
+- Cluster rightsizing for recurring jobs
+- Partition pruning opportunities in SQL
+- Caching or incremental patterns instead of full reloads
+- Moving dev workloads to smaller warehouses
+
+Treat each suggestion as a hypothesis—validate with your warehouse’s query profiler before changing SLAs.
+
+<Info>
+  Some warehouses bill separately for storage; cost insights may focus on compute unless you integrate storage billing feeds.
+</Info>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Compute settings" icon="microchip" href="/settings/compute">
+    Configure execution environments that drive spend.
+  </Card>
+  <Card title="Usage and limits" icon="chart-column" href="/settings/usage">
+    Compare actuals to plan entitlements.
+  </Card>
+</CardGroup>

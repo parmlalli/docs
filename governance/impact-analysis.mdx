@@ -1,0 +1,64 @@
+---
+title: "Impact analysis"
+description: "Understand the downstream impact of schema or data changes."
+---
+
+**Impact analysis** predicts which pipelines, datasets, dashboards, and reverse ETL syncs depend on an object you plan to change. You reduce surprise outages by reviewing the dependency graph before merges, renames, or type changes.
+
+## Premium feature
+
+Impact analysis is a **Premium** capability (bundled or add-on per your order form). If the tool is unavailable, you can still use catalog ownership notes and manual pipeline search, but you lose automated dependency graphs.
+
+## Dependency graphs
+
+Enter a table, topic, column, or pipeline node; Planasonix renders **upstream** and **downstream** dependencies:
+
+- Ingestion jobs that populate the asset
+- Transforms that read or write it
+- BI extracts, notebooks, or semantic models linked via integrations
+
+Graph depth controls how many hops you display—start shallow, expand when investigating cross-domain effects.
+
+<Steps>
+  <Step title="Select the change target">
+    Pick the warehouse table or stream field you intend to modify.
+  </Step>
+  <Step title="Review downstream consumers">
+    Note dashboards, syncs, and scheduled jobs in the highest business-criticality tiers first.
+  </Step>
+  <Step title="Coordinate owners">
+    Notify teams with open PRs touching the same graph edges.
+  </Step>
+  <Step title="Plan migration">
+    Ship additive changes first, dual-write if needed, then retire old fields with confirmed zero downstream references.
+  </Step>
+</Steps>
+
+## Change impact assessment
+
+<Tabs>
+  <Tab title="Schema edits">
+    Renames and type changes rank as high risk; impact analysis lists parsers and SQL that reference old names.
+  </Tab>
+  <Tab title="Semantic changes">
+    Changing business definitions without schema changes still affects metrics; link semantic objects when your workspace integrates them.
+  </Tab>
+  <Tab title="Deletion">
+    Never drop assets until impact analysis and [lineage](/governance/lineage) both show no active paths, plus archival backups per policy.
+  </Tab>
+</Tabs>
+
+<Info>
+  Impact analysis reflects last-known metadata. If external systems consume data outside Planasonix, maintain a manual appendix for those dependencies.
+</Info>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Data contracts" icon="file-contract" href="/governance/data-contracts">
+    Encode allowed changes with versions.
+  </Card>
+  <Card title="Observability dashboard" icon="gauge-high" href="/observability/dashboard">
+    Watch for regressions after risky releases.
+  </Card>
+</CardGroup>

@@ -1,0 +1,221 @@
+---
+title: "Runs"
+description: "View and manage pipeline execution runs."
+---
+
+A **run** is one execution of a pipeline graph. Use these endpoints to audit outcomes, drill into per-node metrics, stream logs, and cancel work.
+
+**Base URL:** `https://api.planasonix.com`  
+**Auth:** `Authorization: Bearer` plus your API key or JWT.
+
+---
+
+### `GET /api/runs`
+
+List runs across pipelines with filters.
+
+<ParamField query="pipelineId" type="string">
+  Only runs for this pipeline.
+</ParamField>
+
+<ParamField query="status" type="string">
+  `queued`, `running`, `succeeded`, `failed`, `canceled`, and so on.
+</ParamField>
+
+<ParamField query="dateRange" type="string">
+  Encoded range (for example `2025-03-01..2025-03-31`) or separate `from`/`to` if your deployment exposes them.
+</ParamField>
+
+<ParamField query="limit" type="integer">
+  Page size.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "data": [
+    {
+      "id": "run_01j8k2m4",
+      "pipelineId": "pl_02hqabc",
+      "status": "succeeded",
+      "trigger": "schedule",
+      "startedAt": "2025-03-27T02:00:00Z",
+      "finishedAt": "2025-03-27T02:18:42Z",
+      "durationSeconds": 1122
+    },
+    {
+      "id": "run_01j7j1k2",
+      "pipelineId": "pl_02hqabc",
+      "status": "failed",
+      "trigger": "manual",
+      "startedAt": "2025-03-26T14:12:00Z",
+      "finishedAt": "2025-03-26T14:14:05Z",
+      "durationSeconds": 125
+    }
+  ],
+  "meta": { "cursor": "eyJpZCI6InJ1bl8wMWo3ajFrMiJ9" }
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/runs/{id}`
+
+Full run record: status, timing, row counts, errors, and trigger metadata.
+
+<ParamField path="id" type="string" required>
+  Run ID.
+</ParamField>
+
+<ResponseField name="status" type="string">
+  Terminal or in-progress state.
+</ResponseField>
+
+<ResponseField name="metrics" type="object">
+  Aggregated counters (rows read/written, bytes, cost units).
+</ResponseField>
+
+<ResponseField name="error" type="object">
+  Present when `status` is `failed`; includes message and optional stack reference.
+</ResponseField>
+
+<Expandable title="Example response">
+```json
+{
+  "id": "run_01j8k2m4",
+  "pipelineId": "pl_02hqabc",
+  "pipelineName": "crm_to_warehouse",
+  "status": "succeeded",
+  "trigger": { "type": "schedule", "scheduleId": "sch_01" },
+  "startedAt": "2025-03-27T02:00:00Z",
+  "finishedAt": "2025-03-27T02:18:42Z",
+  "durationSeconds": 1122,
+  "metrics": {
+    "rowsRead": 2450000,
+    "rowsWritten": 2450000,
+    "bytesShuffled": 1073741824
+  },
+  "error": null
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/runs/{id}/nodes`
+
+Per-node execution: start/finish times, state, retries, and row counts.
+
+<ParamField path="id" type="string" required>
+  Run ID.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "runId": "run_01j8k2m4",
+  "nodes": [
+    {
+      "nodeId": "n_source",
+      "type": "source.postgres",
+      "status": "succeeded",
+      "startedAt": "2025-03-27T02:00:05Z",
+      "finishedAt": "2025-03-27T02:04:10Z",
+      "metrics": { "rowsOut": 2450000 }
+    },
+    {
+      "nodeId": "n_sink",
+      "type": "destination.snowflake",
+      "status": "succeeded",
+      "startedAt": "2025-03-27T02:04:12Z",
+      "finishedAt": "2025-03-27T02:18:40Z",
+      "metrics": { "rowsIn": 2450000 }
+    }
+  ]
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/runs/{id}/logs`
+
+Execution logs (plain text chunks, JSON lines, or URLs to object storage, depending on deployment).
+
+<ParamField path="id" type="string" required>
+  Run ID.
+</ParamField>
+
+<ParamField query="nodeId" type="string">
+  Filter to a single node’s log stream.
+</ParamField>
+
+<ParamField query="since" type="string">
+  ISO timestamp or log cursor for incremental fetch.
+</ParamField>
+
+<Expandable title="Example response (structured lines)">
+```json
+{
+  "runId": "run_01j8k2m4",
+  "lines": [
+    { "ts": "2025-03-27T02:00:06Z", "level": "info", "nodeId": "n_source", "message": "Started JDBC read" },
+    { "ts": "2025-03-27T02:04:09Z", "level": "info", "nodeId": "n_source", "message": "Read completed: 2450000 rows" }
+  ],
+  "nextCursor": "crs_01j8k2m4_0042"
+}
+```
+</Expandable>
+
+---
+
+### `DELETE /api/runs/{id}`
+
+Request cancellation of a **running** or **queued** run. Completed runs return **409** or **400** depending on policy.
+
+<ParamField path="id" type="string" required>
+  Run ID.
+</ParamField>
+
+<Expandable title="Example request and response">
+<CodeGroup>
+```bash Cancel run
+curl -X DELETE https://api.planasonix.com/api/runs/run_01j9l3n5 \
+  -H "Authorization: Bearer plnx_live_xxxxxxxx"
+```
+
+```json Response body
+{
+  "id": "run_01j9l3n5",
+  "status": "cancel_requested",
+  "message": "Cancellation accepted; workers will stop after current safe point."
+}
+```
+</CodeGroup>
+</Expandable>
+
+## Status reference
+
+| Status | Meaning |
+| ------ | ------- |
+| `queued` | Scheduled or manual run waiting for capacity |
+| `running` | Actively executing |
+| `succeeded` | All nodes completed without fatal errors |
+| `failed` | One or more nodes failed or policy aborted the run |
+| `canceled` | User or system canceled the run |
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Trigger a run" icon="zap" href="/api-reference/pipelines">
+    `POST /api/pipelines/{id}/run`
+  </Card>
+  <Card title="Run history (UI)" icon="clock" href="/platform/run-history">
+    How runs appear in the product.
+  </Card>
+</CardGroup>

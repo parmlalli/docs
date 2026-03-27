@@ -1,0 +1,94 @@
+---
+title: "Databases"
+description: "Connect to relational and NoSQL databases including PostgreSQL, MySQL, SQL Server, Oracle, MongoDB, and more."
+---
+
+Database connections let Planasonix read from and write to operational and analytical databases: full snapshots, incremental queries, change-data-capture (CDC) where the connector supports it, and custom SQL. You configure network reachability, database identifiers, authentication, and TLS once, then bind the same connection to every pipeline that should use that datastore.
+
+## Supported databases
+
+Planasonix supports the engines below directly or through wire-compatible endpoints. **Managed variants** use the same connector family as the self-hosted product; you supply the cloud endpoint and any cloud-native authentication (for example IAM database authentication on Amazon RDS).
+
+**Relational and analytical SQL**
+
+- **PostgreSQL** — Amazon RDS for PostgreSQL, Aurora PostgreSQL, Google Cloud SQL for PostgreSQL, Azure Database for PostgreSQL, **Aiven** for PostgreSQL, **Neon**, Supabase, CockroachDB (PostgreSQL wire protocol), TimescaleDB, and Citus-style clusters where the driver can reach them.
+- **MySQL** — MariaDB, Amazon RDS for MySQL, Aurora MySQL, Cloud SQL for MySQL, Azure Database for MySQL, and **PlanetScale** (MySQL-compatible).
+- **Microsoft SQL Server** — Azure SQL Database, Amazon RDS for SQL Server, Google Cloud SQL for SQL Server.
+- **Oracle Database** — Oracle Autonomous Database; use **service name** or **SID** as required by your deployment.
+
+**NoSQL, wide-column, and search**
+
+- **MongoDB** — **MongoDB Atlas**, replica sets, and sharded clusters per connector capabilities.
+- **ClickHouse** — **ClickHouse Cloud** and self-managed clusters.
+- **Apache Cassandra** — **Aiven** for Cassandra and Amazon Keyspaces where the Cassandra-compatible API matches what the connector expects.
+- **DuckDB** — File-backed and remote attachment patterns supported by your Planasonix edition.
+- **Elasticsearch** — Elastic Cloud and **OpenSearch** when exposed through the supported client interfaces for your connector version.
+
+<Info>
+  Not every engine exposes CDC, metadata discovery, or custom SQL the same way. Open the connector panel in Planasonix for your version to see supported sync modes, SSL modes, and advanced options.
+</Info>
+
+## Configure a database connection
+
+<Steps>
+  <Step title="Create the connection and select the engine">
+    In **Connections**, choose **New connection** and pick the connector that matches your server (for example **PostgreSQL** or **Oracle**). If you use a managed service, still choose the base engine unless the UI offers a dedicated tile. **Snowflake**, **BigQuery**, and similar analytics platforms belong under [Data warehouses](/connections/data-warehouses), not this page.
+  </Step>
+  <Step title="Enter host, port, and database identifiers">
+    Provide the hostname or IP, listener **port**, and **database** name (catalog, pluggable database, or Oracle SID/service name). If your team relies on a non-default **schema** or **search path**, set it in advanced options so table discovery lists the objects you expect.
+  </Step>
+  <Step title="Attach or create database credentials">
+    Link a **database** credential with username and password, or use **IAM** or native cloud auth where the connector supports it (for example IAM database authentication to RDS PostgreSQL). Confirm the principal can `SELECT` required objects for sources and `INSERT` / `UPDATE` / `MERGE` as needed for destinations.
+  </Step>
+  <Step title="Configure SSL/TLS">
+    Choose **disable** only on isolated lab networks. For production, use **require** or **verify-full** (full certificate validation). Upload your organization’s **CA bundle** if the server uses a private certificate authority.
+  </Step>
+  <Step title="Test from the runtime network path">
+    Run **Test connection** from Planasonix so the check uses the same egress paths as scheduled jobs. Fix security groups, firewalls, VPN, or private link until the test succeeds, then save.
+  </Step>
+  <Step title="Reference the connection in pipelines">
+    In a source or destination node, select this connection and choose tables, collections, or queries. Prefer separate connections for **prod** and **non-prod** even when the engine type is identical.
+  </Step>
+</Steps>
+
+## Connection parameters
+
+These fields appear on most SQL-oriented database connectors. Optional fields may sit behind **Advanced**; labels can vary slightly by engine.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| **Host** | Yes | DNS name, IP, or cluster endpoint the driver connects to. |
+| **Port** | Yes | Listener port (for example `5432` PostgreSQL, `3306` MySQL, `1433` SQL Server, `1521` Oracle, `27017` MongoDB, `8123` ClickHouse, `9042` Cassandra, `9200` Elasticsearch where applicable). |
+| **Database** | Usually | Database name, catalog, pluggable database, or SID/service name depending on the engine. |
+| **Username** | Usually | Login or role name; stored in the linked credential, not pasted into shared connection fields. |
+| **Password** | Usually | Stored only in the credential; rotate without changing connection IDs referenced by pipelines. |
+| **SSL / TLS** | Recommended | Mode (disable, prefer, require, verify-ca, verify-full) and optional server CA for encrypted transport and identity verification. |
+
+<Tabs>
+  <Tab title="Private networks">
+    If the database sits in a VPC, ensure Planasonix workers can open outbound TCP to the host and port. Use agent-based connectivity, site-to-site VPN, AWS PrivateLink, Azure Private Link, or Cloud SQL Auth Proxy patterns your organization approves. Allowlist **Planasonix egress IPs** if the database uses IP-based firewall rules.
+  </Tab>
+  <Tab title="Read replicas">
+    Point read-heavy extraction jobs at a **replica** connection so you protect the primary. Use a distinct connection name (for example `prod-postgres-replica-analytics`) so failover and monitoring stay clear.
+  </Tab>
+  <Tab title="Least privilege">
+    Grant the database user only the schemas, tables, and commands the pipeline needs. Avoid superuser, `SYSDBA`, or `db_owner`-wide rights unless a specific feature requires them.
+  </Tab>
+</Tabs>
+
+## Related reading
+
+<CardGroup cols={2}>
+  <Card title="Data warehouses" icon="warehouse" href="/connections/data-warehouses">
+    When loads target Snowflake, BigQuery, or Databricks instead of a row store.
+  </Card>
+  <Card title="Credentials management" icon="key-round" href="/connections/credentials">
+    Rotation, sharing, and audit expectations for database secrets.
+  </Card>
+  <Card title="Connections overview" icon="plug" href="/connections/overview">
+    How connections reference credentials across the platform.
+  </Card>
+  <Card title="Streaming / CDC" icon="radio" href="/streaming/cdc-sources">
+    When you ingest changes as a stream instead of batch JDBC queries.
+  </Card>
+</CardGroup>

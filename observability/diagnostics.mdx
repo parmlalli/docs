@@ -1,0 +1,64 @@
+---
+title: "Data diagnostics"
+description: "Diagnose data quality issues and identify root causes."
+---
+
+**Data diagnostics** helps you understand shape, distribution, and freshness problems inside datasets without exporting everything to a notebook first. Use it when dashboards look wrong but pipelines show green checks.
+
+## Diagnostic tools
+
+<Steps>
+  <Step title="Select a dataset or run artifact">
+    Pick a table, stage output, or sample file from a recent run.
+  </Step>
+  <Step title="Launch profiling">
+    Compute column statistics: null rates, distinct counts, min/max for numerics, top values for categoricals.
+  </Step>
+  <Step title="Compare baselines">
+    Contrast the current profile to a saved baseline or prior run to spot drift.
+  </Step>
+  <Step title="Trace upstream">
+    Jump to the pipeline nodes that produced the artifact and open recent logs.
+  </Step>
+</Steps>
+
+## Data profiling
+
+Profiling is read-only against connections your role can access. Large tables use sampling strategies documented in the UI—note sample percentages when interpreting rare-value counts.
+
+<Tabs>
+  <Tab title="Key integrity">
+    Check primary key uniqueness and foreign key presence when diagnostics expose join cardinality hints.
+  </Tab>
+  <Tab title="PII awareness">
+    Mask or hash columns flagged as sensitive before sharing diagnostic exports externally.
+  </Tab>
+</Tabs>
+
+## Anomaly detection
+
+**Anomaly detection** models seasonality on volume, null rate, or numeric aggregates. When today’s batch diverges from the forecast band, diagnostics opens an incident card with likely upstream nodes.
+
+<Info>
+  Seasonal businesses (retail holidays, fiscal close) need custom calendars; configure blackouts or adjusted baselines before major events.
+</Info>
+
+<AccordionGroup>
+  <Accordion title="False positives">
+    If legitimate marketing spikes trigger alerts, widen bands temporarily and document the business event in the alert note.
+  </Accordion>
+  <Accordion title="True negatives">
+    Silent failures can occur when bad data still matches schema—pair profiling with business reconciliation queries monthly.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Dead letter queue" icon="triangle-exclamation" href="/observability/dead-letter-queue">
+    Inspect rows that failed validation or loads.
+  </Card>
+  <Card title="Data contracts" icon="file-contract" href="/governance/data-contracts">
+    Encode rules diagnostics surfaces informally today.
+  </Card>
+</CardGroup>

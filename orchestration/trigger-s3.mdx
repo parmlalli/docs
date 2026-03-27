@@ -1,0 +1,108 @@
+---
+title: "S3 event triggers"
+description: "Trigger pipeline runs when files arrive in Amazon S3 buckets."
+---
+
+S3 event triggers start Planasonix pipelines when objects are created (or updated, depending on your configuration) in **Amazon S3**. You connect bucket notifications to **Amazon SNS** or **Amazon SQS**, then register the topic or queue with Planasonix so it can correlate events with a pipeline.
+
+<Info>
+  Read [Triggers](/orchestration/triggers) for shared concepts: prefix filters, batching, and idempotent loads. This page focuses on AWS wiring.
+</Info>
+
+## Architecture overview
+
+<Steps>
+  <Step title="S3 emits events">
+    You configure **event notifications** on a bucket for the object operations you care about (typically object creation).
+  </Step>
+  <Step title="Events land on SNS or SQS">
+    You send notifications to **SNS** (fan-out) or **SQS** (durable queue). Planasonix consumes messages from the integration you authorize.
+  </Step>
+  <Step title="Planasonix maps events to a pipeline">
+    In Planasonix, you create a trigger that points at the queue or subscription endpoint, set filters, and choose the target pipeline and run parameters.
+  </Step>
+</Steps>
+
+## Create the S3 event notification
+
+<Steps>
+  <Step title="Open bucket notifications">
+    In **S3 → Buckets → your bucket → Properties → Event notifications**, create a new notification rule.
+  </Step>
+  <Step title="Choose event types">
+    For file-arrival workloads, select **All object create events** or a subset such as **PUT**, **POST**, **Copy**, and **Multipart upload completed** if you need multipart coverage. Planasonix commonly keys off **`s3:ObjectCreated:*`** semantics.
+  </Step>
+  <Step title="Set prefix and suffix filters">
+    Set **Prefix** to a logical landing zone (for example, `landing/orders/`). Set **Suffix** when you only ingest certain file types (for example, `.parquet`, `.csv.gz`). Narrow filters reduce noise and cost.
+  </Step>
+  <Step title="Choose destination">
+    Pick **SNS topic** or **SQS queue**. Create the topic or queue in the same account or a trusted account per your org’s pattern.
+  </Step>
+</Steps>
+
+### Event types you typically enable
+
+| Event (conceptual) | When you use it |
+| ------------------ | ---------------- |
+| Object created (PUT, POST, copy, complete multipart) | New files land in the prefix |
+| Object removed (optional) | You model deletes or tombstones in downstream logic |
+
+<Tip>
+  If producers use multipart uploads, ensure **multipart upload completion** is included so you do not start pipelines on incomplete parts.
+</Tip>
+
+## Configure SNS or SQS for Planasonix
+
+<Tabs>
+  <Tab title="SNS">
+    - Create an **SNS topic** and grant **S3** permission to publish (`sns:Publish` on the topic ARN from the bucket’s service principal).
+    - Subscribe the **Planasonix integration** queue or HTTPS endpoint as documented in the product (or subscribe SQS to SNS and point Planasonix at SQS—common for retries).
+    - Enable **raw message delivery** only if Planasonix documents support for that shape; otherwise keep the default wrapper S3 sends via SNS.
+  </Tab>
+  <Tab title="SQS">
+    - Create a **standard** SQS queue unless you require FIFO semantics for ordering (most file pipelines do not).
+    - On the SQS access policy, allow **S3** to `sqs:SendMessage` for the bucket’s notification principal and ARN condition.
+    - Planasonix needs **`sqs:ReceiveMessage`**, **`sqs:DeleteMessage`**, and **`sqs:GetQueueAttributes`** (names may vary slightly by integration) on that queue via IAM role or cross-account trust as configured in the Planasonix connection.
+  </Tab>
+</Tabs>
+
+## Link to Planasonix
+
+In **Orchestration → Triggers** (or your workspace’s equivalent), create an **S3-compatible** trigger:
+
+- Provide the **queue ARN**, **topic ARN**, or **connection** object Planasonix prompts for.
+- Re-enter **prefix** and **suffix** filters if the product applies a second layer of filtering.
+- Set **batch window** or **max messages** if you want to coalesce bursts before a run starts.
+
+Run the **connection test** or place a test object to confirm end-to-end delivery.
+
+## IAM permissions required
+
+Grant least privilege on the resources Planasonix uses to **read triggering objects** and **decrypt** them when **SSE-KMS** applies.
+
+<AccordionGroup>
+  <Accordion title="Read objects referenced in events">
+    Planasonix (or a runner role you attach) needs **`s3:GetObject`** on the object keys inside your allowed prefixes. If you use KMS, add **`kms:Decrypt`** for the CMK that protects those objects.
+  </Accordion>
+  <Accordion title="Queue or topic access">
+    For SQS, the integration role needs receive and delete on the subscribed queue. For SNS→SQS, ensure the **SNS subscription** policy allows SNS to publish to SQS and Planasonix to consume from SQS.
+  </Accordion>
+  <Accordion title="Cross-account buckets">
+    When the bucket lives in another account, update **bucket policy** and **KMS key policy** to trust the Planasonix or data-plane role. Event notifications still originate from the bucket account; align IAM on both sides.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  Public read/write buckets must not back production triggers. Restrict producers to trusted principals and use bucket policies that deny insecure transport (`aws:SecureTransport`).
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Triggers overview" icon="bolt" href="/orchestration/triggers">
+    Cross-cloud patterns and operational guidance.
+  </Card>
+  <Card title="Cloud storage connections" icon="cloud" href="/connections/cloud-storage">
+    Credential patterns for S3 and KMS.
+  </Card>
+</CardGroup>

@@ -1,0 +1,71 @@
+---
+title: "Destinations"
+description: "Configure reverse ETL destination targets."
+---
+
+Destinations are the SaaS systems, databases, or APIs where reverse ETL writes data. You connect each destination with OAuth or API credentials, then pick which object (or resource) receives rows from your warehouse query.
+
+## Supported destinations
+
+Planasonix ships connectors for common go-to-market, support, ads, and data platforms. Availability depends on your plan and enabled connectors for your workspace. Typical categories include:
+
+<AccordionGroup>
+  <Accordion title="CRM and sales">
+    Sync accounts, contacts, leads, opportunities, and custom objects into systems your sales team uses daily.
+  </Accordion>
+  <Accordion title="Marketing and lifecycle">
+    Push lists, traits, and events into email, push, and customer engagement tools for segmentation and personalization.
+  </Accordion>
+  <Accordion title="Support and success">
+    Update ticket properties, user profiles, or health scores so support sees warehouse-backed context.
+  </Accordion>
+  <Accordion title="Ads and audiences">
+    Refresh custom audiences and offline conversions where the platform exposes stable APIs.
+  </Accordion>
+  <Accordion title="Internal APIs and webhooks">
+    Send structured payloads to HTTP endpoints when you operate proprietary services or niche tools.
+  </Accordion>
+</AccordionGroup>
+
+Open the **connector gallery** from workspace settings or the sync wizard to see the full list enabled for your tenant, including required OAuth scopes and rate-limit notes.
+
+## Object selection
+
+When you configure a sync, you choose a **destination object** (or equivalent resource type). That choice drives:
+
+- Which fields appear in the mapper
+- Which operations the API allows (create-only vs full CRUD)
+- How batching and pagination behave during a run
+
+Pick the narrowest object that matches your use case. Syncing to a generic “custom object” is fine when your warehouse model maps cleanly to that schema.
+
+## Field selection
+
+After you pick an object, you enable the **fields** you want Planasonix to write. You should:
+
+- Include **required** fields the API rejects when missing
+- Include **identifiers** used for upsert or update (external IDs, email, or platform-specific keys)
+- Omit sensitive fields you do not intend to send from the warehouse
+
+Some connectors discover fields from the vendor schema; others let you type API names manually when you extend objects in the destination.
+
+<Tabs>
+  <Tab title="Discovered schema">
+    When discovery is available, refresh schema after you add custom fields in the destination so new columns appear in the mapper without guesswork.
+  </Tab>
+  <Tab title="Manual fields">
+    When you enter API names by hand, match the vendor’s casing and namespaces exactly. Wrong names fail at runtime with 4xx errors.
+  </Tab>
+</Tabs>
+
+## Credentials and environments
+
+Store production and sandbox credentials as separate connections. Point test syncs at sandbox destinations so API limits and data pollution do not affect production customers.
+
+<Info>
+  Field-level security in the destination still applies. If a user or integration lacks permission to write a field, the run fails for those rows; use [monitoring](/reverse-etl/monitoring) to catch partial failures early.
+</Info>
+
+## Next step
+
+Continue to [Field mapping](/reverse-etl/field-mapping) to connect warehouse columns to the fields you selected here.

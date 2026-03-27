@@ -1,0 +1,79 @@
+---
+title: "SAP troubleshooting"
+description: "Resolve common issues with SAP HANA, OData, and RFC/BAPI connections."
+---
+
+SAP landscapes mix **HANA SQL**, **OData** services on Gateway or S/4HANA, and **RFC/BAPI** calls through gateways. Errors often blend **basis** configuration, **authorization**, and **network** paths. Capture **transaction codes**, **RFC destination** names, and **HTTP status** codes when you escalate.
+
+## SAP-specific connection errors
+
+<Tabs>
+  <Tab title="Logon not possible">
+    User locked, wrong **client**, or **password** expired. Check **SU01** in the SAP GUI and **password policy**. For **SNC** or **SSO**, verify **SAP SSO** configuration matches the **PSE** on the app server.
+  </Tab>
+  <Tab title="Authorization">
+    **Missing authorization** for RFC function modules, OData entity sets, or HANA **analytic privileges**. Use **STAUTHTRACE** / **SU53** in SAP (per your security process) to identify missing **auth objects**; mirror **least privilege** in non-prod first.
+  </Tab>
+  <Tab title="Gateway / router">
+    **sapgw** or **SAProuter** strings in errors point to **network** or **SAProuter ACL** issues. Confirm **service** ports are open from Planasonix **egress** or **agent** hosts and that **SNC** names match both ends.
+  </Tab>
+  <Tab title="HANA SQL">
+    **Insufficient privilege**, **invalid column view**, or **calculation view** dependency errors often mean the **technical user** lacks **SELECT** on underlying **column tables** or **analytic privileges** on **IP** filters.
+  </Tab>
+</Tabs>
+
+<Info>
+  SAP often returns **generic** messages to external callers. Ask your basis team for **SM21** / **dev traces** timed to your failed Planasonix run.
+</Info>
+
+## OData pagination
+
+OData feeds **page** results with **`$skiptoken`**, **`$nextLink`**, or **`@odata.nextLink`** depending on version and gateway.
+
+- Enable **server-driven paging** in the connector; do not assume a single response holds the full extract.
+- Respect **`$filter`** pushdown—narrow **date** and **org** fields to reduce gateway load.
+- Watch **timeout** on large **$expand** trees; prefer **multiple** calls with narrower expands if the gateway **times out** at 60 seconds.
+
+<Tip>
+  Materialize **stable sort keys** (for example primary keys) in filters so pagination does not **skip or duplicate** rows when data changes mid-extract.
+</Tip>
+
+## RFC configuration
+
+**RFC destination** (type **T** or **H** with registered/unregistered programs) must match what Planasonix uses:
+
+- **Program ID** and **gateway host** align with your **RFC SDK** or **JCo** gateway settings.
+- **Unicode** vs **non-Unicode** mismatches produce **character** errors—standardize on **UTF-8** end to end.
+- **Parallel RFC** calls may exhaust **dialog** or **background** work processes—throttle **concurrency** in the pipeline.
+
+<AccordionGroup>
+  <Accordion title="CPIC errors">
+    Often **network** or **SAProuter** denials. Verify **router string** syntax and that **reverse** connections are allowed from the app server back to the gateway if your topology requires it.
+  </Accordion>
+  <Accordion title="Structure and buffer mismatches">
+    After SAP transports change **BAPI** interfaces, refresh **metadata** in Planasonix and regenerate **field maps**. Stale structures cause **conversion** exceptions mid-batch.
+  </Accordion>
+</AccordionGroup>
+
+## SuccessFactors API limits
+
+SuccessFactors **OData** and **compound APIs** enforce **daily** and **burst** throttles.
+
+- Spread **full loads** across windows; use **delta** APIs where certified for your entities.
+- Honor **429** responses with **exponential backoff** and **jitter**.
+- Split **large** picklists into **filtered** queries—unbounded **$expand** on **Employee Central** objects triggers **timeouts** and **limits** quickly.
+
+<Warning>
+  Replaying the same **time range** repeatedly against **pay** or **personal** data may violate **DPP** policies. Coordinate replays with HRIS governance.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="SaaS applications" icon="building" href="/connections/saas-applications">
+    Broader SaaS connection patterns.
+  </Card>
+  <Card title="Connection troubleshooting" icon="plug" href="/troubleshooting/connections">
+    Network, TLS, and credential checks that apply across SAP paths.
+  </Card>
+</CardGroup>

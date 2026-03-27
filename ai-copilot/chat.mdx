@@ -1,0 +1,66 @@
+---
+title: "Chat"
+description: "Ask questions, get suggestions, and troubleshoot pipelines with AI chat."
+---
+
+The **Copilot chat** panel is your primary place to ask how something works, sketch a design, or debug an error message. Conversations stay beside the editor so you can apply suggestions without switching tools.
+
+## Sidebar chat interface
+
+Open **AI Copilot** from the pipeline toolbar or global assistant entry point. The sidebar shows:
+
+- Your messages and the assistant replies
+- Optional **context chips** for the active pipeline, node, or error
+- Shortcuts to insert generated SQL or node snippets when the model offers them
+
+Resize the panel or collapse it when you need full canvas width. Chat history is scoped per workspace according to your retention policy.
+
+<Tip>
+  Start messages with the outcome you want (“I need incremental loads keyed on `updated_at`”) and name the systems involved (S3, BigQuery, Salesforce). Specific prompts reduce back-and-forth.
+</Tip>
+
+## Pipeline context-aware suggestions
+
+When you work inside a pipeline, Copilot can read **structural context** you authorize: node types, edge relationships, and configuration fields needed to give relevant answers. It does not automatically exfiltrate full row-level data from previews unless you explicitly paste samples.
+
+<Tabs>
+  <Tab title="Node-focused questions">
+    Select a node and ask about its parameters, performance, or error text. The assistant ties answers to that node’s type (source, transform, destination).
+  </Tab>
+  <Tab title="End-to-end flow">
+    Ask how data moves from source to destination; Copilot summarizes the graph and suggests missing quality checks or orchestration hooks.
+  </Tab>
+  <Tab title="Run failures">
+    Paste or link run IDs when your role allows; Copilot explains likely causes and points to logs or [diagnostics](/observability/diagnostics).
+  </Tab>
+</Tabs>
+
+You can clear context between topics so unrelated pipelines do not leak into the next answer.
+
+## Feedback system
+
+Use **thumbs up / thumbs down** (or the feedback form, if enabled) on replies your organization uses for quality review. Feedback helps admins decide when to adjust prompts, update the [knowledge base](/ai-copilot/knowledge-base), or restrict certain behaviors.
+
+<AccordionGroup>
+  <Accordion title="What to include in feedback">
+    Note whether the answer was factually wrong, unsafe, or merely verbose. Mention the pipeline type and node if the issue was context-specific.
+  </Accordion>
+  <Accordion title="Escalation">
+    For repeated hallucinations or policy concerns, open a ticket with your internal AI governance contact; do not rely on chat for compliance sign-off.
+  </Accordion>
+</AccordionGroup>
+
+## Limitations
+
+Copilot may propose deprecated parameters or connector options that changed in your workspace version. Always verify against the in-product docs and run a preview. If chat is disabled, you still have full manual authoring capabilities.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Pipeline generation" icon="diagram-project" href="/ai-copilot/pipeline-generation">
+    Turn descriptions into node graphs.
+  </Card>
+  <Card title="SQL assistance" icon="database" href="/ai-copilot/sql-assistance">
+    Generate and tune queries inside nodes.
+  </Card>
+</CardGroup>

@@ -1,0 +1,88 @@
+---
+title: "Webhook settings"
+description: "Configure organization-level webhook endpoints and request signing."
+---
+
+Organization webhooks let external systems react to Planasonix events—run completion, governance signals, or security notifications—without polling the API. You configure **endpoints**, **event subscriptions**, and **cryptographic signing** so receivers trust payloads and you can prove delivery integrity.
+
+## Enterprise feature
+
+**Organization webhook settings** are available on **Enterprise** plans (or equivalent contract add-ons). Starter and Professional workspaces may rely on user-level integrations or a smaller set of built-in channels. If the tab is missing, contact your account team about enabling enterprise webhooks.
+
+## Webhook URL configuration
+
+<Steps>
+  <Step title="Create an HTTPS endpoint">
+    Your receiver must use **TLS 1.2+** and return **2xx** within the configured timeout for synchronous acknowledgements. Plan for idempotent handling because retries may duplicate delivery.
+  </Step>
+  <Step title="Register the URL in Planasonix">
+    In **Settings → Webhook settings**, add the **URL**, optional **description**, and choose whether the endpoint is **active**. You can maintain multiple endpoints for different teams (for example, security vs. data engineering).
+  </Step>
+  <Step title="Validate connectivity">
+    Use **Send test event** to confirm firewalls, certificates, and mutual TLS (if configured) before subscribing to high-volume event types.
+  </Step>
+</Steps>
+
+## Event types
+
+Subscribe only to events you process. Common categories include:
+
+| Category | Examples |
+| -------- | -------- |
+| Pipeline execution | Run started, succeeded, failed, cancelled |
+| Orchestration | Job queued, lease acquired, backfill segment complete |
+| Security and access | API key created, SSO certificate expiring, policy change |
+| Governance | Contract violation detected, catalog sync finished |
+
+<Tip>
+  Split endpoints by **blast radius**: route security events to a locked-down receiver and operational events to automation that can change production resources.
+</Tip>
+
+## Request signing for security
+
+Planasonix signs outbound webhook requests with a **shared secret** or **asymmetric key** pair you configure.
+
+- **HMAC-SHA256** – verify using the secret and the raw request body; compare the signature in a constant-time routine.
+- **Asymmetric** – publish your public key to the receiver; Planasonix signs with the private key material stored in your org secret store.
+
+Each delivery includes headers such as **timestamp** and **signature** so you reject **replay** attacks by enforcing a maximum skew (for example, five minutes).
+
+## Signature verification
+
+On your server:
+
+1. Read the **raw body** before JSON parsing.
+2. Recompute the HMAC (or verify the JWT/signature scheme documented for your tenant).
+3. Reject if the timestamp is stale or the signature mismatches.
+
+<Warning>
+  Never log full webhook payloads in plaintext if they can contain PII or pipeline metadata your policy treats as confidential.
+</Warning>
+
+## Retry policies
+
+Failed deliveries (non-2xx, timeouts, TLS errors) enter a **retry queue** with exponential backoff and a maximum attempt count. You configure:
+
+- **Initial backoff** and **multiplier**
+- **Maximum attempts** before the delivery moves to a **dead-letter** state visible in the UI
+- Optional **circuit breaker** pause when an endpoint fails repeatedly
+
+<AccordionGroup>
+  <Accordion title="Why you still see duplicates">
+    At-least-once delivery means your handler must deduplicate using the **event id** in the payload envelope.
+  </Accordion>
+  <Accordion title="Ordering guarantees">
+    Events for the same logical resource are **best-effort ordered**; design consumers to tolerate out-of-order messages when multiple pipelines run concurrently.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Orchestration webhooks" icon="webhook" href="/orchestration/webhooks">
+    Trigger pipelines from external systems (distinct from org notification webhooks).
+  </Card>
+  <Card title="Notifications" icon="bell" href="/settings/notifications">
+    User-facing channels and routing for alerts.
+  </Card>
+</CardGroup>

@@ -1,0 +1,88 @@
+---
+title: "Convert from Alteryx"
+description: "Import Alteryx workflows and convert them to Planasonix pipelines."
+---
+
+Alteryx **.yxmd** workflows describe a directed graph of **tools**. Planasonix maps each tool to a **node** or **subgraph** where semantics align; formula tools, joins, and unions translate more reliably than **spatial**, **predictive**, or **macro-driven** patterns.
+
+<Info>
+  Consult [Import and convert](/pipelines/import-and-convert) for uploading batches of `.yxmd` files and interpreting conversion reports.
+</Info>
+
+## .yxmd file parsing
+
+<Steps>
+  <Step title="Collect workflows and dependencies">
+    Gather `.yxmd` files plus any **macro** `.yxmc` dependencies and **data connections** exported according to your governance policy. Remove embedded credentials from files before upload; rebind secrets in Planasonix.
+  </Step>
+  <Step title="Upload and choose options">
+    In the Alteryx import profile, select whether to **inline macros** on first pass or **preserve** macro boundaries as subgraphs when supported.
+  </Step>
+  <Step title="Review tool coverage summary">
+    Open the **coverage** section of the conversion report to see counts of supported, approximated, and unsupported tools.
+  </Step>
+</Steps>
+
+## Tool to node mapping
+
+| Alteryx tool (examples) | Planasonix direction |
+| ----------------------- | -------------------- |
+| **Input Data** / **Connect In-DB** | Source nodes with SQL or driver metadata |
+| **Formula**, **Filter**, **Select** | Column and row transforms |
+| **Join**, **Union** | Join and union nodes |
+| **Summarize** | Aggregation node |
+| **Output Data** | Destination node |
+| **Browse** (developer) | Ignored or converted to preview annotations |
+
+<Tip>
+  Rename ambiguous tool containers in Alteryx **before** export (`Join Customers to Orders`) so generated Planasonix nodes carry meaningful labels out of the box.
+</Tip>
+
+## Formula and data types
+
+Alteryx **Formula** expressions use Alteryx-specific functions and **type coercion** rules.
+
+<AccordionGroup>
+  <Accordion title="Function parity">
+    Functions like `DateTimeParse`, `IFNULL`, and string cleaners may translate to **SQL** or **native** expressions. When no direct mapping exists, the importer inserts a **placeholder** SQL block—replace it with tested logic.
+  </Accordion>
+  <Accordion title="Locale and types">
+    **Date**, **fixed decimal**, and **string width** behavior can differ from your warehouse. Run **preview** steps on representative samples after conversion.
+  </Accordion>
+</AccordionGroup>
+
+## Macro handling
+
+**Standard macros** encapsulate reusable tool chains.
+
+<Tabs>
+  <Tab title="Standard macros">
+    Planasonix may expand macros into **nested subgraphs** or **reusable pipeline components** depending on product version. Keep macro inputs documented so you can map **control parameters** to [variables](/pipelines/variables).
+  </Tab>
+  <Tab title="Batch and iterative macros">
+    **Batch** and **iterative** macros often require **control-flow** loops or **parameterized** runs in Planasonix. Expect **manual redesign** when row-driven iteration cannot flatten to set-based SQL.
+  </Tab>
+</Tabs>
+
+<Warning>
+  **Predictive**, **R**, and **Python** tools are not guaranteed to convert. Treat them as **explicit manual** work: either embed **Python nodes** in Planasonix or push modeling to a dedicated ML platform and ingest results.
+</Warning>
+
+## In-database vs standard workflows
+
+**In-DB** streams should map closer to **warehouse-native** SQL. **Standard** workflows that mix **local temp files** and engine execution may need restructuring for **cloud** runtimes without local disk assumptions.
+
+<Note>
+  **Dynamic inputs** (wildcard paths, directory tools) should become **parameterized** sources or **file triggers** in [orchestration](/orchestration/triggers) rather than hard-coded samples.
+</Note>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Row transforms" icon="table" href="/nodes/row-transforms">
+    Filters, sorts, and sampling after import.
+  </Card>
+  <Card title="Advanced nodes" icon="wand-magic-sparkles" href="/nodes/advanced">
+    Python and extension points for complex Alteryx logic.
+  </Card>
+</CardGroup>

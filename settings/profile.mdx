@@ -1,0 +1,40 @@
+---
+title: "Profile"
+description: "Manage your account profile and personal settings."
+---
+
+Your **profile** stores the identity other users see in comments, run history, and audit logs. Keeping it accurate speeds up collaboration and helps security teams map actions to real people.
+
+## Personal information
+
+Update:
+
+- **Display name** – shown in UI and notifications
+- **Email** – primary login identifier where your workspace uses email-based auth
+- **Avatar** – optional image from your SSO provider or uploaded file (policy-dependent)
+
+Some fields sync from your **identity provider** when SSO is enforced; inline edits may be disabled—request changes through IT if values are wrong.
+
+## Preferences
+
+Depending on deployment, you may set:
+
+- **Default workspace** or landing page after login
+- **Locale** and **time display** formats for schedules you read in the UI
+- **Editor** preferences for pipeline JSON/YAML when applicable
+
+<Tip>
+  Align your profile time zone with where you interpret cron schedules most often; pipeline time zones are still set per schedule.
+</Tip>
+
+## Security quick links
+
+From the profile area you can jump to:
+
+- [Multi-factor authentication](/settings/mfa)
+- [API keys](/settings/api-keys) you own
+- Active **sessions** (sign out other devices) when supported
+
+<Info>
+  If your email changes, verify re-invitations to shared resources and update any external runbooks that reference your old address.
+</Info>

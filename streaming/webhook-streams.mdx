@@ -1,0 +1,105 @@
+---
+title: "Webhook streams"
+description: "Receive real-time data from external services via webhook stream endpoints."
+---
+
+**Webhook streams** turn HTTPS `POST` requests from vendors, internal apps, or SaaS products into a **durable, ordered stream** you process with the same streaming nodes you use for Kafka or Kinesis. You get a **stable URL**, **authentication**, and **backpressure** controls instead of operating your own ingestion tier.
+
+## Setting up webhook stream sources
+
+<Steps>
+  <Step title="Create the stream source">
+    In the canvas, add a **Webhook stream** source (or equivalent streaming connector). Planasonix provisions a **unique path** and shows the full **ingest URL**.
+  </Step>
+  <Step title="Choose authentication">
+    Select **shared secret (HMAC)**, **static bearer token**, **mTLS**, or **JWT validation**—match what your sender supports and your security baseline requires.
+  </Step>
+  <Step title="Configure the sender">
+    Register the URL in the vendor console or your API gateway. Start with a **sandbox** workspace and low rate limits.
+  </Step>
+  <Step title="Attach downstream nodes">
+    Parse JSON, Avro, or newline-delimited payloads, then branch to quality checks and destinations.
+  </Step>
+</Steps>
+
+<Info>
+  Webhook streams are **ingress-only**; they do not replace [orchestration webhooks](/orchestration/webhooks) that notify *your* systems about Planasonix events.
+</Info>
+
+## Payload parsing
+
+Incoming bodies land as **raw bytes** plus **headers**. Typical patterns:
+
+<Tabs>
+  <Tab title="JSON object">
+    Use a **JSON parser** node with **schema inference** disabled in production; pin a **JSON Schema** or **contract** to catch vendor drift early.
+  </Tab>
+  <Tab title="JSON array batch">
+    Enable **array expansion** so each element becomes its own stream record with shared metadata (delivery id, received_at).
+  </Tab>
+  <Tab title="Form or multipart">
+    Map **form fields** to columns; store large attachments in **object storage** via a dedicated branch if payloads exceed inline limits.
+  </Tab>
+</Tabs>
+
+Preserve **vendor envelope** fields (`event_id`, `type`, `timestamp`) as top-level metadata for deduplication and routing.
+
+<Tip>
+  Normalize **timestamps** to UTC immediately after parse; vendors mix epoch seconds, millis, and RFC3339 strings in the same product line.
+</Tip>
+
+## Authentication
+
+<AccordionGroup>
+  <Accordion title="HMAC signature">
+    Configure the **signing algorithm** and **header names** the vendor documents. Reject requests when the signature is missing or the timestamp skew exceeds your window.
+  </Accordion>
+  <Accordion title="Bearer token">
+    Rotate tokens in **two steps**: add the new secret, deploy senders, then remove the old secret after traffic confirms the cutover.
+  </Accordion>
+  <Accordion title="mTLS">
+    Upload your **client CA** or use Planasonix-managed client certs. Ideal for internal services behind mutual authentication.
+  </Accordion>
+</AccordionGroup>
+
+## Backpressure policies
+
+When downstream processing or destinations lag, the ingress layer must decide how to behave.
+
+| Policy | When to use |
+| ------ | ----------- |
+| **Queue and slow accept** | You can tolerate **higher latency** but must not drop vendor retries; watch **queue depth** alerts. |
+| **Reject with 429** | Vendor supports **Retry-After**; protects workers from OOM during spikes. |
+| **Sample or shed** | Extreme telemetry volumes where **approximate** analytics is acceptable—document the data loss budget. |
+
+<Warning>
+  Returning **200** before you persist creates **silent loss** if the process crashes. Prefer acknowledging only after **durable enqueue** unless the vendor contract mandates fire-and-forget.
+</Warning>
+
+## Vendor webhook examples
+
+<CardGroup cols={2}>
+  <Card title="Stripe" icon="credit-card">
+    Verify **Stripe-Signature** with the endpoint secret; handle **id** per event type and use **connect** headers when processing Connect accounts.
+  </Card>
+  <Card title="GitHub" icon="github">
+    Use **X-Hub-Signature-256**; restrict to **repository** events you need; respond quickly and offload work to the stream graph.
+  </Card>
+  <Card title="Segment" icon="diagram-project">
+    Map **track**, **identify**, and **page** payloads to typed tables; watch for **high cardinality** properties that bloat schemas.
+  </Card>
+  <Card title="Custom internal APIs" icon="code">
+    Issue **service tokens** from your IdP; include **correlation id** headers for cross-service tracing into [diagnostics](/observability/diagnostics).
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Stream processing" icon="water" href="/streaming/stream-processing">
+    Windows, state, and error handling after ingest.
+  </Card>
+  <Card title="APIs and webhooks (connections)" icon="link" href="/connections/apis-and-webhooks">
+    Related HTTP integration patterns for batch and reverse ETL.
+  </Card>
+</CardGroup>

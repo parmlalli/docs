@@ -1,0 +1,50 @@
+---
+title: "Quickstart"
+description: "Get your first data pipeline running in under 5 minutes."
+---
+
+This guide assumes you have access to a Planasonix workspace (trial or company tenant) and one data source you are allowed to use for testing—such as a read-only Postgres database, a Google Sheet, or a sandbox Salesforce org.
+
+<Note>
+  If your organization enforces SSO, complete login through your identity provider first. You need a role that lets you create connections and pipelines in at least one project.
+</Note>
+
+<Steps>
+  <Step title="Create your account and project">
+    Open your Planasonix URL and sign in. If you are the first user in a new tenant, you create an **organization** name your colleagues will recognize.
+
+    After login, either join an existing **project** your admin invited you to or create a project for this test. Projects isolate connections, pipelines, and secrets; pick a name like `Analytics sandbox` so production assets stay separate.
+
+    Confirm you see the home dashboard and the left navigation includes **Connections** and **Pipelines**. If either is missing, ask a workspace admin to grant **Editor** (or equivalent) on the project.
+  </Step>
+  <Step title="Add a connection">
+    Go to **Connections** and choose **New connection**. Select your source type (for example **PostgreSQL** or **Google Sheets**).
+
+    Enter the minimum required fields: host and database for Postgres, or OAuth for a SaaS tool. Use the **Test connection** action before saving. A successful test proves network reachability and that credentials work from Planasonix’s runtime—not only from your laptop.
+
+    Save the connection with a clear name (`Finance Postgres read replica`). You reference this name when you add extract nodes so other teammates know which environment they are touching.
+  </Step>
+  <Step title="Build a pipeline">
+    Open **Pipelines** and choose **New pipeline**. Name it something specific (`Quickstart — orders to warehouse`) so it is easy to find in audit logs later.
+
+    On the canvas, add an **extract** node and pick the connection you created. Choose a small table or sheet tab with fewer than 10,000 rows for the first run. Add a **load** node pointed at your destination connection (for example Snowflake or BigQuery). If you do not have a warehouse handy, use a **staging** connection or the platform’s sample destination if your admin enabled one.
+
+    Map source columns to destination columns. For a first run, a one-to-one mapping is enough. Add a **schema drift** or **not null** check only if you already know the rules you want; you can refine those after the pipeline succeeds once.
+
+    Click **Save** and resolve any validation errors (unmapped required fields, missing primary keys where the destination needs them, and so on).
+  </Step>
+  <Step title="Run and monitor">
+    Use **Run now** to execute the pipeline outside its schedule. Watch the **run detail** view: each node reports start time, duration, rows read and written, and status.
+
+    If a node fails, open **Logs** for that step. Common first-run issues include IP allowlists, expired OAuth tokens, and destination tables that do not exist yet—create the target table or enable auto-create if your organization allows it.
+
+    After a successful run, spot-check the destination with a simple row count or `SELECT *` limited query. Optionally enable **alerts** on failure so the next time something breaks you get notified in email or Slack.
+
+    From here, add a **schedule** (hourly or daily), turn on **CDC** if your source supports it, or attach a **reverse ETL** sync to push a subset of rows to an operational tool.
+  </Step>
+</Steps>
+
+## Related reading
+
+- [Introduction](/getting-started/introduction) — Platform overview and architecture.
+- [Core concepts](/getting-started/concepts) — Definitions for organizations, projects, connections, pipelines, nodes, schedules, and reverse ETL.

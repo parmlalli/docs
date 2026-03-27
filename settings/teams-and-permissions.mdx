@@ -1,0 +1,64 @@
+---
+title: "Teams and permissions"
+description: "Manage teams, roles, and access permissions within your organization."
+---
+
+**Teams** group people who share responsibility for domains (finance, product analytics, platform). **Roles** bundle permissions so you grant least privilege without hand-editing every pipeline.
+
+## Team creation
+
+<Steps>
+  <Step title="Create the team">
+    In **Organization** → **Teams**, add a name, optional description, and owning manager.
+  </Step>
+  <Step title="Add members">
+    Invite users or sync from your identity provider if group mapping is enabled.
+  </Step>
+  <Step title="Assign resources">
+    Attach default connections, projects, or tags the team may use so new members inherit baseline access.
+  </Step>
+</Steps>
+
+## Role-based access
+
+Common role patterns:
+
+| Role | Typical capabilities |
+| ---- | --------------------- |
+| Viewer | Read pipelines, runs, and catalog entries; no edits |
+| Editor | Create and edit drafts; cannot promote to production in locked environments |
+| Maintainer | Edit production pipelines, manage schedules, resolve DLQ for owned assets |
+| Admin | Manage connections, secrets rotation, teams, billing contacts (varies by org policy) |
+
+<AccordionGroup>
+  <Accordion title="Custom roles">
+    Enterprise deployments often map SSO groups to custom roles with fine-grained toggles (for example, “run but not delete”).
+  </Accordion>
+  <Accordion title="Service accounts">
+    Use non-human principals for CI and orchestration; scope their roles to a single project or connection namespace.
+  </Accordion>
+</AccordionGroup>
+
+## Sharing pipelines and connections
+
+- **Pipelines** can be private to a user, shared with a team, or workspace-wide. Explicit shares override defaults when you collaborate across teams.
+- **Connections** store credentials; sharing a pipeline does not automatically expose secrets—recipients still need connection use-permission.
+
+<Warning>
+  Avoid workspace-wide **Admin** for contractors. Use time-bounded project roles and remove access when engagements end.
+</Warning>
+
+## Auditing access
+
+Review **access reports** periodically: who can use production warehouses, who can export data, and which API keys map to which teams. Pair with [Session policy](/settings/session-policy) for IP and timeout rules.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="API keys" icon="key" href="/settings/api-keys">
+    Programmatic access for automation principals.
+  </Card>
+  <Card title="SSO" icon="shield-halved" href="/settings/sso">
+    Group claims that drive team membership.
+  </Card>
+</CardGroup>

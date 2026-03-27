@@ -1,0 +1,100 @@
+---
+title: "User management"
+description: "Invite users, manage roles, and control access to your organization."
+---
+
+**User management** is where administrators add people to the workspace, assign **organization roles**, and remove access when roles change. Day-to-day pipeline permissions still layer **teams**, **resource shares**, and **connection use** on top of these basics.
+
+## Prerequisites
+
+You need an **administrator** (or equivalent) role in the organization to invite users, change org-wide roles, or deactivate accounts. If options are missing, ask your identity admin.
+
+## Inviting users
+
+<Steps>
+  <Step title="Open organization users">
+    Go to **Organization** → **Users** (or **Settings** → **Members**, depending on your layout).
+  </Step>
+  <Step title="Send invite">
+    Enter the corporate email, choose an initial **organization role**, and optional **team** assignments.
+  </Step>
+  <Step title="SSO and domain claims">
+    If SSO is enforced, invites may auto-join on first login when the email domain matches your allowed domains.
+  </Step>
+</Steps>
+
+<Note>
+  Guest or contractor domains sometimes require explicit approval workflows configured by your admin.
+</Note>
+
+## Role assignment
+
+Organization roles set the **ceiling** for what someone can attempt in the product. Examples common across deployments:
+
+| Role | Typical use |
+| ---- | ----------- |
+| Viewer | Read pipelines, runs, and catalog entries |
+| Member / Editor | Create and edit resources within team scope |
+| Admin | Manage users, connections, security settings, and billing contacts (varies) |
+
+<Tip>
+  Prefer the **lowest** org role that still lets people work, then expand with teams and project-level grants.
+</Tip>
+
+After invite acceptance, refine access with **team membership** and **shared items** rather than promoting everyone to admin.
+
+## Removing users
+
+<Steps>
+  <Step title="Transfer ownership">
+    Reassign **owned** pipelines, connections, and schedules so automation does not stall.
+  </Step>
+  <Step title="Deactivate or remove">
+    Use **Remove** or **Deactivate** per policy. Deactivation preserves audit history; hard removal may be restricted.
+  </Step>
+  <Step title="Rotate secrets">
+    Rotate **API keys** and **service accounts** the user created or could have copied.
+  </Step>
+</Steps>
+
+<Warning>
+  Removing a user does not automatically revoke **OAuth tokens** in upstream SaaS systems. Revoke grants in the provider if required by security policy.
+</Warning>
+
+## Multi-organization membership
+
+Users can belong to **more than one** Planasonix organization (for example a parent company and a subsidiary project). Each org has:
+
+- Its own **billing**, **SSO**, and **audit** configuration
+- Isolated **connections** and **secrets**
+- Separate **team** namespaces
+
+The UI lets you **switch organizations** from the workspace menu. Bookmarks and API tokens are per-org unless your tooling abstracts them.
+
+<AccordionGroup>
+  <Accordion title="Email collisions">
+    The same email may map to distinct org memberships; invitations always target a specific org ID.
+  </Accordion>
+  <Accordion title="Service accounts">
+    Create **non-human** users or API keys per org for CI/CD so pipelines never rely on a human’s cross-org session.
+  </Accordion>
+</AccordionGroup>
+
+## Detailed RBAC
+
+For **teams**, **custom roles**, **resource sharing**, and **connection use** semantics, use the dedicated guide:
+
+<Card title="Teams and permissions" icon="user-shield" href="/settings/teams-and-permissions">
+  Team structure, role bundles, sharing pipelines, and auditing access.
+</Card>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="SSO" icon="shield-halved" href="/settings/sso">
+    Federated sign-in and group mapping.
+  </Card>
+  <Card title="API keys" icon="key" href="/settings/api-keys">
+    Programmatic principals and rotation.
+  </Card>
+</CardGroup>

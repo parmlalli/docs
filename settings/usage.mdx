@@ -1,0 +1,58 @@
+---
+title: "Usage and limits"
+description: "Monitor your usage and understand plan limits."
+---
+
+The **usage** view shows how much of your subscription you consume: pipeline runs, row volume, compute minutes, API calls, and streaming throughput. You use it to catch growth early and to justify upgrades before hard limits block production work.
+
+## What you can monitor
+
+<Tabs>
+  <Tab title="Runs and throughput">
+    Count of successful and failed runs, rows processed, bytes moved, and reverse ETL operations per billing period.
+  </Tab>
+  <Tab title="Compute">
+    Worker hours or credits consumed by transforms, quality checks, and notebooks—often broken down by environment tag.
+  </Tab>
+  <Tab title="API and webhooks">
+    REST request counts and outbound webhook deliveries; spikes may indicate a runaway poller or misconfigured retry loop.
+  </Tab>
+</Tabs>
+
+## Plan limits
+
+Limits may include:
+
+- **Concurrent runs** per workspace or per connection
+- **Daily API** quota for certain SaaS connectors
+- **Maximum** active schedules or streaming jobs
+- **Seat** count for human users and sometimes service accounts
+
+When you approach a limit, the UI surfaces warnings; some limits **soft-cap** (queue) and others **hard-stop** with an error.
+
+<Info>
+  Limits reset on calendar billing cycles or rolling windows—check the tooltip next to each meter in the usage screen.
+</Info>
+
+## Optimization without surprise downgrades
+
+- Pause **dev** schedules outside business hours
+- Consolidate **micro-pipelines** that each pay fixed startup overhead
+- Use **incremental** sync patterns instead of full table scans where possible
+
+Pair usage review with [Cost insights](/observability/cost-insights) for warehouse and cloud spend outside Planasonix’s own meters.
+
+## Export and chargeback
+
+Export usage CSV for **chargeback** models: allocate cost to `cost_center` or `team` tags you set on pipelines. Finance reconciles Planasonix invoices against these exports.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Plans and pricing" icon="tags" href="/settings/plans-and-pricing">
+    What each tier includes.
+  </Card>
+  <Card title="Compute" icon="microchip" href="/settings/compute">
+    Tune worker profiles to match actual usage.
+  </Card>
+</CardGroup>

@@ -1,0 +1,327 @@
+---
+title: "Schedules"
+description: "Create and manage pipeline execution schedules."
+---
+
+Use these endpoints to list, create, update, and control **cron-based schedules** that run pipelines on a timetable. Authenticate with a [Bearer API key](/api-reference/authentication).
+
+**Base URL:** `https://api.planasonix.com`
+
+```http
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+```
+
+<Info>
+  If your workspace uses a versioned base path (for example `/v1`), prepend it before `/api`. See [API reference](/api-reference/introduction).
+</Info>
+
+---
+
+## List schedules
+
+Retrieves every schedule in the workspace. Optional filters narrow results by pipeline or enabled state.
+
+**`GET /api/schedules`**
+
+### Request parameters
+
+<ParamField query="pipeline_id" type="string">
+  Return only schedules bound to this pipeline ID.
+</ParamField>
+
+<ParamField query="enabled" type="boolean">
+  When `true` or `false`, filter by enabled status. Omit to return all.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="50">
+  Page size for collection responses (max varies by deployment).
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Opaque cursor from `meta.page.cursor` for the next page.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "sch_01j9k2m4n5p6q7r8",
+      "type": "schedule",
+      "attributes": {
+        "pipeline_id": "pl_01hq8sales_nightly",
+        "cron_expression": "0 2 * * *",
+        "timezone": "America/Chicago",
+        "enabled": true,
+        "next_run_at": "2025-03-28T07:00:00Z",
+        "last_run_at": "2025-03-27T07:00:00Z",
+        "created_at": "2025-01-15T18:22:10Z",
+        "updated_at": "2025-03-27T06:15:00Z"
+      }
+    }
+  ],
+  "meta": {
+    "page": { "limit": 50, "cursor": null }
+  }
+}
+```
+
+---
+
+## Create schedule
+
+Creates a new schedule for a pipeline. The pipeline must exist and your API key must have permission to attach schedules.
+
+**`POST /api/schedules`**
+
+### Request body
+
+<ParamField body="pipelineId" type="string" required>
+  Target pipeline ID.
+</ParamField>
+
+<ParamField body="cronExpression" type="string" required>
+  Standard five-field cron expression (minute hour day month weekday).
+</ParamField>
+
+<ParamField body="timezone" type="string" required>
+  IANA time zone name (for example `UTC`, `Europe/Berlin`).
+</ParamField>
+
+<ParamField body="enabled" type="boolean" default="true">
+  Whether the schedule starts active. You can enable or disable later via dedicated endpoints.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "sch_01j9k2m4n5p6q7r8",
+    "type": "schedule",
+    "attributes": {
+      "pipeline_id": "pl_01hq8sales_nightly",
+      "cron_expression": "0 2 * * *",
+      "timezone": "America/Chicago",
+      "enabled": true,
+      "next_run_at": "2025-03-28T07:00:00Z",
+      "last_run_at": null,
+      "created_at": "2025-03-27T14:30:00Z",
+      "updated_at": "2025-03-27T14:30:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Get schedule
+
+Returns a single schedule by ID.
+
+**`GET /api/schedules/{id}`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Schedule ID.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "sch_01j9k2m4n5p6q7r8",
+    "type": "schedule",
+    "attributes": {
+      "pipeline_id": "pl_01hq8sales_nightly",
+      "cron_expression": "0 2 * * *",
+      "timezone": "America/Chicago",
+      "enabled": true,
+      "next_run_at": "2025-03-28T07:00:00Z",
+      "last_run_at": "2025-03-27T07:00:00Z",
+      "created_at": "2025-01-15T18:22:10Z",
+      "updated_at": "2025-03-27T06:15:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Update schedule
+
+Updates mutable fields on an existing schedule. Omitted fields are left unchanged unless the API version documents otherwise.
+
+**`PUT /api/schedules/{id}`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Schedule ID.
+</ParamField>
+
+### Request body
+
+<ParamField body="cronExpression" type="string">
+  New cron expression.
+</ParamField>
+
+<ParamField body="timezone" type="string">
+  New IANA timezone.
+</ParamField>
+
+<ParamField body="enabled" type="boolean">
+  Enable or disable without calling the enable/disable endpoints.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "sch_01j9k2m4n5p6q7r8",
+    "type": "schedule",
+    "attributes": {
+      "pipeline_id": "pl_01hq8sales_nightly",
+      "cron_expression": "30 1 * * *",
+      "timezone": "America/Chicago",
+      "enabled": true,
+      "next_run_at": "2025-03-28T06:30:00Z",
+      "last_run_at": "2025-03-27T07:00:00Z",
+      "created_at": "2025-01-15T18:22:10Z",
+      "updated_at": "2025-03-27T15:02:33Z"
+    }
+  }
+}
+```
+
+---
+
+## Delete schedule
+
+Permanently removes the schedule. In-flight runs are not canceled unless documented by your deployment.
+
+**`DELETE /api/schedules/{id}`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Schedule ID.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "sch_01j9k2m4n5p6q7r8",
+    "type": "schedule",
+    "attributes": {
+      "deleted": true,
+      "deleted_at": "2025-03-27T15:05:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Enable schedule
+
+Sets `enabled` to true and resumes future invocations according to the cron expression.
+
+**`POST /api/schedules/{id}/enable`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Schedule ID.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "sch_01j9k2m4n5p6q7r8",
+    "type": "schedule",
+    "attributes": {
+      "enabled": true,
+      "next_run_at": "2025-03-28T07:00:00Z",
+      "updated_at": "2025-03-27T15:08:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Disable schedule
+
+Sets `enabled` to false. Already queued or running jobs may still complete.
+
+**`POST /api/schedules/{id}/disable`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Schedule ID.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "sch_01j9k2m4n5p6q7r8",
+    "type": "schedule",
+    "attributes": {
+      "enabled": false,
+      "next_run_at": null,
+      "updated_at": "2025-03-27T15:09:12Z"
+    }
+  }
+}
+```
+
+---
+
+## Trigger immediate run
+
+Enqueues a pipeline run for the schedule’s pipeline immediately, independent of the next cron tick.
+
+**`POST /api/schedules/{id}/run`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Schedule ID.
+</ParamField>
+
+### Request body
+
+<ParamField body="variables" type="object">
+  Optional key-value variables passed into the pipeline run context.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "run_01j9k3abcdefgh",
+    "type": "pipeline_run",
+    "attributes": {
+      "pipeline_id": "pl_01hq8sales_nightly",
+      "schedule_id": "sch_01j9k2m4n5p6q7r8",
+      "status": "queued",
+      "trigger": "schedule_manual",
+      "created_at": "2025-03-27T15:10:00Z"
+    }
+  }
+}
+```

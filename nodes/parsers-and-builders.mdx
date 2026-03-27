@@ -1,0 +1,96 @@
+---
+title: "Parsers and builders"
+description: "Parse incoming data formats and build outgoing payloads."
+---
+
+**Parsers** turn raw bytes or semi-structured text into **rows and columns** Planasonix can process. **Builders** assemble hierarchical structures (JSON, XML) from tabular fields for APIs and message buses.
+
+## CSV Parser
+
+**CSV Parser** reads delimited text into a typed schema.
+
+**Configuration:**
+
+- **Delimiter / quote / escape**: Match producer settings (`;` in EU exports, quoted newlines).
+- **Header row**: First row as names vs fixed column list.
+- **Schema**: Column names, types, and null markers (`\N`, empty string).
+- **Encoding**: UTF-8 vs legacy encodings for older mainframe feeds.
+
+**Typical use:** Ingest partner files dropped to object storage before validation and warehouse load.
+
+<Tip>
+  When schemas drift, pair the parser with **Schema Mapping** strictness tuned to your tolerance—quarantine bad files rather than silently coercing risky types.
+</Tip>
+
+## JSON Parser
+
+**JSON Parser** flattens documents or explodes arrays into rows.
+
+**Configuration:**
+
+- **Root path**: JSON Pointer or dot path to the repeating element (`$.events[*]`).
+- **Explode arrays**: One output row per array element with parent fields repeated.
+- **Variant columns**: Map nested objects to `STRUCT` or JSON strings per engine capabilities.
+
+**Typical use:** Webhook payloads with nested `user` and `items` arrays—explode `items` to line-level facts while keeping `order_id` on each row.
+
+## XML Parser
+
+**XML Parser** converts hierarchical XML into tables using XPath or configured mappings.
+
+**Configuration:**
+
+- **Row element**: The repeating node (`/Orders/Order`).
+- **Field XPaths**: Extract attributes and child elements into columns.
+- **Namespaces**: Register prefixes so paths resolve consistently.
+
+**Typical use:** Legacy B2B integrations that still ship SOAP-style or batch XML dumps.
+
+## JSON Builder
+
+**JSON Builder** creates JSON documents from column values.
+
+**Configuration:**
+
+- **Template**: Map columns to JSON paths (`$.customer.id` ← `customer_id`).
+- **Nesting**: Group fields under objects and arrays (for example, one `line_items` array per order when aggregating upstream).
+- **Typing**: Emit numbers vs strings correctly for strict API validators.
+
+**Typical use:** POST enriched rows to a REST endpoint that expects a nested body—not a flat CSV.
+
+## XML Builder
+
+**XML Builder** renders XML payloads from rows.
+
+**Configuration:**
+
+- **Root element** and **row wrapper** tags.
+- **Attribute vs element** mapping per field.
+- **Namespaces and schema hints** when partners require xsi types.
+
+**Typical use:** Enterprise partners that only accept XML batch uploads to SFTP or HTTPS endpoints.
+
+## Parser vs builder placement
+
+<Steps>
+  <Step title="Parse early">
+    Put parsers immediately after **Read** from files or blob storage so downstream nodes always see relational data.
+  </Step>
+  <Step title="Transform in the middle">
+    Cleanse, join, and aggregate while data stays tabular—simpler to preview and diff.
+  </Step>
+  <Step title="Build late">
+    Construct JSON/XML right before **Webhook Action**, **Write** to messaging systems, or handoff to reverse ETL nodes.
+  </Step>
+</Steps>
+
+## Related nodes
+
+<CardGroup cols={2}>
+  <Card title="Sources" icon="database" href="/nodes/sources">
+    Bring raw files and payloads into the graph.
+  </Card>
+  <Card title="Destinations" icon="share-from-square" href="/nodes/destinations">
+    Deliver built payloads or curated tables.
+  </Card>
+</CardGroup>

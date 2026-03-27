@@ -1,0 +1,56 @@
+---
+title: "Data lineage"
+description: "Trace data from source to destination with column-level lineage."
+---
+
+**Lineage** shows how data flows through pipelines: which source columns feed which transforms and which destination columns they populate. Column-level lineage answers audit questions that table-level graphs cannot.
+
+## Premium+ feature
+
+Fine-grained lineage (column mapping across complex SQL and multi-hop graphs) requires **Premium+** or **Enterprise** entitlements, depending on your contract. Table-only lineage previews may appear on lower tiers. Your billing admin can confirm the exact SKU.
+
+## Column lineage visualization
+
+Open a pipeline and launch the **Lineage** view. Select a destination column to highlight upstream columns and intermediate expressions. Select a source column to see every sink it influences.
+
+<Tip>
+  Use lineage during code review: if a column shows unexpected upstream paths, investigate joins and aliases before merge.
+</Tip>
+
+## Table-level lineage
+
+Table-level graphs summarize nodes as black boxes—useful for executive summaries and coarse impact checks. Drill down to column lineage when you need proof for regulators or internal auditors.
+
+<AccordionGroup>
+  <Accordion title="SQL transforms">
+    Lineage parses SELECT lists, joins, and unions when dialect features are supported; dynamic SQL may appear partially resolved—document such nodes manually.
+  </Accordion>
+  <Accordion title="Non-SQL nodes">
+    Visual transforms emit lineage when metadata is explicit; custom code may require annotations.
+  </Accordion>
+</AccordionGroup>
+
+## Operational uses
+
+<Tabs>
+  <Tab title="Incident response">
+    When a dashboard breaks, trace the broken metric to the warehouse column and upstream ingestion job in minutes instead of hours.
+  </Tab>
+  <Tab title="Deprecation">
+    Prove no active pipelines consume a column before you drop it.
+  </Tab>
+  <Tab title="Compliance">
+    Export lineage snapshots for GDPR or SOX workflows showing PII propagation paths.
+  </Tab>
+</Tabs>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Impact analysis" icon="chart-network" href="/governance/impact-analysis">
+    Quantify downstream scope of changes.
+  </Card>
+  <Card title="Pipelines overview" icon="diagram-project" href="/pipelines/overview">
+    Author graphs lineage can parse.
+  </Card>
+</CardGroup>

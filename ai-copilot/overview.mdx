@@ -1,0 +1,68 @@
+---
+title: "AI Copilot overview"
+description: "Accelerate pipeline development with AI-powered assistance."
+---
+
+AI Copilot helps you design pipelines, write SQL, and troubleshoot runs without leaving Planasonix. You describe intent in natural language; the assistant proposes nodes, edges, queries, and explanations grounded in your workspace context where your plan allows it.
+
+## What AI Copilot does
+
+<CardGroup cols={2}>
+  <Card title="Chat" icon="messages" href="/ai-copilot/chat">
+    Ask questions, iterate on designs, and get step-by-step guidance in the sidebar.
+  </Card>
+  <Card title="Pipeline generation" icon="diagram-project" href="/ai-copilot/pipeline-generation">
+    Generate or extend pipeline graphs from a short description of the data flow.
+  </Card>
+  <Card title="SQL assistance" icon="database" href="/ai-copilot/sql-assistance">
+    Draft, refactor, and debug SQL against your connected sources.
+  </Card>
+  <Card title="Knowledge base" icon="books" href="/ai-copilot/knowledge-base">
+    On Enterprise plans, ground answers in your organization’s own documents.
+  </Card>
+</CardGroup>
+
+Copilot does not replace data governance: you still review generated SQL, credentials, and schedules before production promotion.
+
+## Availability
+
+AI Copilot is **feature-gated** by subscription tier and admin policy. If you do not see the Copilot icon or entry points, your organization may have disabled AI features or your role may lack permission. Workspace owners can confirm entitlements under [Plans and pricing](/settings/plans-and-pricing) and security settings.
+
+<Info>
+  Some regions or industries restrict use of third-party language models. Your legal team may require you to keep certain projects on manual authoring only.
+</Info>
+
+## Platform vs user API keys
+
+Model calls can be billed and authenticated in two ways:
+
+<Tabs>
+  <Tab title="Platform keys">
+    **Platform-managed keys** use Planasonix’s provider agreement. You do not paste your own vendor key; usage may count toward platform quotas or your contract’s AI add-on.
+  </Tab>
+  <Tab title="User (BYO) keys">
+    **User-supplied keys** connect your organization’s account with the model provider. You control spend and data-processing terms directly with that vendor. Admins configure whether BYO keys are allowed and who can add them.
+  </Tab>
+</Tabs>
+
+When BYO keys are required by policy, ensure rotation and least-privilege API tokens follow your internal standards.
+
+## Responsible use
+
+- Review generated pipelines in a dev environment before promoting.
+- Avoid pasting secrets, personal data, or regulated payloads into chat unless your security review approves that workflow.
+- Use feedback controls (thumbs up/down or comments) so your admins can tune quality over time.
+
+## Next steps
+
+<Steps>
+  <Step title="Enable Copilot">
+    Confirm the feature is on for your workspace and choose platform or BYO keys per policy.
+  </Step>
+  <Step title="Open chat on a pipeline">
+    Open a draft pipeline and start with a concrete goal (“ingest S3 JSON, flatten nested fields, load to Snowflake”).
+  </Step>
+  <Step title="Iterate with previews">
+    Run previews and fix issues with [SQL assistance](/ai-copilot/sql-assistance) before scheduling.
+  </Step>
+</Steps>

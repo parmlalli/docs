@@ -1,0 +1,129 @@
+---
+title: "Data warehouses"
+description: "Connect to cloud data warehouses and lakehouses including Snowflake, BigQuery, Databricks, Redshift, and more."
+---
+
+Warehouse connections power large-scale loads, merges, and metadata-driven pipelines. Planasonix uses each platform’s native clients and authentication flows so you can align with how your cloud administrator already provisions access.
+
+## Supported platforms
+
+You can connect Planasonix to:
+
+- **Snowflake** — Multi-cloud warehouse with roles, warehouses, databases, and schemas as first-class objects.
+- **Google BigQuery** — Serverless analytics on GCP; projects, datasets, and jobs APIs.
+- **Databricks** — Unity Catalog, SQL warehouses, and lakehouse tables (including Delta Lake).
+- **Amazon Redshift** — Provisioned clusters and serverless workgroups; IAM and database users.
+- **Azure Synapse Analytics** — Dedicated SQL pool and serverless SQL patterns as supported by the connector.
+- **Microsoft Fabric** — OneLake and warehouse or SQL endpoints exposed through the Fabric connector surface.
+- **Apache Iceberg** — Open table format on object storage; often paired with Spark, Databricks, or Trino-style catalogs depending on your deployment.
+
+<Note>
+  Iceberg connections frequently sit alongside a **catalog** and **compute** connection (for example Databricks or a query engine). Confirm your Planasonix edition includes the Iceberg and catalog path you use in production.
+</Note>
+
+## Configure a warehouse connection
+
+<Steps>
+  <Step title="Pick the warehouse connector">
+    In **Connections**, create a new connection and choose **Snowflake**, **BigQuery**, **Databricks**, or the tile that matches your platform. Iceberg-focused setups may use a dedicated connector or a bundle of catalog plus storage connections—follow the in-product wizard for your edition.
+  </Step>
+  <Step title="Set account and namespace defaults">
+    Enter **account identifiers**, **project and dataset**, **workspace URL**, **HTTP path** for SQL warehouses, **cluster or workgroup** names, and default **database/schema** so pipeline nodes inherit the correct namespace without repeating it on every node.
+  </Step>
+  <Step title="Attach the right credential type">
+    Link a credential that matches the platform’s auth model (key pair, OAuth, service account JSON, PAT, IAM, Entra ID, and so on). Details vary by vendor; see the tabs below.
+  </Step>
+  <Step title="Validate TLS and network path">
+    Ensure warehouse endpoints are reachable from Planasonix workers (public internet, VPN, or private connectivity as your org requires). Run **Test connection** before scheduling production loads.
+  </Step>
+  <Step title="Grant narrow warehouse roles">
+    Create service identities with explicit grants on databases, schemas, and future objects only where the platform supports it. Avoid account-wide administrator roles for pipeline users.
+  </Step>
+</Steps>
+
+## Authentication methods by platform
+
+<Tabs>
+  <Tab title="Snowflake">
+    **Key pair (JWT)** — Preferred for automation: store the private key in Planasonix credentials; register the public key on the Snowflake user.
+
+    **Username and password** — Acceptable for some legacy setups; pair with Snowflake network policy and MFA rules from your administrator.
+
+    **OAuth** — Use when your organization centralizes Snowflake access through an IdP-backed OAuth client.
+
+    You also set **account identifier**, **warehouse**, **database**, and **schema** defaults on the connection so jobs land in the right namespace without repeating them in every pipeline.
+  </Tab>
+  <Tab title="BigQuery">
+    **Service account JSON key** — Typical for batch jobs: the credential references a GCP service account with `bigquery.jobs.create` and dataset-level IAM on the projects you read or write.
+
+    **OAuth (user)** — Suitable for exploratory pipelines tied to a human analyst; subject to Google Workspace policies.
+
+    **Workload identity federation** — Use when Planasonix runs in GCP and you bind Kubernetes or VM identities to the service account without long-lived keys.
+
+    Set **project** and **default dataset** on the connection to reduce boilerplate in SQL and load steps.
+  </Tab>
+  <Tab title="Databricks">
+    **Personal access token (PAT)** — Common for workspace-authenticated API and SQL access; scope tokens to the minimum workspace and expiration your policy allows.
+
+    **OAuth / Microsoft Entra ID** — Use in enterprises that prohibit PATs; aligns with conditional access and centralized app registration.
+
+    **Service principal** — For unattended jobs where Azure Databricks service principals are enabled.
+
+    You typically configure **workspace URL**, **HTTP path** for SQL warehouses, and optionally **catalog** for Unity Catalog–enabled workspaces.
+  </Tab>
+  <Tab title="Redshift">
+    **Database user and password** — Standard for many teams; secrets live in Planasonix credentials, not in connection JSON that might be exported.
+
+    **IAM authentication** — Recommended on AWS: the connection references an IAM role or user that acquires temporary credentials for the cluster or serverless workgroup.
+
+    **Secrets Manager** — Some teams store the database user secret in AWS Secrets Manager and grant Planasonix read access via IAM.
+
+    Include **cluster identifier** or **serverless workgroup** and **database** so the driver targets the correct endpoint.
+  </Tab>
+  <Tab title="Synapse">
+    **SQL authentication** — SQL login and password for dedicated pools when your administrator allows SQL auth.
+
+    **Microsoft Entra ID** — Preferred for enterprises: managed identities or service principals with Synapse RBAC.
+
+    **Managed identity** — When Planasonix runs inside Azure and can attach a user-assigned or system-assigned identity to the runtime.
+
+    Specify **server host**, **database**, and pool type (dedicated vs serverless) per your connector options.
+  </Tab>
+  <Tab title="Fabric">
+    **Microsoft Entra ID** — Interactive OAuth for analysts or device-code flows where enabled.
+
+    **Service principal** — For scheduled pipelines; requires Fabric workspace and artifact permissions aligned to your semantic model or warehouse.
+
+    Connection fields usually include **workspace**, **lakehouse or warehouse ID**, and **tenant** context as required by the API surface.
+  </Tab>
+  <Tab title="Iceberg">
+    Authentication follows the **catalog** and **object storage** you use: cloud **IAM** for S3, GCS, or Azure Data Lake, plus **catalog credentials** (Glue, Hive metastore, Unity Catalog, REST catalog, and so on) as implemented by your Planasonix deployment.
+
+    Treat the warehouse connection as a bundle of **catalog URI**, **warehouse path on object storage**, and a **principal** that can read data files and commit table metadata safely.
+  </Tab>
+</Tabs>
+
+## Operational tips
+
+Warehouse jobs benefit from explicit **staging areas** (buckets or external stages) and **role separation** between extract, transform, and publish. Use one connection per environment and per major workload (for example `prod-databricks-curated` vs `prod-databricks-raw`) so you can tune warehouse size and cost without cross-contamination.
+
+<Warning>
+  Broad warehouse roles (for example `ACCOUNTADMIN` on Snowflake or owner on entire catalogs) should not be used for pipeline service identities. Create narrow roles with explicit grants.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Cloud storage" icon="cloud" href="/connections/cloud-storage">
+    Land files before COPY/LOAD or external table patterns.
+  </Card>
+  <Card title="Credentials management" icon="key-round" href="/connections/credentials">
+    Key rotation and access reviews for warehouse identities.
+  </Card>
+  <Card title="Pipelines overview" icon="git-branch" href="/pipelines/overview">
+    How warehouse nodes fit into orchestrated graphs.
+  </Card>
+  <Card title="Reverse ETL" icon="arrow-left-right" href="/reverse-etl/overview">
+    When you push modeled warehouse data back to applications.
+  </Card>
+</CardGroup>

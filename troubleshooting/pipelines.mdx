@@ -1,0 +1,76 @@
+---
+title: "Pipeline troubleshooting"
+description: "Diagnose and resolve pipeline execution failures."
+---
+
+When a pipeline fails, you want three answers: **which node**, **why**, and **whether the data is safe to retry**. Planasonix surfaces that through run history, **node status**, and **logs**. This page groups the failures operators see most often and the fastest ways to narrow them down.
+
+## Common errors
+
+<Tabs>
+  <Tab title="Node failures">
+    A single node turns red while upstream stayed green. Open **node details** for the **exception class**, **SQL state**, or **HTTP status**. Typical causes: **syntax** after variable substitution, **missing file**, **forbidden API**, or **type coercion** on null-heavy columns. Fix the node config or guard with **null-safe** expressions and **default values**.
+  </Tab>
+  <Tab title="Memory pressure">
+    Errors mention **heap**, **spill**, **out of memory**, or **container killed**. Reduce **fan-in** (widen filters, push aggregation down), lower **parallelism**, or move heavy transforms to the **warehouse**. For file scans, narrow **partition pruning** and avoid reading wide Parquet into the driver.
+  </Tab>
+  <Tab title="Timeouts">
+    **Query timeout**, **stage timeout**, or **lease expired** usually means the warehouse or API is slower than your SLA. Tune **statement timeout** per environment, **batch size**, or **retry with backoff** for throttled APIs. Confirm the slowness is not **lock contention** on the source.
+  </Tab>
+  <Tab title="Schema mismatch">
+    **Column not found**, **cannot cast**, or **extra fields** appear after source upgrades. Refresh **schema drift** detection, update **contracts**, or add **evolve schema** steps. For semi-structured data, enforce **JSON paths** and reject unknown keys in production.
+  </Tab>
+</Tabs>
+
+## Debugging with preview, node logs, and run details
+
+<Steps>
+  <Step title="Open the failed run">
+    From the pipeline canvas or **Runs** list, select the **attempt** with the error badge. Note **start time**, **environment**, and **parameter overrides**.
+  </Step>
+  <Step title="Read node logs">
+    Expand the failed node and load **logs** filtered to **Error** and **Warn**. Follow stack traces to the first **caused by** line—later messages are often cascading.
+  </Step>
+  <Step title="Use preview where safe">
+    **Preview** samples rows through the subgraph. Use **limited** row counts and **masked** columns for PII. Preview hits the same connections as production—respect **rate limits** on external APIs.
+  </Step>
+  <Step title="Compare to last success">
+    Use **diff** on Git commits or **version history** if the pipeline changed between green and red runs. Roll back one change at a time.
+  </Step>
+</Steps>
+
+<Info>
+  Some failures are **transient** (network blips). Use **retry policies** on idempotent branches instead of manual reruns for every flake.
+</Info>
+
+## Performance optimization tips
+
+<AccordionGroup>
+  <Accordion title="Push down before pull up">
+    Filter and project in **source queries** or **warehouse SQL** before you move large datasets through the orchestration tier.
+  </Accordion>
+  <Accordion title="Right-size partitions">
+    Too many tiny files hurts listing; too few huge files hurts parallelism. Aim for **128–512 MB** compressed objects where the format allows, subject to source constraints.
+  </Accordion>
+  <Accordion title="Cache stable dimensions">
+    Reuse **broadcast** or **cached** small lookups instead of repeating joins on every micro-batch in streaming paths.
+  </Accordion>
+  <Accordion title="Watch queue depth">
+    Backpressure in **streaming** or **orchestrated** jobs shows up as growing **lag** before hard failures. Alert on lag early.
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  Capture a **baseline** duration after a healthy run; alert when p95 **doubles**—that catches regression before hard timeouts fire.
+</Tip>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Diagnostics" icon="stethoscope" href="/observability/diagnostics">
+    Automated anomaly hints across runs.
+  </Card>
+  <Card title="Dead letter queue" icon="inbox" href="/observability/dead-letter-queue">
+    Inspect rejected rows and poison messages.
+  </Card>
+</CardGroup>

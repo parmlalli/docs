@@ -1,0 +1,45 @@
+---
+title: "Notebooks overview"
+description: "Run interactive notebooks within your data pipelines."
+---
+
+**Notebooks** bring exploratory analysis and operational diagnostics into Planasonix so you can prototype transforms, validate assumptions, and document findings next to the pipelines that productionize the work.
+
+## Enterprise feature
+
+Hosted notebooks with workspace credentials and pipeline integration require an **Enterprise** subscription. Other tiers may allow export-only workflows or local Jupyter without in-product execution—check your navigation and [Plans and pricing](/settings/plans-and-pricing).
+
+## Jupyter-style notebooks
+
+Planasonix notebooks support familiar **cells** (code, markdown), **kernel** selection, and **variable** inspection. You connect to approved warehouse or Spark clusters using connections admins provision—no personal passwords embedded in notebook JSON.
+
+<Tabs>
+  <Tab title="Exploration">
+    Profile samples, chart distributions, and test join logic before you commit nodes on the canvas.
+  </Tab>
+  <Tab title="Documentation">
+    Mix markdown explanations with runnable code so handoffs survive team changes.
+  </Tab>
+</Tabs>
+
+## Pipeline integration
+
+Notebooks can reference pipeline **parameters** and **run context** when your deployment wires them together. Typical patterns:
+
+- Read the same parameters a nightly job uses to filter partitions during investigation
+- Query staging tables a pipeline just wrote without copying connection strings manually
+
+<Info>
+  Notebook outputs may contain PII from production samples—apply masking cells and clearance rules consistent with your data classification policy.
+</Info>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Getting started" icon="rocket" href="/notebooks/getting-started">
+    Create and run your first notebook.
+  </Card>
+  <Card title="Spark integration" icon="bolt" href="/notebooks/spark-integration">
+    Use Spark and Databricks compute.
+  </Card>
+</CardGroup>

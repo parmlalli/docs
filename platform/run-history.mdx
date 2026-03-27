@@ -1,0 +1,95 @@
+---
+title: "Run history"
+description: "View and analyze the execution history of all pipeline runs."
+---
+
+**Run history** is the operational ledger of pipeline execution: every attempt, its outcome, timing, and volume metrics. You use it to verify SLAs, compare regressions after deploys, and answer “did last night’s load finish?” without opening the warehouse.
+
+## Run list
+
+The default **run list** shows recent executions across pipelines you can access. Columns typically include:
+
+- **Pipeline** name and environment (for example draft vs production)
+- **Trigger** (schedule, manual, API, webhook, upstream chain)
+- **Start** and **end** timestamps in your preferred time zone
+- **Status** and high-level **error** classification when failed
+- **Duration** and **row counts** where the engine reported them
+
+### Filtering
+
+Narrow the list before exporting or paging through thousands of rows:
+
+- **Time range** presets (last hour, last day, custom)
+- **Status** (success, failed, canceled, running)
+- **Pipeline** or **tag** / **project**
+- **Triggered by** (user, service account, schedule id)
+
+<Tip>
+  Save filters you use for weekly reviews as **bookmarked URLs** or workspace views if your deployment supports them.
+</Tip>
+
+## Status codes
+
+Statuses summarize the scheduler and engine outcome:
+
+| Status | Meaning |
+| ------ | ------- |
+| Running | Work is still executing or waiting on resources |
+| Success | Completed without engine-reported failure |
+| Failed | Terminated with an error surfaced to Planasonix |
+| Canceled | Stopped by user, policy, or superseding run |
+| Skipped | Not started due to concurrency or schedule policy |
+
+<Info>
+  **Success** means the platform recorded completion. Always validate **business rules** (for example row count thresholds) using quality checks inside the pipeline or external monitors.
+</Info>
+
+## Duration
+
+**Duration** measures wall-clock time from dispatch to terminal state. Compare durations across:
+
+- **Warehouse** slot contention
+- **Source** API rate limits
+- **Data volume** growth week over week
+
+Spikes often correlate with **cluster autoscaling** cold starts or **full scans** after schema changes.
+
+## Row counts
+
+When connectors expose them, runs display **rows read**, **rows written**, or **bytes** moved. Use these fields to:
+
+- Detect **silent partial loads** when status is success but counts diverge from baseline
+- Size **incremental** windows and **backfills**
+
+## Individual run details
+
+Open a run to see:
+
+- **DAG** or **node graph** with per-node status
+- **Parameters** and **variables** resolved for that execution
+- **Retry** attempts and which node failed first
+- **Lineage** links to downstream triggers when chaining is enabled
+
+### Node-level logs
+
+Select a node to read **structured logs**: SQL text (when permitted), connector messages, and engine warnings. Download logs for **support** tickets; redaction rules apply to secrets.
+
+<AccordionGroup>
+  <Accordion title="Log volume">
+    High-cardinality info logs can truncate in the UI; use run export or centralized logging integrations when your org ships logs to SIEM.
+  </Accordion>
+  <Accordion title="Concurrent runs">
+    When multiple runs exist for the same schedule slot, open each run id separately; the list highlights superseded or coalesced executions.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Error history" icon="triangle-exclamation" href="/platform/error-history">
+    Cross-run error aggregation and diagnosis.
+  </Card>
+  <Card title="Dashboard" icon="chart-line" href="/observability/dashboard">
+    Workspace health summaries.
+  </Card>
+</CardGroup>

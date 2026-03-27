@@ -1,0 +1,62 @@
+---
+title: "Dashboard"
+description: "View pipeline health, run history, and key metrics at a glance."
+---
+
+The **DataOps dashboard** is the control tower for pipeline operations. You see which jobs are green, which are trending slower, and where data quality checks failed—all without opening each pipeline individually.
+
+## DataOps dashboard
+
+Widgets typically include:
+
+- **Run outcomes** – success, failure, skipped over the last 24 hours / 7 days
+- **Latency** – schedule drift (did the 06:00 job start at 06:00?)
+- **Throughput** – rows or bytes processed relative to trailing averages
+- **Ownership** – teams responsible for the noisiest failures
+
+Filter by environment (dev/stage/prod), domain tags, or connection to focus incident response.
+
+<Tabs>
+  <Tab title="Executive view">
+    Collapse to SLA tiles: on-time loads, critical dataset freshness, open incidents.
+  </Tab>
+  <Tab title="Engineer view">
+    Expand to per-pipeline sparklines, error fingerprints, and last deploy markers.
+  </Tab>
+</Tabs>
+
+## Health metrics
+
+**Health** combines recency of success, error budget consumption, and dependency availability (for example, warehouse incidents). A pipeline can be “degraded” if it completes but misses freshness targets.
+
+<Tip>
+  Pair health metrics with on-call rotations so degraded states page someone even when jobs technically “succeed” with partial data.
+</Tip>
+
+## Quality scores
+
+When you attach data quality nodes or contracts, the dashboard surfaces **quality scores** or failure counts per dataset. Drops often precede BI incidents; investigate before executives notice.
+
+## Schema monitoring
+
+**Schema drift** indicators compare observed columns to expected schemas or contracts. New unexpected columns, missing required fields, or type widening/narrowing appear as events you can route to alerts.
+
+<AccordionGroup>
+  <Accordion title="Noise control">
+    Tune sensitivity so expected vendor experiments do not page nightly; whitelist known sandbox sources separately.
+  </Accordion>
+  <Accordion title="Cross-pipeline correlation">
+    When multiple pipelines fail together, check shared infrastructure (warehouse, identity provider, DNS) before deep-diving each job.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Diagnostics" icon="stethoscope" href="/observability/diagnostics">
+    Drill into profiling and anomalies.
+  </Card>
+  <Card title="Alerts" icon="bell" href="/observability/alerts">
+    Turn dashboard signals into notifications.
+  </Card>
+</CardGroup>

@@ -1,0 +1,104 @@
+---
+title: "Connections overview"
+description: "Connect Planasonix to your databases, warehouses, cloud storage, APIs, and SaaS applications."
+---
+
+Planasonix is an enterprise ETL platform with **300+ connectors**. A **connection** is a named configuration that tells Planasonix how to reach a system: which connector to use, non-secret settings (hosts, regions, default databases), and which **credential** supplies secrets at run time. You create connections once and attach them to source, destination, and HTTP nodes across pipelines, schedules, and environments without duplicating passwords or API keys in every job.
+
+## What connections are
+
+A connection identifies one external system in your workspace or project. It stores:
+
+- **Connector type** — The engine or product family (PostgreSQL, S3, Salesforce, Kafka, and so on), which drives the fields you see and which pipeline nodes can use the connection.
+- **Reachability settings** — Hostnames, ports, regions, bucket names, base URLs, TLS options, and other values that are safe to show to teammates who edit connections.
+- **Credential reference** — A pointer to an encrypted credential record; the connection never embeds raw secrets in exportable pipeline metadata.
+
+You usually create one connection per **logical endpoint** (for example `prod-postgres-finance`, `eu-s3-landing`). Use separate connections when authentication, region, or data residency must differ, even for the same product (for example two Salesforce orgs).
+
+## How connections work
+
+<Steps>
+  <Step title="Choose a connector type">
+    When you create a connection, pick the system family. That choice determines required fields, supported authentication modes, and which canvas nodes can reference the connection.
+  </Step>
+  <Step title="Enter non-secret configuration">
+    Set hosts, ports, default databases or buckets, topic prefixes, warehouse names, and TLS behavior. Keep these fields free of embedded secrets; put passwords and keys in credentials instead.
+  </Step>
+  <Step title="Link a credential">
+    Attach a credential that matches the connector (database login, cloud IAM, API key, OAuth client, and so on). See [Credentials management](/connections/credentials) for types and rotation.
+  </Step>
+  <Step title="Test and save">
+    Run **Test connection** so the check uses the same network path as workers (including VPN, private link, or IP allowlists). After success, save and select this connection in pipeline nodes.
+  </Step>
+</Steps>
+
+Orchestration resolves the connection on each run: Planasonix loads your saved settings, decrypts the linked credential for that execution only, and passes both to the connector runtime. If you rotate a credential, every pipeline that references a connection using that credential picks up the new secret on the next run without you editing individual jobs.
+
+## Credential system
+
+Credentials are stored **encrypted at rest** and injected only when a job needs them. Separating credentials from connection metadata gives you:
+
+- **Rotation** — Update one credential; all linked connections benefit.
+- **Audit** — Review who created credentials and which connections use them, without plaintext secrets in pipeline exports or Git.
+- **Least privilege** — Grant builders permission to use a connection while restricting who can create or replace underlying secrets.
+
+Supported credential kinds include **AWS**, **Azure**, **GCP**, database logins, **API keys**, **OAuth** bundles (client credentials plus stored refresh material), and protocol-specific material (FTP, SAP, and others). The exact list in your tenant may vary by edition; your administrator can confirm which types appear under **Credentials**.
+
+<Info>
+  Some organizations connect Planasonix to an external secret manager. If that applies to you, credential records may proxy to vault paths instead of holding long-lived plaintext in Planasonix—follow your security team’s runbook for rotation.
+</Info>
+
+## Connection type categories
+
+Use the cards below to open guides for supported systems, authentication options, and configuration patterns.
+
+<CardGroup cols={2}>
+  <Card title="Databases" icon="database" href="/connections/databases">
+    PostgreSQL, MySQL, SQL Server, Oracle, MongoDB, ClickHouse, Cassandra, DuckDB, Elasticsearch, and managed cloud variants.
+  </Card>
+  <Card title="Data warehouses" icon="warehouse" href="/connections/data-warehouses">
+    Snowflake, BigQuery, Databricks, Redshift, Synapse, Fabric, and Apache Iceberg–oriented lakehouse paths.
+  </Card>
+  <Card title="Cloud storage" icon="cloud" href="/connections/cloud-storage">
+    S3, Azure Blob, GCS, R2, MinIO, Wasabi, Box, OneDrive, SharePoint, FTP/SFTP, and common file formats.
+  </Card>
+  <Card title="Streaming platforms" icon="radio" href="/connections/streaming-platforms">
+    Kafka, Confluent Cloud, Redpanda, Kinesis, Pulsar, Upstash, with Confluent and Glue schema registry options.
+  </Card>
+  <Card title="APIs and webhooks" icon="webhook" href="/connections/apis-and-webhooks">
+    REST, AI REST, GraphQL, SAP OData, SAP RFC/BAPI, webhooks, OpenAPI import, and pagination tuning.
+  </Card>
+  <Card title="SaaS applications" icon="building-2" href="/connections/saas-applications">
+    CRM, ERP, commerce, ads, marketing, HR, analytics, collaboration, and 100+ more packaged connectors.
+  </Card>
+  <Card title="AI providers" icon="sparkles" href="/connections/ai-providers">
+    OpenAI, Anthropic Claude, Google Gemini for LLM transforms and AI Copilot.
+  </Card>
+  <Card title="Credentials management" icon="key-round" href="/connections/credentials">
+    Types, sharing, rotation, OAuth tokens, and security practices for integration owners.
+  </Card>
+</CardGroup>
+
+## Choose a starting point
+
+<AccordionGroup>
+  <Accordion title="Operational or application databases">
+    If data lives in a transactional or document database, start with [Databases](/connections/databases). Use read replicas or scoped database users for heavy extract workloads.
+  </Accordion>
+  <Accordion title="Analytics warehouses and lakehouses">
+    For Snowflake, BigQuery, Databricks, or similar, use [Data warehouses](/connections/data-warehouses). Pair with [Cloud storage](/connections/cloud-storage) when you stage files before load.
+  </Accordion>
+  <Accordion title="Files and object stores">
+    For CSV, Parquet, JSON, or partner drops in buckets, use [Cloud storage](/connections/cloud-storage).
+  </Accordion>
+  <Accordion title="Events and low-latency ingestion">
+    For topics and streams, use [Streaming platforms](/connections/streaming-platforms).
+  </Accordion>
+  <Accordion title="HTTP APIs, SAP, or push events">
+    Use [APIs and webhooks](/connections/apis-and-webhooks) for generic or custom HTTP. Use [SaaS applications](/connections/saas-applications) when Planasonix ships a first-class connector (OAuth, object catalog, incremental sync).
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  Name connections after **environment and system** (for example `prod-salesforce`, `eu-s3-landing`) so anyone selecting a connection on the canvas can choose correctly without opening the full configuration.
+</Tip>

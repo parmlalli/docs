@@ -1,0 +1,62 @@
+---
+title: "Semantic layer"
+description: "Define business metrics and a semantic layer for consistent analytics."
+---
+
+The **semantic layer** stores curated **metrics**, **dimensions**, and **entities** so every BI tool and SQL client asks the same questions the same way. You define grain, aggregation rules, and friendly names once, then expose them to analysts through Planasonix.
+
+## Metrics catalog
+
+Create entries such as `net_revenue`, `active_subscribers`, or `churn_rate` with:
+
+- **Definition** – SQL or declarative expression referencing approved fact and dimension tables
+- **Grain** – Per day, per account, per subscription, etc.
+- **Constraints** – Filters that must always apply (exclude test tenants, internal accounts)
+- **Certification** – Steward approval for executive use
+
+Version metrics when definitions change; dashboards pin to versions until owners accept updates.
+
+<Tip>
+  Keep metric names business-stable even when underlying table names churn; update mappings in the semantic layer instead of renaming metrics constantly.
+</Tip>
+
+## Semantic definitions
+
+**Dimensions** describe `who`, `what`, `where`, and `when` (product line, region, campaign). **Entities** map keys across facts (customer_id bridges orders and support tickets). Document slowly changing dimensions explicitly so analysts know which history version they query.
+
+<AccordionGroup>
+  <Accordion title="Drill paths">
+    Define allowed hierarchies (region → country → city) so self-serve tools expose consistent drill-downs.
+  </Accordion>
+  <Accordion title="Access control">
+    Row-level security rules in the semantic layer should mirror warehouse entitlements; never widen access accidentally through friendly views.
+  </Accordion>
+</AccordionGroup>
+
+## JDBC access
+
+BI tools that speak **JDBC** can connect to Planasonix’s semantic JDBC endpoint (when enabled for your tenant) and issue SQL against published models. The driver translates requests to governed queries against your warehouse connection profile.
+
+<Tabs>
+  <Tab title="Tool compatibility">
+    Tableau, Power BI, Looker (via database connections), and Excel Power Query commonly use JDBC/ODBC bridges—verify exact support with your CS engineer during onboarding.
+  </Tab>
+  <Tab title="Performance">
+    Push heavy computation to the warehouse; the semantic layer should add predicates and joins, not materialize massive intermediate sets unless you design aggregates for that purpose.
+  </Tab>
+</Tabs>
+
+<Warning>
+  JDBC credentials are as sensitive as warehouse passwords. Store them in your vault and rotate on the same schedule as database keys.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Data catalog" icon="books" href="/governance/data-catalog">
+    Discover physical tables behind semantic models.
+  </Card>
+  <Card title="Impact analysis" icon="chart-network" href="/governance/impact-analysis">
+    See downstream BI assets when metrics change.
+  </Card>
+</CardGroup>

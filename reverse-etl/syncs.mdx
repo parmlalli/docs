@@ -1,0 +1,75 @@
+---
+title: "Syncs"
+description: "Create and manage reverse ETL sync jobs."
+---
+
+A **sync** is the unit of work that moves rows from your warehouse into a destination. You name the sync, attach a warehouse SQL source, choose a destination object, map fields, and set how each run should behave when rows are new, changed, or removed.
+
+## Create a sync
+
+<Steps>
+  <Step title="Open Reverse ETL and create a sync">
+    Choose **Reverse ETL** from the workspace menu, then **New sync**. Give the sync a name your team will recognize in logs and alerts.
+  </Step>
+  <Step title="Select warehouse and connection">
+    Pick the warehouse connection that holds your model. You run SQL only against connections your role can use.
+  </Step>
+  <Step title="Configure the SQL source">
+    Enter SQL that returns the columns you plan to map. Prefer a dedicated view or named query so you can evolve logic without editing the sync definition each time.
+  </Step>
+  <Step title="Choose destination and mode">
+    Select the destination app, object, and sync mode (insert, update, upsert, or delete). Then complete [field mapping](/reverse-etl/field-mapping).
+  </Step>
+  <Step title="Schedule or trigger">
+    Attach a schedule, manual run policy, or upstream trigger that fits how fresh the data must be.
+  </Step>
+</Steps>
+
+## Warehouse SQL source
+
+Your SQL source should return a flat result set: one row per destination record, column names that match what you intend to map (aliases help). Guidelines:
+
+- **Stable keys**: For upsert and update, include the destination primary key or external ID column from the warehouse so each row maps unambiguously.
+- **Incremental patterns**: When volumes are large, filter with a high-watermark column (`updated_at`, `sync_version`) and document the filter in the sync description so operators know how freshness is controlled.
+- **Timeouts**: Keep heavy joins and aggregations in warehouse views; the sync SQL should read the view to stay fast and predictable.
+- **Preview**: Use the sync preview to validate row counts and sample values before the first full run.
+
+<Warning>
+  Destructive modes (delete) remove or archive data in the target system according to the destination API. Confirm scopes, dry-run if available, and restrict who can edit sync mode.
+</Warning>
+
+## Sync modes
+
+<Tabs>
+  <Tab title="Insert">
+    **Insert** creates new records for each row returned by your query. Use when the destination starts empty for that population or when duplicates are acceptable and detected downstream. Most destinations reject duplicate keys; align with the API’s behavior.
+  </Tab>
+  <Tab title="Update">
+    **Update** changes existing records identified by your key column. Rows without a match may be skipped or reported as errors depending on destination settings.
+  </Tab>
+  <Tab title="Upsert">
+    **Upsert** creates a record when no match exists and updates when a match exists. This is the default choice for most operational syncs when you have a reliable external or natural key.
+  </Tab>
+  <Tab title="Delete">
+    **Delete** removes or invalidates records in the destination based on keys returned by your query (or based on platform-specific semantics). Use only with clear data governance approval.
+  </Tab>
+</Tabs>
+
+## Manage syncs
+
+You can pause a sync, change schedules, rotate credentials, and clone a sync to test mapping changes in a sandbox destination. Version notes on each save help auditors trace who changed SQL or modes.
+
+<Tip>
+  Pair each production sync with an alert rule so failed runs surface in [Observability](/observability/overview) before downstream teams notice stale CRM or ad data.
+</Tip>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Destinations" icon="bullseye-pointer" href="/reverse-etl/destinations">
+    Choose objects and fields for each connector.
+  </Card>
+  <Card title="Monitoring" icon="chart-line" href="/reverse-etl/monitoring">
+    Inspect runs, errors, and the dead letter queue.
+  </Card>
+</CardGroup>

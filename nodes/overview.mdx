@@ -1,0 +1,68 @@
+---
+title: "Nodes overview"
+description: "Explore the complete library of pipeline nodes for sourcing, transforming, and delivering data."
+---
+
+**Nodes** are the building blocks of every Planasonix pipeline. Each node performs one job: read data, reshape it, check quality, or write it somewhere else. You connect nodes with edges so outputs flow into inputs in a clear, reviewable graph.
+
+The library is grouped into **sources**, **row transforms**, **column transforms**, **joins and unions**, **aggregation**, **parsers and builders**, **control flow**, **data quality**, **advanced** code and engine integrations, and **destinations**. Browse by category below—each page lists node types, configuration fields you set in the inspector, and patterns that work well in production.
+
+## Node categories
+
+<CardGroup cols={2}>
+  <Card title="Sources" icon="database" href="/nodes/sources">
+    Ingest from connections, tables, CDC, Iceberg, webhooks, and iterators.
+  </Card>
+  <Card title="Row transforms" icon="filter" href="/nodes/row-transforms">
+    Filter, sort, sample, and deduplicate rows.
+  </Card>
+  <Card title="Column transforms" icon="table-columns" href="/nodes/column-transforms">
+    Dates, windows, schema mapping, and guided data prep.
+  </Card>
+  <Card title="Joins and unions" icon="object-group" href="/nodes/joins-and-unions">
+    Combine datasets with joins, fuzzy matching, and unions.
+  </Card>
+  <Card title="Aggregation" icon="chart-column" href="/nodes/aggregation">
+    Summarize, pivot, and unpivot for analytics-ready shapes.
+  </Card>
+  <Card title="Parsers and builders" icon="file-code" href="/nodes/parsers-and-builders">
+    Parse CSV, JSON, and XML; build structured payloads for downstream systems.
+  </Card>
+  <Card title="Control flow" icon="code-branch" href="/nodes/control-flow">
+    Branching, errors, loops, splits, and cross-pipeline triggers.
+  </Card>
+  <Card title="Data quality" icon="circle-check" href="/nodes/data-quality">
+    Validate, profile, detect PII, generate test rows, and notify owners.
+  </Card>
+  <Card title="Advanced" icon="microchip" href="/nodes/advanced">
+    SQL, scripts, notebooks, UDFs, streaming, ML, and geospatial operations.
+  </Card>
+  <Card title="Destinations" icon="share-from-square" href="/nodes/destinations">
+    Write to warehouses, lakes, cloud storage, and webhooks.
+  </Card>
+</CardGroup>
+
+## How to choose a node
+
+<Steps>
+  <Step title="Start from the data shape">
+    If data is not yet tabular, use a **parser** or **source** that emits rows. If it is already relational, jump to transforms or joins.
+  </Step>
+  <Step title="Prefer native nodes over scripts">
+    Built-in nodes carry clearer metadata for lineage and optimization. Use **Custom SQL** or **Python** when you need logic that no single node expresses cleanly.
+  </Step>
+  <Step title="Plan for failure">
+    Add **Error Handler** or **Notification** nodes on critical paths so operational teams learn about issues before consumers do.
+  </Step>
+</Steps>
+
+## Pipeline authoring resources
+
+<CardGroup cols={2}>
+  <Card title="Pipeline canvas" icon="diagram-project" href="/pipelines/canvas">
+    Learn how to wire nodes, preview data, and debug runs.
+  </Card>
+  <Card title="Variables" icon="brackets-curly" href="/pipelines/variables">
+    Parameterize node settings for reuse across environments.
+  </Card>
+</CardGroup>

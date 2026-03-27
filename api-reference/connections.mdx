@@ -1,0 +1,492 @@
+---
+title: "Connections"
+description: "Create, test, and manage data source and destination connections."
+---
+
+Connections represent credentials and configuration for databases, warehouses, APIs, and cloud storage. All endpoints below require authentication unless noted.
+
+**Base URL:** `https://api.planasonix.com`  
+**Auth:** `Authorization: Bearer` plus your API key or JWT access token.
+
+---
+
+## List and CRUD
+
+### `GET /api/connections`
+
+List connections in your workspace.
+
+<ParamField query="type" type="string">
+  Filter by connector type (for example `postgres`, `snowflake`, `s3`).
+</ParamField>
+
+<ParamField query="search" type="string">
+  Case-insensitive match on connection name.
+</ParamField>
+
+<Expandable title="Example request and response">
+<CodeGroup>
+```bash List connections
+curl -s https://api.planasonix.com/api/connections?type=snowflake \
+  -H "Authorization: Bearer plnx_live_xxxxxxxx"
+```
+
+```json Response body
+{
+  "data": [
+    {
+      "id": "conn_01hqxyz",
+      "name": "prod_analytics_wh",
+      "type": "snowflake",
+      "credentialId": "cred_01hqabc",
+      "createdAt": "2025-03-01T10:00:00Z",
+      "updatedAt": "2025-03-27T08:15:00Z"
+    },
+    {
+      "id": "conn_02hqdef",
+      "name": "marketing_s3_lake",
+      "type": "s3",
+      "credentialId": "cred_02hqghi",
+      "createdAt": "2025-02-14T14:30:00Z",
+      "updatedAt": "2025-03-20T11:00:00Z"
+    }
+  ],
+  "meta": { "total": 2 }
+}
+```
+</CodeGroup>
+</Expandable>
+
+---
+
+### `POST /api/connections`
+
+Create a connection. Secret values belong in a **credential**; `config` holds non-secret settings.
+
+<ParamField body="name" type="string" required>
+  Human-readable name unique within the project or workspace (per your policy).
+</ParamField>
+
+<ParamField body="type" type="string" required>
+  Connector type identifier.
+</ParamField>
+
+<ParamField body="config" type="object" required>
+  Connector-specific configuration (host, database, bucket, region, and so on).
+</ParamField>
+
+<ParamField body="credentialId" type="string">
+  Existing credential that stores secrets for this connection.
+</ParamField>
+
+<Expandable title="Example request and response">
+```bash
+curl -X POST https://api.planasonix.com/api/connections \
+  -H "Authorization: Bearer plnx_live_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "staging_postgres",
+    "type": "postgres",
+    "credentialId": "cred_01hqabc",
+    "config": {
+      "host": "db.internal.acme.com",
+      "port": 5432,
+      "database": "staging",
+      "sslMode": "require"
+    }
+  }'
+```
+
+```json
+{
+  "id": "conn_03hqjkl",
+  "name": "staging_postgres",
+  "type": "postgres",
+  "credentialId": "cred_01hqabc",
+  "config": {
+    "host": "db.internal.acme.com",
+    "port": 5432,
+    "database": "staging",
+    "sslMode": "require"
+  },
+  "createdAt": "2025-03-27T12:00:00Z"
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/connections/{id}`
+
+Return one connection, including metadata and non-secret `config`.
+
+<ParamField path="id" type="string" required>
+  Connection identifier.
+</ParamField>
+
+<ResponseField name="id" type="string">
+  Connection ID.
+</ResponseField>
+
+<ResponseField name="config" type="object">
+  Resolved configuration; secrets are never returned in plain text.
+</ResponseField>
+
+<Expandable title="Example response">
+```json
+{
+  "id": "conn_01hqxyz",
+  "name": "prod_analytics_wh",
+  "type": "snowflake",
+  "credentialId": "cred_01hqabc",
+  "config": {
+    "account": "acme.us-east-1",
+    "warehouse": "ETL_WH",
+    "database": "ANALYTICS",
+    "schema": "PUBLIC"
+  },
+  "updatedAt": "2025-03-27T08:15:00Z"
+}
+```
+</Expandable>
+
+---
+
+### `PUT /api/connections/{id}`
+
+Update name, `config`, or linked `credentialId`.
+
+<ParamField path="id" type="string" required>
+  Connection identifier.
+</ParamField>
+
+<ParamField body="name" type="string">
+  New display name.
+</ParamField>
+
+<ParamField body="config" type="object">
+  Replacement or merged config (behavior depends on connector; send full object when in doubt).
+</ParamField>
+
+<ParamField body="credentialId" type="string">
+  New credential to attach.
+</ParamField>
+
+---
+
+### `DELETE /api/connections/{id}`
+
+Remove a connection. Fails if active pipelines still reference it (unless your API version allows force delete).
+
+<ParamField path="id" type="string" required>
+  Connection identifier.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "ok": true,
+  "id": "conn_03hqjkl",
+  "deletedAt": "2025-03-27T12:30:00Z"
+}
+```
+</Expandable>
+
+---
+
+## Test and introspection
+
+### `POST /api/connections/test`
+
+Validate settings without persisting a connection.
+
+<ParamField body="type" type="string" required>
+  Connector type.
+</ParamField>
+
+<ParamField body="config" type="object" required>
+  Connection configuration to test.
+</ParamField>
+
+<ParamField body="credentialId" type="string">
+  Optional credential for secret resolution.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "ok": true,
+  "latencyMs": 142,
+  "serverVersion": "PostgreSQL 15.4",
+  "message": "Connection successful."
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/connections/{id}/tables`
+
+List tables available through the connection.
+
+<ParamField path="id" type="string" required>
+  Connection identifier.
+</ParamField>
+
+<ParamField query="schema" type="string">
+  Limit to a schema (when applicable).
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "connectionId": "conn_01hqxyz",
+  "schema": "analytics",
+  "tables": [
+    { "name": "orders", "type": "TABLE" },
+    { "name": "order_items", "type": "TABLE" },
+    { "name": "dim_customers", "type": "VIEW" }
+  ]
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/connections/{id}/columns`
+
+Return columns for a specific table.
+
+<ParamField path="id" type="string" required>
+  Connection identifier.
+</ParamField>
+
+<ParamField query="schema" type="string">
+  Schema name.
+</ParamField>
+
+<ParamField query="table" type="string" required>
+  Table name.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "connectionId": "conn_01hqxyz",
+  "schema": "analytics",
+  "table": "orders",
+  "columns": [
+    { "name": "order_id", "type": "BIGINT", "nullable": false },
+    { "name": "customer_id", "type": "UUID", "nullable": true },
+    { "name": "amount_cents", "type": "INTEGER", "nullable": false },
+    { "name": "ordered_at", "type": "TIMESTAMPTZ", "nullable": false }
+  ]
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/connections/{id}/schemas`
+
+List schemas (databases that support multiple schemas).
+
+<ParamField path="id" type="string" required>
+  Connection identifier.
+</ParamField>
+
+---
+
+### `GET /api/connections/{id}/catalogs`
+
+List catalogs (Iceberg, Unity Catalog, Hive-metastore style sources).
+
+<ParamField path="id" type="string" required>
+  Connection identifier.
+</ParamField>
+
+---
+
+### `GET /api/connections/{id}/preview`
+
+Sample rows from a table or object.
+
+<ParamField path="id" type="string" required>
+  Connection identifier.
+</ParamField>
+
+<ParamField query="schema" type="string">
+  Schema or namespace.
+</ParamField>
+
+<ParamField query="table" type="string">
+  Table or object name.
+</ParamField>
+
+<ParamField query="limit" type="integer">
+  Max rows (default bounded by server policy, often 100–1000).
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "columns": ["order_id", "customer_id", "amount_cents"],
+  "rows": [
+    [1001, "c7f2b3a1-4d5e-6f70-8192-abcdef012345", 12999],
+    [1002, null, 4590]
+  ],
+  "truncated": true
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/connections/{id}/files`
+
+Browse objects in cloud storage connections.
+
+<ParamField path="id" type="string" required>
+  Connection identifier.
+</ParamField>
+
+<ParamField query="prefix" type="string">
+  Path prefix inside the bucket or container.
+</ParamField>
+
+<ParamField query="delimiter" type="string">
+  Directory delimiter (often `/`).
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "prefix": "raw/events/",
+  "objects": [
+    { "key": "raw/events/2025/03/27/part-000.parquet", "size": 8388608, "lastModified": "2025-03-27T06:00:00Z" },
+    { "key": "raw/events/2025/03/27/_SUCCESS", "size": 0, "lastModified": "2025-03-27T06:00:01Z" }
+  ],
+  "commonPrefixes": ["raw/events/2025/03/28/"]
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/connections/{id}/cloud-schema`
+
+Infer or load schema for files in cloud storage (for example Parquet/CSV headers).
+
+<ParamField path="id" type="string" required>
+  Connection identifier.
+</ParamField>
+
+<ParamField query="path" type="string" required>
+  Object key or path to inspect.
+</ParamField>
+
+---
+
+## Query-parameter variants
+
+### `GET /api/connections/tables`
+
+Same as listing tables, but `connectionId` is passed as a query parameter instead of a path segment.
+
+<ParamField query="connectionId" type="string" required>
+  Connection to introspect.
+</ParamField>
+
+<ParamField query="schema" type="string">
+  Optional schema filter.
+</ParamField>
+
+---
+
+### `GET /api/connections/columns`
+
+Column metadata with `connectionId` (and table identifiers) in the query string.
+
+<ParamField query="connectionId" type="string" required>
+  Connection to introspect.
+</ParamField>
+
+<ParamField query="schema" type="string">
+  Schema name.
+</ParamField>
+
+<ParamField query="table" type="string" required>
+  Table name.
+</ParamField>
+
+---
+
+### `POST /api/connections/test-query`
+
+Run a read-only SQL statement to validate syntax and permissions (subject to row/timeout limits).
+
+<ParamField body="connectionId" type="string" required>
+  Target connection.
+</ParamField>
+
+<ParamField body="sql" type="string" required>
+  SQL to execute (typically `SELECT` only).
+</ParamField>
+
+<ParamField body="limit" type="integer">
+  Row cap for the result set.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "ok": true,
+  "columns": ["region", "revenue_usd"],
+  "rows": [
+    ["US-West", 128400.55],
+    ["EU-Central", 90211.12]
+  ],
+  "stats": { "rowsScanned": 450000, "executionMs": 820 }
+}
+```
+</Expandable>
+
+---
+
+### `POST /api/connections/databricks/discover`
+
+Discover catalogs and schemas for Databricks-backed connections.
+
+<ParamField body="connectionId" type="string" required>
+  Databricks connection ID.
+</ParamField>
+
+<ParamField body="catalog" type="string">
+  When set, list schemas inside this catalog only.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "connectionId": "conn_db_01",
+  "catalogs": [
+    {
+      "name": "main",
+      "schemas": ["default", "analytics", "sandbox"]
+    },
+    {
+      "name": "hive_metastore",
+      "schemas": ["legacy"]
+    }
+  ]
+}
+```
+</Expandable>
+
+## Related
+
+<CardGroup cols={1}>
+  <Card title="Credentials" icon="key" href="/connections/credentials">
+    Store secrets separately from connection config.
+  </Card>
+</CardGroup>

@@ -1,0 +1,433 @@
+---
+title: "AI Copilot"
+description: "AI-powered pipeline assistance and code generation."
+---
+
+The AI Copilot API exposes programmatic access to the same assistants you use in the product: natural-language pipeline generation, config suggestions, documentation drafts, static checks on custom code, provider health, and notebook-focused helpers. Responses depend on your workspace’s enabled models and data policies.
+
+```http
+Authorization: Bearer YOUR_API_KEY_HERE
+```
+
+<Info>
+  If your workspace uses URL versioning, insert `/v1` before `/api` in the path. See [API reference](/api-reference/introduction).
+</Info>
+
+<Tip>
+  Long-running generations may return **202** with a `job_id` you poll on a status endpoint where your deployment supports async mode; the examples below show a common synchronous **200** shape.
+</Tip>
+
+## Check AI status
+
+```http
+GET https://api.planasonix.com/api/ai/status
+```
+
+```json
+{
+  "data": {
+    "available": true,
+    "providers": [
+      {
+        "id": "azure_openai",
+        "status": "healthy",
+        "models": ["gpt-4o", "gpt-4o-mini"],
+        "last_error": null
+      },
+      {
+        "id": "anthropic",
+        "status": "degraded",
+        "models": ["claude-3-5-sonnet-20241022"],
+        "last_error": "elevated_latency_region=us-east-1"
+      }
+    ],
+    "default_model": "gpt-4o",
+    "knowledge_base_indexed_docs": 1284
+  }
+}
+```
+
+## Generate pipeline from natural language
+
+```http
+POST https://api.planasonix.com/api/ai/generate-pipeline
+Content-Type: application/json
+```
+
+```json
+{
+  "prompt": "Ingest daily CSV drops from S3 prefix s3://acme-landing/sales/ into Snowflake table analytics.raw_sales, dedupe on order_id, and convert amounts to USD using the fx_rates table.",
+  "target_environment": "staging",
+  "constraints": {
+    "max_nodes": 24,
+    "allowed_credential_types": ["aws", "database"]
+  }
+}
+```
+
+```json
+{
+  "data": {
+    "summary": "Four-node pipeline: S3 source → type inference → dedupe on order_id → Snowflake load with currency join",
+    "definition": {
+      "nodes": [
+        { "id": "n1", "type": "s3_source", "config": { "prefix": "s3://acme-landing/sales/" } },
+        { "id": "n2", "type": "schema_inference", "config": {} },
+        { "id": "n3", "type": "dedupe", "config": { "keys": ["order_id"] } },
+        {
+          "id": "n4",
+          "type": "snowflake_load",
+          "config": { "table": "analytics.raw_sales", "write_mode": "merge" }
+        }
+      ],
+      "edges": [
+        { "from": "n1", "to": "n2" },
+        { "from": "n2", "to": "n3" },
+        { "from": "n3", "to": "n4" }
+      ]
+    },
+    "warnings": [
+      "Specify credential_id for S3 and Snowflake before first run."
+    ]
+  }
+}
+```
+
+## Enhance existing pipeline
+
+```http
+POST https://api.planasonix.com/api/ai/enhance-pipeline
+Content-Type: application/json
+```
+
+```json
+{
+  "pipeline_id": "pl_01hqxyz",
+  "prompt": "Add row-level checks: order_total must equal sum(line_items); flag negative quantities.",
+  "focus": "data_quality"
+}
+```
+
+```json
+{
+  "data": {
+    "pipeline_id": "pl_01hqxyz",
+    "suggestions": [
+      {
+        "kind": "add_node",
+        "after": "n_transform",
+        "node": {
+          "type": "assertion",
+          "config": {
+            "expression": "order_total = SUM(line_items.amount) OVER (PARTITION BY order_id)"
+          }
+        }
+      }
+    ],
+    "rationale": "Assertions keep bad aggregates from reaching the warehouse without blocking the whole batch when configured in warn mode."
+  }
+}
+```
+
+## Generate node configuration
+
+```http
+POST https://api.planasonix.com/api/ai/generate-node-config
+Content-Type: application/json
+```
+
+```json
+{
+  "node_type": "sql",
+  "intent": "Pivot monthly revenue columns into long format for BI tools",
+  "sample_input_schema": {
+    "columns": [
+      { "name": "region", "type": "string" },
+      { "name": "rev_2024_01", "type": "decimal" },
+      { "name": "rev_2024_02", "type": "decimal" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "data": {
+    "node_type": "sql",
+    "config": {
+      "query": "SELECT region, month, revenue FROM analytics.wide_monthly UNPIVOT (revenue FOR month IN (rev_2024_01, rev_2024_02))"
+    },
+    "dialect": "snowflake"
+  }
+}
+```
+
+## Generate documentation
+
+```http
+POST https://api.planasonix.com/api/ai/generate-documentation
+Content-Type: application/json
+```
+
+```json
+{
+  "subject_type": "pipeline",
+  "subject_id": "pl_01hqxyz",
+  "audience": "data_engineers",
+  "format": "markdown"
+}
+```
+
+```json
+{
+  "data": {
+    "title": "Finance mart refresh",
+    "markdown": "## Overview\n\nThis pipeline …\n\n## Inputs\n\n…\n\n## Failure modes\n\n…"
+  }
+}
+```
+
+## Validate custom code
+
+```http
+POST https://api.planasonix.com/api/ai/check-code
+Content-Type: application/json
+```
+
+```json
+{
+  "language": "sql",
+  "dialect": "bigquery",
+  "code": "SELECT customer_id, SUM(amount) AS total FROM `analytics.sales` GROUP BY 1 HAVING total > 0"
+}
+```
+
+```json
+{
+  "data": {
+    "valid": true,
+    "issues": [],
+    "suggestions": [
+      "Consider qualifying column names with table alias for readability."
+    ]
+  }
+}
+```
+
+## Test AI provider connection
+
+```http
+POST https://api.planasonix.com/api/ai/test-provider
+Content-Type: application/json
+```
+
+```json
+{
+  "provider_id": "azure_openai",
+  "model": "gpt-4o-mini"
+}
+```
+
+```json
+{
+  "data": {
+    "provider_id": "azure_openai",
+    "ok": true,
+    "latency_ms": 412,
+    "sample_completion": "pong"
+  }
+}
+```
+
+## Parse documentation for knowledge base
+
+```http
+POST https://api.planasonix.com/api/ai/parse-docs
+Content-Type: application/json
+```
+
+```json
+{
+  "source_url": "https://internalwiki.example.com/data/onboarding",
+  "ingest_mode": "incremental",
+  "tags": ["onboarding", "pipelines"]
+}
+```
+
+```json
+{
+  "data": {
+    "job_id": "kbjob_01j9kd4e5f6g7h8i9",
+    "chunks_indexed": 56,
+    "status": "completed"
+  }
+}
+```
+
+## Knowledge — feedback
+
+```http
+POST https://api.planasonix.com/api/ai/knowledge/feedback
+Content-Type: application/json
+```
+
+```json
+{
+  "message_id": "msg_01chat_turn",
+  "helpful": false,
+  "reason": "cited deprecated connector",
+  "correction": "Use jdbc_sap_hana instead of generic jdbc for HANA 2.0"
+}
+```
+
+```json
+{
+  "data": {
+    "recorded": true,
+    "feedback_id": "fbb_01j9ke5f6g7h8i9j0"
+  }
+}
+```
+
+## Knowledge — stats
+
+```http
+GET https://api.planasonix.com/api/ai/knowledge/stats
+```
+
+```json
+{
+  "data": {
+    "documents": 1284,
+    "chunks": 98210,
+    "last_full_reindex_at": "2025-03-25T04:00:00Z",
+    "top_sources": [
+      { "host": "internalwiki.example.com", "chunks": 21034 },
+      { "host": "docs.planasonix.com", "chunks": 15402 }
+    ]
+  }
+}
+```
+
+## Knowledge — recent activity
+
+```http
+GET https://api.planasonix.com/api/ai/knowledge/recent
+```
+
+```json
+{
+  "data": [
+    {
+      "type": "ingest",
+      "source": "confluence://DATA/standards",
+      "status": "success",
+      "at": "2025-03-27T08:12:00Z"
+    }
+  ]
+}
+```
+
+## Notebook — complete cell
+
+```http
+POST https://api.planasonix.com/api/ai/notebook/complete
+Content-Type: application/json
+```
+
+```json
+{
+  "kernel": "python",
+  "prefix": "import pandas as pd\n\ndf = pd.read_parquet(\"s3://acme-landing/sales/2025-03-26.parquet\")\n# TODO: compute revenue by region\n",
+  "cursor_line": 4
+}
+```
+
+```json
+{
+  "data": {
+    "completion": "summary = df.groupby(\"region\")[\"amount_usd\"].sum().reset_index(name=\"revenue_usd\")\nprint(summary.head())\n"
+  }
+}
+```
+
+## Notebook — explain error
+
+```http
+POST https://api.planasonix.com/api/ai/notebook/explain-error
+Content-Type: application/json
+```
+
+```json
+{
+  "kernel": "python",
+  "traceback": "KeyError: 'amount_usd'",
+  "cell_source": "df.groupby(\"region\")[\"amount_usd\"].sum()"
+}
+```
+
+```json
+{
+  "data": {
+    "explanation": "The column amount_usd is missing from the dataframe—likely the parquet uses amount_cents instead.",
+    "suggested_fix": "df[\"amount_usd\"] = df[\"amount_cents\"] / 100.0"
+  }
+}
+```
+
+## Notebook — optimize
+
+```http
+POST https://api.planasonix.com/api/ai/notebook/optimize
+Content-Type: application/json
+```
+
+```json
+{
+  "kernel": "python",
+  "cell_source": "for i in range(len(df)):\n    df.at[i, 'tax'] = df.at[i, 'subtotal'] * 0.08\n",
+  "goal": "vectorize for large dataframes"
+}
+```
+
+```json
+{
+  "data": {
+    "optimized": "df[\"tax\"] = df[\"subtotal\"] * 0.08\n"
+  }
+}
+```
+
+## Notebook — generate cell
+
+```http
+POST https://api.planasonix.com/api/ai/notebook/generate
+Content-Type: application/json
+```
+
+```json
+{
+  "kernel": "sql",
+  "dialect": "snowflake",
+  "intent": "Compare this week vs last week signups by country, top 10 countries only"
+}
+```
+
+```json
+{
+  "data": {
+    "cell_source": "WITH bounds AS (\n  SELECT\n    DATE_TRUNC('week', CURRENT_DATE()) AS this_week,\n    DATE_TRUNC('week', CURRENT_DATE()) - INTERVAL '7 day' AS last_week\n)\nSELECT country, …"
+  }
+}
+```
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="AI Copilot overview" icon="sparkles" href="/ai-copilot/overview">
+    Product capabilities and guardrails.
+  </Card>
+  <Card title="Knowledge base" icon="library" href="/ai-copilot/knowledge-base">
+    Curating sources the assistant can cite.
+  </Card>
+</CardGroup>

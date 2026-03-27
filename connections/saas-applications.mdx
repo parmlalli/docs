@@ -1,0 +1,98 @@
+---
+title: "SaaS applications"
+description: "Connect to popular SaaS platforms including Salesforce, HubSpot, Shopify, Stripe, and 100+ more."
+---
+
+SaaS connectors wrap vendor APIs behind a consistent connection model: you authenticate once, Planasonix handles token refresh where applicable, and pipelines reference stable object or resource names instead of raw HTTP details.
+
+Planasonix includes **300+ connectors** across categories; the sections below highlight representative systems. Use the in-product connector catalog for the full matrix, edition flags, and object coverage.
+
+## Categories and examples
+
+<AccordionGroup>
+  <Accordion title="CRM" icon="users">
+    **Salesforce** — OAuth-based access to standard and custom objects, bulk APIs where supported, and incremental sync patterns aligned with API limits.
+
+    **HubSpot** — Contacts, companies, deals, tickets, and marketing objects with OAuth or private app tokens depending on your HubSpot subscription.
+  </Accordion>
+  <Accordion title="ERP" icon="building">
+    **NetSuite** — Token-based authentication (TBA) or OAuth 2.0 as enabled for your account; respect governance around saved searches and SuiteQL usage.
+
+    **SAP** — Cloud and hybrid scenarios often combine OData connectors with on-prem RFC where licensed; coordinate with basis teams for routers and allowlists.
+  </Accordion>
+  <Accordion title="Commerce" icon="shopping-cart">
+    **Shopify** — Admin API with OAuth; track REST vs GraphQL timelines from Shopify’s platform notices.
+
+    **Stripe** — Restricted API keys scoped to the resources Planasonix needs (for example read on `charges` and `customers` only).
+  </Accordion>
+  <Accordion title="Marketing and ads" icon="megaphone">
+    **Meta** (Marketing API), **Google Ads**, **LinkedIn Ads**, **TikTok for Business** — OAuth with advertiser account selection; comply with platform ad policies and data use terms.
+
+    **Mailchimp**, **Klaviyo** — Audience and campaign analytics; API keys or OAuth per vendor requirements.
+  </Accordion>
+  <Accordion title="HR" icon="briefcase">
+    **Workday** — Integration system user or OAuth patterns as supported; often requires IP allowlisting.
+
+    **BambooHR** — API key per subdomain; limit keys to HR system owners.
+  </Accordion>
+  <Accordion title="Analytics and CDP" icon="line-chart">
+    **Mixpanel**, **Amplitude** — Project keys and service accounts for server-side export APIs.
+
+    **Segment** — Workspace token for configuration and replay APIs where available.
+  </Accordion>
+  <Accordion title="Collaboration" icon="message-square">
+    **Google Sheets** — OAuth with Drive file scope; use service accounts with domain-wide delegation only when your administrator approves.
+
+    **Slack** — Bot tokens for channel and conversation reads; subscribe to Slack app rotation and revocation events.
+  </Accordion>
+</AccordionGroup>
+
+## How OAuth works for SaaS connections
+
+Most SaaS connectors use **OAuth 2.0** so Planasonix never stores the user’s primary password.
+
+<Steps>
+  <Step title="Register an OAuth app with the vendor">
+    You create an application in the vendor’s developer console (for example Salesforce Connected App, Google Cloud OAuth client). You record the **client ID**, **client secret**, and **redirect URI** that Planasonix provides for your workspace or region.
+  </Step>
+  <Step title="Store client credentials in Planasonix">
+    Add an **OAuth**-type credential with the client ID and secret. Restrict who can attach this credential to new connections through workspace roles.
+  </Step>
+  <Step title="Authorize the connection">
+    An admin or integration owner clicks **Authorize**. The browser redirects to the vendor login and consent screen. After approval, Planasonix receives an **authorization code**, exchanges it for **access** and **refresh** tokens, and stores refresh material encrypted.
+  </Step>
+  <Step title="Run pipelines with automatic refresh">
+    When access tokens expire, Planasonix refreshes them using the stored refresh token. If a user revokes the app or the vendor rotates tokens, the connection enters a **reauthorize** state until someone repeats the consent flow.
+  </Step>
+</Steps>
+
+### Scopes and least privilege
+
+Request only the **OAuth scopes** the pipeline needs (for example read-only CRM scopes for extract jobs). Broader scopes increase blast radius if a token leaks and complicate security reviews.
+
+<Info>
+  Some vendors issue **non-expiring** or long-lived refresh tokens only for certain app types. Read the vendor’s token lifetime documentation and plan for periodic reauthorization if they enforce rolling refresh invalidation.
+</Info>
+
+## Operational guidance
+
+- Use **separate OAuth apps** per environment (prod vs sandbox) so consent, data residency, and rate limits stay isolated.
+- Align **API version** headers or base paths with what your connector expects before you schedule high-volume syncs.
+- Monitor **429** responses and vendor status pages; backoff settings on the connection reduce failed job noise.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="APIs and webhooks" icon="webhook" href="/connections/apis-and-webhooks">
+    Custom HTTP endpoints not covered by a packaged connector.
+  </Card>
+  <Card title="Credentials management" icon="key-round" href="/connections/credentials">
+    Sharing rules, rotation, and OAuth credential records.
+  </Card>
+  <Card title="Reverse ETL" icon="arrow-left-right" href="/reverse-etl/overview">
+    Push warehouse-modeled data into SaaS destinations.
+  </Card>
+  <Card title="Connections overview" icon="plug" href="/connections/overview">
+    How SaaS connections fit the broader connection model.
+  </Card>
+</CardGroup>

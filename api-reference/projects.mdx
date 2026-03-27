@@ -1,0 +1,317 @@
+---
+title: "Projects and folders"
+description: "Organize pipelines into projects and folders."
+---
+
+**Projects** group pipelines, permissions, and defaults. **Folders** add hierarchy inside a project. **Global variables** are workspace-scoped key/value pairs referenced from pipeline graphs.
+
+**Base URL:** `https://api.planasonix.com`  
+**Auth:** `Authorization: Bearer` plus your API key or JWT.
+
+---
+
+## Projects
+
+### `GET /api/projects`
+
+List projects you can access.
+
+<ParamField query="search" type="string">
+  Filter by name.
+</ParamField>
+
+<Expandable title="Example request and response">
+<CodeGroup>
+```bash List projects
+curl -s https://api.planasonix.com/api/projects \
+  -H "Authorization: Bearer plnx_live_xxxxxxxx"
+```
+
+```json Response body
+{
+  "data": [
+    {
+      "id": "prj_01",
+      "name": "Analytics",
+      "description": "Core warehouse loads",
+      "createdAt": "2024-11-01T00:00:00Z",
+      "updatedAt": "2025-03-27T07:00:00Z"
+    }
+  ]
+}
+```
+</CodeGroup>
+</Expandable>
+
+---
+
+### `POST /api/projects`
+
+Create a project.
+
+<ParamField body="name" type="string" required>
+  Project name.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Optional description.
+</ParamField>
+
+<Expandable title="Example request and response">
+```bash
+curl -X POST https://api.planasonix.com/api/projects \
+  -H "Authorization: Bearer plnx_live_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Marketing","description":"Campaign and ads data"}'
+```
+
+```json
+{
+  "id": "prj_02",
+  "name": "Marketing",
+  "description": "Campaign and ads data",
+  "createdAt": "2025-03-27T12:00:00Z"
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/projects/{id}`
+
+Fetch project metadata and summary counts when available.
+
+<ParamField path="id" type="string" required>
+  Project ID.
+</ParamField>
+
+---
+
+### `PUT /api/projects/{id}`
+
+Update project fields.
+
+<ParamField path="id" type="string" required>
+  Project ID.
+</ParamField>
+
+<ParamField body="name" type="string">
+  New name.
+</ParamField>
+
+<ParamField body="description" type="string">
+  New description.
+</ParamField>
+
+---
+
+### `DELETE /api/projects/{id}`
+
+Delete a project. May fail if pipelines still exist unless cascade is supported by your workspace policy.
+
+<ParamField path="id" type="string" required>
+  Project ID.
+</ParamField>
+
+---
+
+## Folders
+
+Folders use the same REST shape as projects, under `/api/folders`.
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| `GET` | `/api/folders` | List folders (typically scoped by `projectId` query param) |
+| `POST` | `/api/folders` | Create folder |
+| `GET` | `/api/folders/{id}` | Get folder |
+| `PUT` | `/api/folders/{id}` | Update folder (name, parent, and so on) |
+| `DELETE` | `/api/folders/{id}` | Delete folder |
+
+### `GET /api/folders`
+
+<ParamField query="projectId" type="string" required>
+  Project whose folder tree to return.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "data": [
+    {
+      "id": "fld_01",
+      "projectId": "prj_01",
+      "name": "Production",
+      "parentId": null,
+      "path": "/Production"
+    },
+    {
+      "id": "fld_02",
+      "projectId": "prj_01",
+      "name": "Staging",
+      "parentId": null,
+      "path": "/Staging"
+    }
+  ]
+}
+```
+</Expandable>
+
+### `POST /api/folders`
+
+<ParamField body="projectId" type="string" required>
+  Owning project.
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  Folder name.
+</ParamField>
+
+<ParamField body="parentId" type="string">
+  Parent folder for nesting; omit for root-level folder.
+</ParamField>
+
+<Expandable title="Example request and response">
+```json
+{
+  "projectId": "prj_01",
+  "name": "Archived",
+  "parentId": null
+}
+```
+
+```json
+{
+  "id": "fld_03",
+  "projectId": "prj_01",
+  "name": "Archived",
+  "parentId": null,
+  "path": "/Archived",
+  "createdAt": "2025-03-27T12:15:00Z"
+}
+```
+</Expandable>
+
+### `GET /api/folders/{id}`
+
+<ParamField path="id" type="string" required>
+  Folder ID.
+</ParamField>
+
+### `PUT /api/folders/{id}`
+
+<ParamField path="id" type="string" required>
+  Folder ID.
+</ParamField>
+
+<ParamField body="name" type="string">
+  Rename.
+</ParamField>
+
+<ParamField body="parentId" type="string">
+  Move under another folder (or `null` for root).
+</ParamField>
+
+### `DELETE /api/folders/{id}`
+
+<ParamField path="id" type="string" required>
+  Folder ID.
+</ParamField>
+
+<Warning>
+  Deleting a folder may fail if it still contains pipelines or subfolders.
+</Warning>
+
+---
+
+## Global variables
+
+### `GET /api/variables/global`
+
+List all global variables for the workspace.
+
+<Expandable title="Example response">
+```json
+{
+  "data": [
+    {
+      "name": "ENV",
+      "value": "prod",
+      "updatedAt": "2025-03-01T09:00:00Z",
+      "updatedBy": "usr_admin"
+    },
+    {
+      "name": "DEFAULT_WAREHOUSE",
+      "value": "ETL_LARGE",
+      "updatedAt": "2025-02-10T11:30:00Z",
+      "updatedBy": "usr_admin"
+    }
+  ]
+}
+```
+</Expandable>
+
+---
+
+### `POST /api/variables/global`
+
+Create or update a variable by name (upsert).
+
+<ParamField body="name" type="string" required>
+  Variable name (letters, numbers, underscores; convention: `SCREAMING_SNAKE_CASE`).
+</ParamField>
+
+<ParamField body="value" type="string" required>
+  String value as seen by pipelines at runtime.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Optional documentation for operators.
+</ParamField>
+
+<Expandable title="Example request and response">
+```bash
+curl -X POST https://api.planasonix.com/api/variables/global \
+  -H "Authorization: Bearer plnx_live_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"SLACK_WEBHOOK_URL","value":"https://hooks.slack.com/services/XXX/YYY/ZZZ"}'
+```
+
+```json
+{
+  "name": "SLACK_WEBHOOK_URL",
+  "value": "https://hooks.slack.com/services/XXX/YYY/ZZZ",
+  "updatedAt": "2025-03-27T12:20:00Z"
+}
+```
+</Expandable>
+
+---
+
+### `DELETE /api/variables/global/{name}`
+
+Remove a global variable.
+
+<ParamField path="name" type="string" required>
+  Variable name.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "ok": true,
+  "name": "SLACK_WEBHOOK_URL",
+  "deletedAt": "2025-03-27T12:25:00Z"
+}
+```
+</Expandable>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Pipeline variables" icon="braces" href="/pipelines/variables">
+    Graph-local vs global variables.
+  </Card>
+  <Card title="Pipelines API" icon="git-branch" href="/api-reference/pipelines">
+    Create pipelines inside projects and folders.
+  </Card>
+</CardGroup>

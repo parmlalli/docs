@@ -1,0 +1,117 @@
+---
+title: "Cloud storage"
+description: "Connect to S3, Azure Blob, GCS, and other cloud and file storage providers."
+---
+
+File-based connections let Planasonix ingest and deliver datasets as objects or streams over common protocols. You point at buckets, containers, or paths, attach credentials with the right cloud or protocol permissions, and reuse the same connection for multiple pipelines that share a landing zone or export folder.
+
+## Supported providers
+
+Planasonix supports the following categories; exact capabilities depend on your connector edition.
+
+**Object and blob storage**
+
+- **AWS S3** — Including cross-account access, SSE-KMS, and VPC endpoints where your network design requires them.
+- **Azure Blob Storage** — Including **Azure Data Lake Storage Gen2** when accessed through the blob or DFS endpoints your connector exposes.
+- **Google Cloud Storage (GCS)** — Project-scoped buckets and uniform bucket-level access patterns.
+- **Cloudflare R2** — S3-compatible API; set custom endpoint and signing options as required.
+- **MinIO** — Self-hosted or air-gapped S3-compatible deployments.
+- **Wasabi** — S3-compatible hot cloud storage with vendor-specific endpoint configuration.
+
+**Enterprise file and collaboration**
+
+- **Box** — Folder- and enterprise-scoped content as exposed by the connector.
+- **Microsoft OneDrive** — Personal or work accounts via Microsoft Graph, per connector support.
+- **Microsoft SharePoint** — Sites, libraries, and drives as exposed by the connector.
+
+**Traditional transfer**
+
+- **FTP** and **SFTP** — Partner and legacy systems; prefer SFTP when the server supports it.
+
+<Info>
+  S3-compatible vendors differ in IAM, region, path-style behavior, and signature versions. Always run **Test connection** and a small sample read after changing endpoint URLs or signing algorithms.
+</Info>
+
+## File format support
+
+Planasonix connectors typically support structured and semi-structured file types for parse, split, and schema inference:
+
+| Format | Typical use |
+| --- | --- |
+| **CSV** | Exports from spreadsheets, mainframes, and flat-file exchanges; delimiter, quote, escape, and header options are configurable. |
+| **JSON** | API dumps, document exports, and newline-delimited JSON (NDJSON) event logs. |
+| **Parquet** | Columnar analytics handoffs; efficient for wide tables and nested data. |
+| **Avro** | Schema-evolving pipelines, often paired with Kafka or Hadoop-era ecosystems. |
+| **XML** | Enterprise and industry feeds; row extraction depends on connector XPath or flattening options. |
+
+Compression (for example gzip, Snappy, ZSTD) is usually detected from object metadata or file extensions when you enable automatic decompression in the pipeline step.
+
+## Configure a storage connection
+
+<Steps>
+  <Step title="Select the provider connector">
+    In **Connections**, choose **New connection** and pick **S3**, **Azure Blob**, **GCS**, or the protocol-specific tile (SFTP, Box, and so on).
+  </Step>
+  <Step title="Set bucket, container, or path defaults">
+    Enter **bucket** or **container** name, optional **prefix** or **folder** roots, and **region** or **endpoint URL** for S3-compatible stores. For Graph-backed connectors, select the **drive** or **site** context the UI requests.
+  </Step>
+  <Step title="Attach cloud or protocol credentials">
+    Link **AWS**, **Azure**, **GCP**, or **password**/key credentials per the tabs below. Scope IAM or RBAC to the smallest prefix or container the pipeline needs.
+  </Step>
+  <Step title="Confirm encryption and TLS">
+    For object stores, align with your cloud default (SSE-S3, SSE-KMS, customer-managed keys). For SFTP, prefer key-based auth and modern ciphers.
+  </Step>
+  <Step title="Test and attach to pipelines">
+    Run **Test connection**, then select this connection in file source or destination nodes. Use separate connections per environment (`dev-`, `prod-`) to avoid accidental writes.
+  </Step>
+</Steps>
+
+## Authentication patterns
+
+<Tabs>
+  <Tab title="AWS S3">
+    Use **IAM user keys** only when your policy requires static keys; prefer **IAM roles** for EKS, EC2, or cross-account **assume role** if Planasonix runs in AWS.
+
+    For buckets in another account, use **bucket policies** that trust the Planasonix role and scope `s3:GetObject`, `s3:PutObject`, and `s3:ListBucket` to prefixes—not entire buckets unless necessary.
+  </Tab>
+  <Tab title="Azure Blob">
+    **Storage account keys** are simple but sensitive; **SAS tokens** with tight expiry and path scope are often better for partner drops.
+
+    **Managed identity** or **service principal** with RBAC on the container is the default for workloads running in Azure.
+  </Tab>
+  <Tab title="GCS">
+    **Service account keys** work everywhere but require rotation discipline; **workload identity** avoids long-lived JSON when Planasonix runs on GKE or GCE.
+
+    Grant **object-level** roles on ingress and egress buckets, not project-wide `Editor`.
+  </Tab>
+  <Tab title="SFTP / FTP">
+    **SSH keys or passwords** live in credentials; restrict source IPs on the server firewall to Planasonix egress addresses.
+
+    Prefer **SFTP** over plain FTP when possible.
+  </Tab>
+</Tabs>
+
+## Layout and naming
+
+Organize prefixes by **source system**, **date**, or **pipeline run ID** so you can partition incremental loads and apply lifecycle rules without scanning entire buckets. If you write back to storage, use a dedicated **export** prefix separate from raw landing data.
+
+<Tip>
+  When the same logical dataset arrives from multiple regions, create one connection per region or bucket to keep latency and data residency boundaries explicit in the UI.
+</Tip>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Data warehouses" icon="warehouse" href="/connections/data-warehouses">
+    Load staged files into Snowflake, BigQuery, or similar.
+  </Card>
+  <Card title="Streaming platforms" icon="radio" href="/connections/streaming-platforms">
+    When continuous ingestion replaces batch file drops.
+  </Card>
+  <Card title="Credentials management" icon="key-round" href="/connections/credentials">
+    Storing and rotating cloud keys and SFTP secrets.
+  </Card>
+  <Card title="Connections overview" icon="plug" href="/connections/overview">
+    How file connections fit the broader connection model.
+  </Card>
+</CardGroup>

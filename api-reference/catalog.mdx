@@ -1,0 +1,311 @@
+---
+title: "Data catalog"
+description: "Discover and document data assets."
+---
+
+The catalog API surfaces tables and assets indexed by Planasonix: columns, descriptions, tags, lineage, downstream impact, and attached data contracts. Use it to power discovery UIs, governance workflows, and integration tests.
+
+```http
+Authorization: Bearer YOUR_API_KEY_HERE
+```
+
+<Info>
+  If your workspace uses URL versioning, insert `/v1` before `/api` in the path. See [API reference](/api-reference/introduction).
+</Info>
+
+## List cataloged tables
+
+```http
+GET https://api.planasonix.com/api/catalog/tables
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "cat_tbl_01inventory",
+      "fqn": "analytics.finance.gl_postings",
+      "database": "analytics",
+      "schema": "finance",
+      "name": "gl_postings",
+      "row_estimate": 128000000,
+      "last_profiled_at": "2025-03-26T22:00:00Z",
+      "tags": ["finance", "erp", "pii:none"]
+    }
+  ],
+  "meta": {
+    "page": { "limit": 50, "cursor": "eyJuZXh0IjoiY2F0X3RibF8wMiJ9" }
+  }
+}
+```
+
+## Search catalog
+
+```http
+GET https://api.planasonix.com/api/catalog/tables/search?q=revenue
+```
+
+Query parameter `q` is the search string (name, FQN, description, column names depending on deployment).
+
+```json
+{
+  "data": [
+    {
+      "id": "cat_tbl_03rev",
+      "fqn": "analytics.marts.fct_daily_revenue",
+      "name": "fct_daily_revenue",
+      "snippet": "… daily **revenue** by region and product line …",
+      "score": 0.92
+    }
+  ]
+}
+```
+
+## Get table details
+
+```http
+GET https://api.planasonix.com/api/catalog/tables/{id}
+```
+
+```json
+{
+  "data": {
+    "id": "cat_tbl_01inventory",
+    "fqn": "analytics.finance.gl_postings",
+    "description": "General ledger posting lines synced from NetSuite",
+    "owner_team": "finance-data",
+    "columns": [
+      {
+        "name": "posting_id",
+        "type": "varchar(64)",
+        "nullable": false,
+        "description": "Source system natural key"
+      },
+      {
+        "name": "amount_cents",
+        "type": "bigint",
+        "nullable": false,
+        "description": "Signed amount in minor currency units"
+      }
+    ],
+    "tags": ["finance", "erp", "pii:none"],
+    "updated_at": "2025-03-26T22:00:00Z"
+  }
+}
+```
+
+## Get downstream impact
+
+```http
+GET https://api.planasonix.com/api/catalog/tables/{id}/impact
+```
+
+```json
+{
+  "data": {
+    "table_id": "cat_tbl_01inventory",
+    "downstream": [
+      {
+        "resource_type": "pipeline",
+        "id": "pl_01hqxyz",
+        "name": "finance_mart_refresh"
+      },
+      {
+        "resource_type": "catalog_table",
+        "id": "cat_tbl_02marts",
+        "fqn": "analytics.marts.fct_gl_balances"
+      }
+    ],
+    "blast_radius_score": "high"
+  }
+}
+```
+
+## Get table lineage
+
+```http
+GET https://api.planasonix.com/api/catalog/tables/{id}/lineage
+```
+
+```json
+{
+  "data": {
+    "table_id": "cat_tbl_01inventory",
+    "upstream": [
+      { "id": "cat_tbl_00raw", "edge_type": "copy", "pipeline_id": "pl_ingest_erp" }
+    ],
+    "downstream": [
+      { "id": "cat_tbl_02marts", "edge_type": "transform", "pipeline_id": "pl_01hqxyz" }
+    ]
+  }
+}
+```
+
+## List contracts on table
+
+```http
+GET https://api.planasonix.com/api/catalog/tables/{id}/contracts
+```
+
+```json
+{
+  "data": [
+    {
+      "contract_id": "ctr_01j9k8u9v0w1x2y3",
+      "name": "customer_360_core",
+      "status": "active",
+      "assigned_at": "2025-03-22T16:00:00Z"
+    }
+  ]
+}
+```
+
+## Assign contract to table
+
+```http
+POST https://api.planasonix.com/api/catalog/tables/{id}/contracts
+Content-Type: application/json
+```
+
+```json
+{
+  "contract_id": "ctr_01j9k8u9v0w1x2y3"
+}
+```
+
+```json
+{
+  "data": {
+    "table_id": "cat_tbl_01inventory",
+    "contract_id": "ctr_01j9k8u9v0w1x2y3",
+    "assigned_at": "2025-03-27T16:00:00Z"
+  }
+}
+```
+
+## Remove contract from table
+
+```http
+DELETE https://api.planasonix.com/api/catalog/tables/{id}/contracts/{contractId}
+```
+
+```json
+{
+  "data": {
+    "table_id": "cat_tbl_01inventory",
+    "contract_id": "ctr_01j9k8u9v0w1x2y3",
+    "removed": true
+  }
+}
+```
+
+## Glossary — domains
+
+### List domains
+
+```http
+GET https://api.planasonix.com/api/glossary/domains
+```
+
+### Create domain
+
+```http
+POST https://api.planasonix.com/api/glossary/domains
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "Finance",
+  "slug": "finance",
+  "description": "Revenue, costs, GL, and planning definitions"
+}
+```
+
+```json
+{
+  "data": {
+    "id": "gdom_01j9kb2c3d4e5f6g7",
+    "name": "Finance",
+    "slug": "finance",
+    "created_at": "2025-03-27T16:10:00Z"
+  }
+}
+```
+
+## Glossary — terms
+
+### List terms
+
+```http
+GET https://api.planasonix.com/api/glossary/terms
+```
+
+### Create term
+
+```http
+POST https://api.planasonix.com/api/glossary/terms
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "Active subscriber",
+  "slug": "active-subscriber",
+  "domain_id": "gdom_01j9kb2c3d4e5f6g7",
+  "definition": "A customer with a paid plan in good standing and at least one successful bill in the last 35 days.",
+  "aliases": ["paying subscriber"]
+}
+```
+
+### Get, update, delete term
+
+```http
+GET https://api.planasonix.com/api/glossary/terms/{id}
+PUT https://api.planasonix.com/api/glossary/terms/{id}
+DELETE https://api.planasonix.com/api/glossary/terms/{id}
+```
+
+Example update body:
+
+```json
+{
+  "definition": "… updated wording after legal review …",
+  "status": "pending_review"
+}
+```
+
+### Approve term
+
+```http
+POST https://api.planasonix.com/api/glossary/terms/{id}/approve
+Content-Type: application/json
+```
+
+```json
+{
+  "comment": "Approved by data council 2025-03-27"
+}
+```
+
+```json
+{
+  "data": {
+    "id": "gtrm_01j9kc3d4e5f6g7h8",
+    "status": "approved",
+    "approved_at": "2025-03-27T17:00:00Z",
+    "approved_by": "usr_01h8abc"
+  }
+}
+```
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Data catalog (guides)" icon="book-open" href="/governance/data-catalog">
+    Stewardship and documentation in the UI.
+  </Card>
+  <Card title="Data contracts API" icon="file-check" href="/api-reference/contracts">
+    Contract lifecycle and violations.
+  </Card>
+</CardGroup>

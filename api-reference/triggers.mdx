@@ -1,0 +1,461 @@
+---
+title: "Triggers"
+description: "Configure event-based pipeline triggers."
+---
+
+These endpoints manage **event-driven triggers** (cloud object notifications, webhooks, file watchers) that start pipeline runs when external conditions are met. Authenticate with a [Bearer API key](/api-reference/authentication).
+
+**Base URL:** `https://api.planasonix.com`
+
+```http
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+```
+
+<Info>
+  If your workspace uses a versioned base path (for example `/v1`), prepend it before `/api`. See [API reference](/api-reference/introduction).
+</Info>
+
+---
+
+## List triggers
+
+Returns all triggers configured in the workspace.
+
+**`GET /api/triggers`**
+
+### Request parameters
+
+<ParamField query="pipeline_id" type="string">
+  Filter triggers for a single pipeline.
+</ParamField>
+
+<ParamField query="type" type="string">
+  Filter by trigger type: `s3`, `gcs`, `azure`, `webhook`, `file_watcher`, or deployment-specific values.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="50">
+  Page size.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from a previous response.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "trg_01j9k4w8x9y0z1a2",
+      "type": "trigger",
+      "attributes": {
+        "name": "ingest-landing-s3",
+        "trigger_type": "s3",
+        "pipeline_id": "pl_01hq8raw_ingest",
+        "enabled": true,
+        "created_at": "2025-02-01T10:00:00Z",
+        "updated_at": "2025-03-20T11:45:00Z"
+      }
+    }
+  ],
+  "meta": {
+    "page": { "limit": 50, "cursor": null }
+  }
+}
+```
+
+---
+
+## Create trigger
+
+Creates a trigger. The request body shape depends on `triggerType` (S3, GCS, Azure Blob, generic webhook, or file watcher). Below is a representative **S3** configuration; other types use analogous connection and path or subscription fields.
+
+**`POST /api/triggers`**
+
+### Request body (common)
+
+<ParamField body="name" type="string" required>
+  Human-readable name.
+</ParamField>
+
+<ParamField body="triggerType" type="string" required>
+  One of `s3`, `gcs`, `azure`, `webhook`, `file_watcher`.
+</ParamField>
+
+<ParamField body="pipelineId" type="string" required>
+  Pipeline to run when the trigger fires.
+</ParamField>
+
+<ParamField body="enabled" type="boolean" default="true">
+  Whether the trigger accepts events when created.
+</ParamField>
+
+### Request body (S3 example)
+
+<ParamField body="connectionId" type="string" required>
+  AWS connection ID with permission to read the bucket and manage notifications where applicable.
+</ParamField>
+
+<ParamField body="bucket" type="string" required>
+  S3 bucket name.
+</ParamField>
+
+<ParamField body="prefix" type="string">
+  Object key prefix filter (optional).
+</ParamField>
+
+<ParamField body="suffix" type="string">
+  Object key suffix filter (for example `.parquet`).
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "trg_01j9k4w8x9y0z1a2",
+    "type": "trigger",
+    "attributes": {
+      "name": "ingest-landing-s3",
+      "trigger_type": "s3",
+      "pipeline_id": "pl_01hq8raw_ingest",
+      "enabled": true,
+      "config": {
+        "bucket": "acme-analytics-landing",
+        "prefix": "uploads/daily/",
+        "suffix": ".csv"
+      },
+      "created_at": "2025-03-27T16:00:00Z",
+      "updated_at": "2025-03-27T16:00:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Get trigger
+
+Returns one trigger including configuration metadata (secrets are never returned).
+
+**`GET /api/triggers/{id}`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Trigger ID.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "trg_01j9k4w8x9y0z1a2",
+    "type": "trigger",
+    "attributes": {
+      "name": "ingest-landing-s3",
+      "trigger_type": "s3",
+      "pipeline_id": "pl_01hq8raw_ingest",
+      "enabled": true,
+      "config": {
+        "bucket": "acme-analytics-landing",
+        "prefix": "uploads/daily/",
+        "suffix": ".csv"
+      },
+      "created_at": "2025-02-01T10:00:00Z",
+      "updated_at": "2025-03-20T11:45:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Update trigger
+
+Updates trigger metadata or configuration. Immutable fields (such as provider identifiers on some trigger types) may return **409 Conflict** if changed.
+
+**`PUT /api/triggers/{id}`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Trigger ID.
+</ParamField>
+
+### Request body
+
+Fields are optional; send only what you want to change (`name`, `enabled`, type-specific `config`, and so on).
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "trg_01j9k4w8x9y0z1a2",
+    "type": "trigger",
+    "attributes": {
+      "name": "ingest-landing-s3-v2",
+      "trigger_type": "s3",
+      "pipeline_id": "pl_01hq8raw_ingest",
+      "enabled": true,
+      "config": {
+        "bucket": "acme-analytics-landing",
+        "prefix": "uploads/hourly/",
+        "suffix": ".parquet"
+      },
+      "updated_at": "2025-03-27T16:20:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Delete trigger
+
+Removes the trigger and tears down provider-side subscriptions when the platform manages them.
+
+**`DELETE /api/triggers/{id}`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Trigger ID.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "trg_01j9k4w8x9y0z1a2",
+    "type": "trigger",
+    "attributes": {
+      "deleted": true,
+      "deleted_at": "2025-03-27T16:25:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Enable trigger
+
+**`POST /api/triggers/{id}/enable`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Trigger ID.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "trg_01j9k4w8x9y0z1a2",
+    "type": "trigger",
+    "attributes": {
+      "enabled": true,
+      "updated_at": "2025-03-27T16:26:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Disable trigger
+
+**`POST /api/triggers/{id}/disable`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Trigger ID.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "trg_01j9k4w8x9y0z1a2",
+    "type": "trigger",
+    "attributes": {
+      "enabled": false,
+      "updated_at": "2025-03-27T16:27:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Test trigger
+
+Validates configuration and optionally performs a dry-run handshake with the provider. Does not enqueue a full pipeline run unless the API explicitly returns a run ID for the test.
+
+**`POST /api/triggers/{id}/test`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Trigger ID.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "trg_01j9k4w8x9y0z1a2",
+    "type": "trigger_test",
+    "attributes": {
+      "status": "ok",
+      "checked_at": "2025-03-27T16:28:00Z",
+      "message": "S3 bucket notification reachable; subscription active.",
+      "latency_ms": 142
+    }
+  }
+}
+```
+
+---
+
+## List trigger executions
+
+Returns recent executions initiated by this trigger (pagination supported).
+
+**`GET /api/triggers/{id}/executions`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Trigger ID.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Filter by run status: `queued`, `running`, `succeeded`, `failed`, `canceled`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="25">
+  Page size.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "tex_01j9k5b1c2d3e4f5",
+      "type": "trigger_execution",
+      "attributes": {
+        "trigger_id": "trg_01j9k4w8x9y0z1a2",
+        "pipeline_run_id": "run_01j9k5a0z9y8x7w6",
+        "status": "succeeded",
+        "event_summary": "s3:ObjectCreated:Put s3://acme-analytics-landing/uploads/daily/2025-03-27/part-0001.csv",
+        "started_at": "2025-03-27T06:01:02Z",
+        "finished_at": "2025-03-27T06:04:18Z"
+      }
+    }
+  ],
+  "meta": {
+    "page": { "limit": 25, "cursor": "eyJpZCI6InRleF8wMWo5azViMWMyZDNlNGY1In0" }
+  }
+}
+```
+
+---
+
+## Webhook ingress (S3)
+
+Provider-facing URL that receives **Amazon S3** event notifications (for example SNS → HTTPS or Lambda-forwarded payloads, depending on your setup). Typically **not** called with your API key; the cloud provider signs or routes events per your subscription.
+
+**`POST /api/webhooks/s3`**
+
+### Request parameters
+
+Headers and body follow **AWS** notification formats (SNS envelope or S3 event JSON). Planasonix validates the subscription and maps events to matching triggers.
+
+### Example response
+
+```json
+{
+  "received": true,
+  "events_processed": 1
+}
+```
+
+---
+
+## Webhook ingress (GCS)
+
+Receives **Google Cloud Storage** object change notifications (Pub/Sub push or compatible JSON).
+
+**`POST /api/webhooks/gcs`**
+
+### Example response
+
+```json
+{
+  "received": true,
+  "events_processed": 2
+}
+```
+
+---
+
+## Webhook ingress (Azure)
+
+Receives **Azure Event Grid** events for Blob Storage (and related) subscriptions.
+
+**`POST /api/webhooks/azure`**
+
+### Example response
+
+```json
+{
+  "received": true,
+  "events_processed": 1
+}
+```
+
+---
+
+## Webhook ingress (custom trigger)
+
+Generic HTTPS endpoint for a **webhook** trigger type. The path includes the trigger identifier so events route to the correct pipeline configuration.
+
+**`POST /api/webhooks/trigger/{triggerId}`**
+
+### Request parameters
+
+<ParamField path="triggerId" type="string" required>
+  Trigger ID (`trg_...`).
+</ParamField>
+
+### Request body
+
+Arbitrary JSON or raw body as configured on the trigger; optional **HMAC** or header-based verification may apply.
+
+### Example response
+
+```json
+{
+  "received": true,
+  "pipeline_run_id": "run_01j9k5c6d7e8f9g0",
+  "status": "accepted"
+}
+```

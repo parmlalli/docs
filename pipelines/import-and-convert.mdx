@@ -1,0 +1,73 @@
+---
+title: "Import and convert"
+description: "Import existing pipelines from Fivetran, dbt, Matillion, Informatica, Alteryx, and SSIS."
+---
+
+**Import and convert** helps you move definitions from tools you already use into Planasonix graphs. You keep institutional knowledge (sources, joins, business rules) while gaining a unified canvas, orchestration, and governance in one platform.
+
+## Supported source platforms
+
+The import service maps external metadata into Planasonix nodes and edges. Coverage depends on the artifact you supply and the platform version; treat the first converted graph as a **draft** you harden with preview runs and peer review.
+
+| Platform | What typically imports | Notes |
+| -------- | ------------------------ | ----- |
+| **Fivetran** | Connector-centric sync metadata | Maps to source and landing patterns; you refine transforms on the canvas. |
+| **dbt** | Models, dependencies, tests (as guidance) | SQL-centric flows become Custom SQL and supporting nodes; review materialization semantics. |
+| **Matillion** | Orchestration and transformation graphs | Component-style jobs map to Planasonix transform nodes. |
+| **Informatica** | Mappings and workflows (subset) | Complex expressions may need manual tuning after import. |
+| **Alteryx** | Workflow logic | Tool-to-node mapping varies by tool type; validate joins and formulas. |
+| **SSIS** | Control flow and data flow packages | Script and custom tasks may require reimplementation in SQL, Python, or native nodes. |
+
+<Info>
+  Importers translate *intent*, not always line-for-line behavior. Always run validation jobs and compare row counts, keys, and business metrics against the legacy system.
+</Info>
+
+## Import wizard steps
+
+<Steps>
+  <Step title="Choose source platform">
+    Select the originating tool. The wizard adjusts required uploads or API connections.
+  </Step>
+  <Step title="Provide artifacts or credentials">
+    Upload export files (for example, `.dtsx`, Alteryx `.yxmd`, dbt project archive) or connect read-only credentials where a live scan is supported.
+  </Step>
+  <Step title="Map connections">
+    Match imported logical connections to Planasonix [connections](/connections/overview). Name alignment reduces manual edits in each node.
+  </Step>
+  <Step title="Review conversion report">
+    Open the report for **warnings** (unsupported features), **approximations** (changed semantics), and **manual tasks** (scripts, custom components).
+  </Step>
+  <Step title="Generate the pipeline">
+    Planasonix creates a draft graph in your selected project or folder. Nothing runs against production until you configure schedules and destinations.
+  </Step>
+  <Step title="Validate and harden">
+    Preview data, fix red nodes, replace placeholders, and add [variables](/pipelines/variables) for environment-specific values.
+  </Step>
+</Steps>
+
+<Tip>
+  Import into a dedicated `migration/` folder per source system. That keeps draft graphs separate from production-grade pipelines until sign-off.
+</Tip>
+
+## Bulk import
+
+When you bring many artifacts at once:
+
+- **Batch upload** multiple files of the same type; the wizard queues conversion jobs and emails or notifies when reports are ready.
+- **Naming conventions**: Apply a prefix (`ssis_`, `alteryx_`) so search and permissions stay manageable.
+- **Ownership**: Assign a default project and technical owner for the batch so follow-up work does not stall in an unassigned queue.
+
+<Warning>
+  Bulk import can create hundreds of draft graphs. Gate promotion with peer review and automated smoke tests (row counts, key uniqueness) before you attach schedules.
+</Warning>
+
+## After import
+
+<CardGroup cols={2}>
+  <Card title="Pipeline canvas" icon="diagram-project" href="/pipelines/canvas">
+    Edit graphs, preview data, and debug runs.
+  </Card>
+  <Card title="Templates" icon="copy" href="/pipelines/templates">
+    Save a vetted post-import pattern for the next wave of migrations.
+  </Card>
+</CardGroup>

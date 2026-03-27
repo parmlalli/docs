@@ -1,0 +1,314 @@
+---
+title: "Pipeline agents"
+description: "Manage on-premises pipeline execution agents."
+---
+
+**Pipeline agents** run Planasonix workloads inside your network. These endpoints register agents, inspect health, revoke credentials, and fetch installers for Linux, Windows, and macOS.
+
+<Info>
+  Send `Authorization: Bearer <api_key>` on every request. See [Authentication](/api-reference/authentication).
+</Info>
+
+## Base URL
+
+```text
+https://api.planasonix.com
+```
+
+Agent routes use the `/api/agents` prefix (no `/v1` segment).
+
+---
+
+## List registered agents
+
+```http
+GET /api/agents
+```
+
+**Query parameters (typical)**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `status` | `active`, `revoked`, `pending` |
+| `label` | Substring match on human-readable label |
+| `limit`, `cursor` | Pagination |
+
+**Response `200 OK`**
+
+```json
+{
+  "data": [
+    {
+      "id": "agt_01jq8prod01",
+      "label": "prod-etl-01.us-west.internal",
+      "platform": "linux",
+      "version": "2.14.3",
+      "status": "active",
+      "last_seen_at": "2025-03-27T14:59:30Z",
+      "created_at": "2025-02-10T11:20:00Z"
+    },
+    {
+      "id": "agt_01jq8stg01",
+      "label": "staging-windows-runner",
+      "platform": "windows",
+      "version": "2.14.2",
+      "status": "active",
+      "last_seen_at": "2025-03-27T14:58:02Z",
+      "created_at": "2025-02-15T09:05:00Z"
+    }
+  ],
+  "meta": {
+    "page": { "limit": 50, "cursor": null }
+  }
+}
+```
+
+---
+
+## Register a new agent
+
+```http
+POST /api/agents
+```
+
+**Request body**
+
+```json
+{
+  "label": "analytics-k8s-pool-a",
+  "platform": "linux",
+  "tags": ["region:us-west-2", "env:production"],
+  "metadata": {
+    "k8s_namespace": "planasonix-agents",
+    "node_pool": "compute-optimized"
+  }
+}
+```
+
+**Response `201 Created`**
+
+```json
+{
+  "data": {
+    "id": "agt_01jq8new01",
+    "label": "analytics-k8s-pool-a",
+    "platform": "linux",
+    "status": "pending",
+    "enrollment_token": "plnx_enroll_01jq8xxxxxxxxxxxxxxxx_only_shown_once",
+    "token_expires_at": "2025-03-27T20:00:00Z",
+    "created_at": "2025-03-27T15:00:00Z"
+  }
+}
+```
+
+<Warning>
+  The enrollment token is shown only at creation time. Store it in a secret manager before closing the response.
+</Warning>
+
+---
+
+## Get agent details
+
+```http
+GET /api/agents/{id}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "id": "agt_01jq8prod01",
+    "label": "prod-etl-01.us-west.internal",
+    "platform": "linux",
+    "version": "2.14.3",
+    "status": "active",
+    "tags": ["region:us-west-2", "env:production"],
+    "capabilities": ["spark", "python_3_11"],
+    "last_seen_at": "2025-03-27T14:59:30Z",
+    "created_at": "2025-02-10T11:20:00Z",
+    "metadata": {
+      "hostname": "etl-prod-01.internal.example.com"
+    }
+  }
+}
+```
+
+---
+
+## Deregister an agent
+
+```http
+DELETE /api/agents/{id}
+```
+
+Removes the agent record and invalidates its credentials. In-flight work may fail; drain the agent first in production.
+
+**Response `204 No Content`**
+
+---
+
+## Get agent health status
+
+```http
+GET /api/agents/{id}/health
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "agent_id": "agt_01jq8prod01",
+    "status": "healthy",
+    "heartbeat_at": "2025-03-27T14:59:30Z",
+    "cpu_percent": 34.2,
+    "memory_percent": 61.0,
+    "disk_free_gb": 412.5,
+    "active_jobs": 2,
+    "queue_depth": 0,
+    "last_error": null
+  }
+}
+```
+
+---
+
+## List currently connected agents
+
+```http
+GET /api/agents/connected
+```
+
+Returns agents with a recent control-plane heartbeat (typically last 2 minutes).
+
+**Response `200 OK`**
+
+```json
+{
+  "data": [
+    {
+      "id": "agt_01jq8prod01",
+      "label": "prod-etl-01.us-west.internal",
+      "connected_since": "2025-03-27T14:45:00Z",
+      "remote_ip": "203.0.113.45"
+    }
+  ]
+}
+```
+
+---
+
+## Revoke agent access
+
+```http
+POST /api/agents/revoke/{id}
+```
+
+Immediately blocks new work and invalidates session credentials. The agent record remains for audit.
+
+**Request body (optional)**
+
+```json
+{
+  "reason": "compromised_token_suspected"
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "id": "agt_01jq8prod01",
+    "status": "revoked",
+    "revoked_at": "2025-03-27T15:02:00Z"
+  }
+}
+```
+
+---
+
+## Re-enable revoked agent
+
+```http
+POST /api/agents/enable/{id}
+```
+
+Requires a fresh enrollment or token rotation flow depending on your workspace policy.
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "id": "agt_01jq8prod01",
+    "status": "pending",
+    "enrollment_token": "plnx_enroll_01jq8yyyyyyyyyyyy_only_shown_once",
+    "token_expires_at": "2025-03-27T21:00:00Z"
+  }
+}
+```
+
+---
+
+## Download agent installer
+
+```http
+GET /api/agents/installer/{agentId}/{platform}
+```
+
+<ParamField path="platform" type="string" required>
+  One of `linux`, `windows`, `macos`. Response is a binary archive or installer package with appropriate `Content-Type` and `Content-Disposition`.
+</ParamField>
+
+**Response `200 OK`**
+
+Binary body (for example `application/gzip` for Linux bundles). No JSON envelope.
+
+---
+
+## Get manual installation instructions
+
+```http
+GET /api/agents/manual-install/{agentId}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "agent_id": "agt_01jq8new01",
+    "steps": [
+      {
+        "order": 1,
+        "title": "Download bundle",
+        "command": "curl -fsSL \"https://api.planasonix.com/api/agents/installer/agt_01jq8new01/linux\" -o planasonix-agent.tar.gz"
+      },
+      {
+        "order": 2,
+        "title": "Extract and install",
+        "command": "sudo ./install.sh --token \"$PLANASONIX_ENROLLMENT_TOKEN\""
+      }
+    ],
+    "environment_variables": {
+      "PLANASONIX_API_HOST": "https://api.planasonix.com",
+      "PLANASONIX_AGENT_ID": "agt_01jq8new01"
+    }
+  }
+}
+```
+
+---
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Pipeline agents" icon="server" href="/platform/pipeline-agents">
+    Architecture and operations in the product docs.
+  </Card>
+  <Card title="Troubleshooting agents" icon="wrench" href="/troubleshooting/agents">
+    Common connectivity and credential issues.
+  </Card>
+</CardGroup>

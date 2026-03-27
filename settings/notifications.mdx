@@ -1,0 +1,57 @@
+---
+title: "Notifications"
+description: "Configure notification preferences for pipeline events and alerts."
+---
+
+Notifications tell you when runs fail, when thresholds breach, or when someone assigns you work in the product. You choose **channels** and **categories** so urgent signals reach you without noise.
+
+## Channels
+
+<Tabs>
+  <Tab title="Email">
+    Digest or immediate mail to your verified address. Respect your org’s allowlists so messages are not quarantined.
+  </Tab>
+  <Tab title="In-app">
+    Toasts and the notification center inside Planasonix; best for active sessions.
+  </Tab>
+  <Tab title="Mobile or SMS">
+    When [MFA](/settings/mfa) or alert SMS is enabled, you opt in to SMS for critical alerts only if your region and policy allow.
+  </Tab>
+  <Tab title="Webhooks and integrations">
+    Workspace-level routes to Slack, Microsoft Teams, PagerDuty, or custom HTTPS endpoints—often configured under [Integrations](/settings/integrations) with per-user overrides where supported.
+  </Tab>
+</Tabs>
+
+## Event categories
+
+Typical toggles include:
+
+- **Pipeline run** – success, failure, cancellation, duration SLA miss
+- **Reverse ETL sync** – batch completion, DLQ growth, credential expiry warnings
+- **Governance** – contract violations, catalog harvest failures
+- **Security** – new API key created, SSO certificate nearing expiry (admin-only)
+
+You can subscribe to **all failures** or limit to pipelines you own or watch.
+
+## Quiet hours and routing
+
+Set **quiet hours** with a fallback channel (for example, page only the on-call integration) so overnight failures still surface. Some teams route dev notifications to a low-priority channel and prod to PagerDuty.
+
+<Info>
+  Alert rules defined in [Observability](/observability/alerts) reference these defaults; individual rules can override recipients for specific pipelines.
+</Info>
+
+## Testing delivery
+
+Use **Send test notification** on each channel to confirm spam filters and mobile settings. Fix bounces before you rely on email for production incidents.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Alerts" icon="bell" href="/observability/alerts">
+    Define when notifications fire.
+  </Card>
+  <Card title="Teams and permissions" icon="users" href="/settings/teams-and-permissions">
+    Who can change org-wide notification routes.
+  </Card>
+</CardGroup>

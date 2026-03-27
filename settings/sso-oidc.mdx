@@ -1,0 +1,109 @@
+---
+title: "Generic OIDC setup"
+description: "Configure any OpenID Connect provider for Planasonix authentication."
+---
+
+OpenID Connect (OIDC) lets Planasonix delegate sign-in to an IdP that speaks OAuth 2.0 and OIDC discovery. Use this guide when your provider is **not** covered by a vendor-specific SAML page but supports **authorization code** flow with a **discovery document**.
+
+<Info>
+  OIDC availability depends on your Planasonix deployment and contract. If you only see SAML fields in **Settings → Security → SSO**, contact your account team before you invest in OIDC configuration.
+</Info>
+
+## Prerequisites
+
+- **Issuer URL** (or full **discovery** URL) from your IdP
+- Ability to create an **OAuth/OIDC client** with a **client ID** and **client secret**
+- **Redirect URI** allowance list that you can edit (Planasonix provides the exact callback URL)
+
+## Register the client with your IdP
+
+<Steps>
+  <Step title="Create an OIDC application">
+    In your IdP’s admin console, create an application of type **Web**, **Regular**, or **Confidential** (not a public mobile client without a secret, unless Planasonix explicitly supports public clients).
+  </Step>
+  <Step title="Set redirect URI">
+    Add the **Redirect URI** from Planasonix **Settings → Security → SSO** (OIDC section). The value must match **exactly**, including path and trailing slash if shown.
+  </Step>
+  <Step title="Note client credentials">
+    Copy **Client ID** and **Client secret** into a secure channel. Some IdPs show the secret only once at creation.
+  </Step>
+  <Step title="Enable discovery (recommended)">
+    If Planasonix supports **OpenID Connect discovery**, paste the discovery URL (often `https://issuer/.well-known/openid-configuration`). Planasonix pulls **authorization**, **token**, **jwks**, and **issuer** endpoints automatically.
+  </Step>
+</Steps>
+
+## Client ID and secret
+
+Store the **client secret** in Planasonix’s secret fields, not in repository code. Rotate the secret on your IdP if it is exposed; update Planasonix immediately after rotation so users do not hit invalid_client errors.
+
+<Warning>
+  Never use the same OIDC client for Planasonix and an unrelated public SPA without strict redirect URI controls. A misconfigured client can broaden token exposure.
+</Warning>
+
+## Discovery URL
+
+A typical discovery document includes:
+
+```json
+{
+  "issuer": "https://idp.example.com",
+  "authorization_endpoint": "https://idp.example.com/oauth2/authorize",
+  "token_endpoint": "https://idp.example.com/oauth2/token",
+  "jwks_uri": "https://idp.example.com/oauth2/keys",
+  "userinfo_endpoint": "https://idp.example.com/oauth2/userinfo"
+}
+```
+
+If your IdP does **not** publish discovery, enter **issuer**, **authorization endpoint**, **token endpoint**, and **JWKS URI** manually in Planasonix when the UI offers advanced mode.
+
+## Scopes
+
+Request the minimum OIDC scopes Planasonix needs to build a user profile:
+
+<Tabs>
+  <Tab title="Typical scopes">
+    - `openid` (required for OIDC)
+    - `email` when you need verified email for account matching
+    - `profile` when you need display name claims
+
+    Add `offline_access` **only** if Planasonix documents refresh-token behavior for your use case.
+  </Tab>
+  <Tab title="Custom claims">
+    Some enterprises emit **groups** or **employee ID** through custom scopes or **groups** scope. Align with the claim names Planasonix maps to [teams and permissions](/settings/teams-and-permissions).
+  </Tab>
+</Tabs>
+
+<Tip>
+  Start with `openid email profile`, test login, then add scopes incrementally. Extra scopes can trigger unnecessary consent prompts or oversized ID tokens.
+</Tip>
+
+## Token endpoint configuration
+
+Planasonix exchanges the authorization **code** at the **token endpoint** using **client authentication** (often `client_secret_post` or `client_secret_basic`). Match the method your IdP expects; mismatches return `invalid_client` or `unauthorized_client`.
+
+<AccordionGroup>
+  <Accordion title="PKCE">
+    If your IdP requires **PKCE** for confidential server-side clients, enable it in Planasonix when supported. Pair PKCE with the same code challenge method (`S256`) the IdP enforces.
+  </Accordion>
+  <Accordion title="Clock skew">
+    Token validation depends on acceptable clock skew between IdP and Planasonix. If logins fail with “token not yet valid,” synchronize NTP on your infrastructure or ask operations to widen skew only as a temporary measure while you fix time sync.
+  </Accordion>
+</AccordionGroup>
+
+## Finish and test
+
+Save OIDC settings in Planasonix. Sign in from an incognito window and confirm:
+
+- User account matches email or subject rules your admin configured
+- Optional group claims appear when authorization rules depend on them
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="SSO overview" icon="shield-halved" href="/settings/sso">
+    SAML-focused overview and org-wide enforcement.
+  </Card>
+  <Card title="Session policy" icon="clock" href="/settings/session-policy">
+    Idle timeout and concurrent session rules after OIDC login.
+  </Card>
+</CardGroup>

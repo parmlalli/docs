@@ -1,0 +1,110 @@
+---
+title: "Pipeline agents"
+description: "Deploy agents to securely connect to on-premises or private network data sources."
+---
+
+**Pipeline agents** are lightweight processes you run inside your network. Planasonix orchestration reaches your private systems through an **outbound-only** tunnel the agent maintains, so you do not expose database ports to the public internet.
+
+## What agents are
+
+An agent:
+
+- Registers with your Planasonix organization using a **scoped enrollment token**.
+- Opens a secure channel for **command and metadata** traffic; data moves according to the connectors you authorize.
+- Reports **health**, version, and connectivity diagnostics to the control plane.
+
+## Why you need them
+
+Many enterprises keep sources on **private RFC1918 networks**, **VPN-only** segments, or behind **firewalls** that forbid inbound connections from SaaS IPs.
+
+<Tabs>
+  <Tab title="Private networks">
+    Databases, file shares, and internal APIs often have no route from the cloud. The agent initiates connectivity from inside, where those systems are reachable.
+  </Tab>
+  <Tab title="VPNs and zero trust">
+    When users reach data only through corporate VPN or ZTNA, cloud runners cannot. Agents run on hosts that already sit on the trusted path.
+  </Tab>
+  <Tab title="Regulatory boundaries">
+    Some policies require data plane traffic to originate in a specific geography or VPC. Agents anchor execution and egress to your approved boundary.
+  </Tab>
+</Tabs>
+
+<Info>
+  Agents complement the **JDBC gateway** and **warehouse** connectivity patterns: use agents when no stable public endpoint exists or when security review rejects inbound allow-lists.
+</Info>
+
+## Installation
+
+<Steps>
+  <Step title="Create an agent enrollment">
+    In **Platform** → **Pipeline agents**, create an agent profile and copy the **enrollment token** and **region endpoint** your admin published.
+  </Step>
+  <Step title="Choose a host">
+    Pick a Linux or Windows server with outbound HTTPS to Planasonix, stable DNS, and network path to your sources. Avoid laptops that sleep.
+  </Step>
+  <Step title="Install the binary or container">
+    Run the installer script or pull the official container image; pass the token via secret manager or environment variable, never commit it to git.
+  </Step>
+  <Step title="Register as a service">
+    Configure **systemd**, **Windows Service**, or your orchestrator so the agent restarts on failure and survives reboots.
+  </Step>
+  <Step title="Verify in the UI">
+    Confirm the agent shows **Connected** and the expected version; assign it to connections that should route through it.
+  </Step>
+</Steps>
+
+<Tip>
+  Run one agent per **failure domain** (for example per data center). You can register multiple agents for high availability; connections should list acceptable agent pools.
+</Tip>
+
+## Health monitoring
+
+The control plane tracks:
+
+- **Last heartbeat** and clock skew
+- **CPU and memory** samples where enabled
+- **TLS and certificate** expiry for the agent’s identity
+- **Queue depth** for pending work (when applicable)
+
+Set **alerts** when an agent goes stale so scheduled jobs do not fail silently at hour-end.
+
+## Diagnostics
+
+From the agent detail page you can:
+
+- Download **recent logs** (redacted) for support tickets
+- Trigger a **connectivity probe** to a hostname and port your policy allows
+- Compare **effective configuration** with the version pinned in the UI
+
+<AccordionGroup>
+  <Accordion title="Auto-remediation">
+    Some deployments enable automatic restart policies or canary upgrades when health checks fail repeatedly. Your platform team defines what runs without human approval.
+  </Accordion>
+  <Accordion title="Upgrades">
+    Plan breaking connector changes with agent upgrades; pin versions during critical business windows and roll forward in maintenance slots.
+  </Accordion>
+</AccordionGroup>
+
+## Connectivity troubleshooting
+
+| Symptom | What to check |
+| ------- | -------------- |
+| Agent never connects | Outbound firewall to Planasonix endpoints, proxy `HTTP(S)_PROXY`, corporate SSL inspection |
+| Intermittent disconnects | Load balancer idle timeouts, NAT session limits, host sleep or patching windows |
+| Source timeouts from jobs | Database `listen` addresses, security groups, and whether the agent host can `telnet`/`nc` the port |
+| Auth failures | Whether credentials are scoped to the agent’s IP or require Kerberos/NTLM hops the agent cannot perform |
+
+<Warning>
+  Do not disable TLS inspection by installing broad trust roots unless your security team approves. Prefer allow-listing the agent’s pinned certificates.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="JDBC gateway" icon="plug" href="/connectors/jdbc-gateway">
+    Alternative path for JDBC-heavy estates.
+  </Card>
+  <Card title="Diagnostics" icon="stethoscope" href="/observability/diagnostics">
+    Platform-wide run and system diagnostics.
+  </Card>
+</CardGroup>

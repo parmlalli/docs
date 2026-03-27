@@ -1,0 +1,60 @@
+---
+title: "SSO"
+description: "Configure SAML-based single sign-on for your organization."
+---
+
+**Single sign-on (SSO)** lets users sign in through your identity provider (IdP) instead of separate Planasonix passwords. SAML is the most common enterprise protocol; OIDC may be available depending on your deployment.
+
+## Enterprise feature
+
+SSO configuration is limited to **Enterprise** (or equivalent) workspaces and requires **organization admin** rights. End users only see the SSO button once the integration is live.
+
+## SAML setup steps
+
+<Steps>
+  <Step title="Create the SAML app in your IdP">
+    Register Planasonix as a service provider. Your IdP asks for an **ACS URL** and **Entity ID**—copy the values from the Planasonix SSO setup screen.
+  </Step>
+  <Step title="Exchange metadata">
+    Upload the IdP **metadata XML** or paste **SSO URL**, **issuer**, and **signing certificate** into Planasonix. Download SP metadata if your IdP requires it.
+  </Step>
+  <Step title="Map attributes">
+    Map `email`, `firstName`, `lastName`, and **group** claims if you use them for [teams and permissions](/settings/teams-and-permissions).
+  </Step>
+  <Step title="Enforce SSO">
+    Toggle **Require SSO** so password logins are disabled for the domain after a cutover window you communicate to users.
+  </Step>
+</Steps>
+
+## Identity provider configuration
+
+<Tabs>
+  <Tab title="Okta">
+    Use SAML 2.0 app integration; assign groups and set **Name ID** to email format the product expects.
+  </Tab>
+  <Tab title="Azure AD / Entra ID">
+    Enterprise application → SAML; verify identifier and reply URL match Planasonix exactly (trailing slashes matter).
+  </Tab>
+  <Tab title="Google Workspace">
+    SAML app with manual ACS and entity URLs; upload the X.509 cert renewal before expiry.
+  </Tab>
+</Tabs>
+
+## Certificate rotation
+
+Plan **certificate rotation** before IdP certs expire. Upload the new signing certificate, test with a pilot group, then remove the old cert. Failed rotation surfaces as login errors for all users.
+
+<Info>
+  JIT (just-in-time) provisioning creates users on first SSO login when enabled; otherwise you must pre-provision accounts or use SCIM if your contract includes it.
+</Info>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Session policy" icon="clock" href="/settings/session-policy">
+    Timeouts and IP rules after SSO.
+  </Card>
+  <Card title="MFA" icon="mobile-screen" href="/settings/mfa">
+    Step-up factors layered on top of IdP policies.
+  </Card>
+</CardGroup>

@@ -1,0 +1,75 @@
+---
+title: "Knowledge base"
+description: "Build an organization knowledge base to improve AI Copilot responses."
+---
+
+The **knowledge base** is an Enterprise feature that stores approved documents your organization wants Copilot to consult. Answers can cite internal glossaries, architecture standards, and onboarding guides instead of relying only on generic training.
+
+## Enterprise feature
+
+Knowledge base ingestion and retrieval require **Enterprise** licensing and admin enablement. If the page is missing from **Settings**, your contract may not include org-level retrieval-augmented generation (RAG), or an admin disabled AI document features.
+
+<Info>
+  Legal and security teams should review what may be uploaded: customer data, credentials, and unreleased strategy documents usually belong out of the knowledge base.
+</Info>
+
+## Organization-level RAG
+
+When RAG is on, Copilot retrieves **chunks** from indexed documents that match your question’s intent. Responses blend product behavior with your internal terminology (for example, official names for domains, zones, and data classes).
+
+Admins configure:
+
+- **Embedding model** and chunking strategy (within provider limits)
+- **Refresh cadence** when source documents change
+- **Access scopes** so sensitive collections are limited to specific teams or workspaces
+
+Users see answers consistent with their permissions; documents tagged for finance should not surface for unrelated roles when scopes are enforced.
+
+## Document management
+
+<Steps>
+  <Step title="Create a collection">
+    Admins create a **collection** per domain (data platform standards, connector playbooks, incident response).
+  </Step>
+  <Step title="Upload or link sources">
+    Upload PDF, Markdown, or HTML exports, or sync from approved repositories when your deployment supports it.
+  </Step>
+  <Step title="Review indexing status">
+    Wait for indexing to complete; failed files show parse errors you must fix and re-upload.
+  </Step>
+  <Step title="Publish to Copilot">
+    Toggle the collection **on** for assistant use after content review.
+  </Step>
+</Steps>
+
+Version documents when policies change; stale chunks confuse users more than no documentation at all.
+
+## Feedback loop
+
+Encourage analysts to mark when Copilot ignored the knowledge base or cited the wrong section. Admins use that signal to:
+
+- Add missing articles
+- Split long documents into clearer sections
+- Retire contradictory pages
+
+Pair the knowledge base with your internal wiki so Planasonix stays a **consumer** of truth, not the only editor of it.
+
+<Tabs>
+  <Tab title="Good candidates">
+    Connector standards, naming conventions, PII handling rules, on-call runbooks for pipeline failures.
+  </Tab>
+  <Tab title="Poor candidates">
+    Raw exports of production tables, credentials, or unredacted tickets.
+  </Tab>
+</Tabs>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Chat" icon="messages" href="/ai-copilot/chat">
+    How Copilot uses context during conversations.
+  </Card>
+  <Card title="Teams and permissions" icon="users" href="/settings/teams-and-permissions">
+    Control who can manage AI-related settings.
+  </Card>
+</CardGroup>

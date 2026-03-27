@@ -1,0 +1,62 @@
+---
+title: "Spark integration"
+description: "Run notebooks with Spark and Databricks compute."
+---
+
+Spark-backed notebooks let you work on data too large for single-node Python loops. Planasonix integrates with **Databricks** and compatible Spark clusters so you submit jobs using workspace-managed credentials.
+
+## Databricks notebook support
+
+When your admin configures a **Databricks** connection, you can:
+
+- Select a **cluster** or **SQL warehouse** policy you are allowed to use
+- Run `%sql`, `%python`, or notebook cells that compile to Spark jobs
+- Browse Unity Catalog objects your entitlement exposes
+
+<Tabs>
+  <Tab title="Interactive clusters">
+    Use for exploration; remember to terminate idle clusters to control cost.
+  </Tab>
+  <Tab title="Job clusters">
+    Prefer job clusters for scheduled notebook nodes so policies enforce autoscaling and timeouts.
+  </Tab>
+</Tabs>
+
+Follow your organization’s **personal access token** or **OAuth** standards; never commit tokens into notebook source.
+
+## Spark execution
+
+**Spark execution** details depend on your deployment:
+
+- **Cluster manager** – Databricks, EMR, Dataproc, or on-prem YARN/Kubernetes
+- **Runtime version** – align with production jobs to avoid subtle function differences
+- **Libraries** – install required JARs/Python wheels via cluster init scripts or workspace libraries
+
+<Tip>
+  Match Spark SQL dialect features between notebook and production transforms to avoid “works in dev, fails in prod” surprises.
+</Tip>
+
+## Performance and cost
+
+<AccordionGroup>
+  <Accordion title="Partitioning">
+    Filter early on partition columns; avoid `collect()` on large datasets—write results to staged tables instead.
+  </Accordion>
+  <Accordion title="Caching">
+    Cache only when reuse within the session justifies memory; drop caches before long idle periods.
+  </Accordion>
+  <Accordion title="Observability">
+    Link long-running notebook jobs to [cost insights](/observability/cost-insights) tags so finance sees Spark spend separately from warehouse SQL.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Notebooks overview" icon="book" href="/notebooks/overview">
+    Capabilities and enterprise requirements.
+  </Card>
+  <Card title="Compute" icon="microchip" href="/settings/compute">
+    Manage cluster policies and defaults.
+  </Card>
+</CardGroup>

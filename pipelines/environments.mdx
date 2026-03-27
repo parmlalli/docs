@@ -1,0 +1,87 @@
+---
+title: "Environments"
+description: "Deploy pipelines across development, staging, and production environments."
+---
+
+**Environments** are an **enterprise** feature that lets you run the same pipeline definition in **development**, **staging**, **production**, or custom stages—without forking graphs. Each environment supplies its own configuration layer, especially [variables](/pipelines/variables) and connection targets.
+
+<Info>
+  Environment limits, naming, and approval rules are configured by your Planasonix administrator. If you do not see environment selectors in run or schedule dialogs, your organization may be on an edition that uses projects alone for separation.
+</Info>
+
+## Why environments matter
+
+- **Safety**: Developers default to dev resources; production credentials stay scoped to production runs.
+- **Consistency**: One graph, one review story—changes propagate predictably when you promote.
+- **Compliance**: Separation of duties rules map cleanly to who can deploy to which stage.
+
+<Info>
+  Exact environment names, limits per organization, and approval rules are set by your Planasonix administrator.
+</Info>
+
+## Environment configuration
+
+Each environment stores:
+
+- **Variable overrides** for paths, endpoints, database names, batch sizes, and feature flags.
+- **Connection bindings** where the same logical role (“analytics warehouse”) maps to different physical endpoints per stage.
+- **Runtime policies** such as max rows, allowed destinations, or notification channels (when enabled).
+
+When you **run** or **schedule** a pipeline, you select the target environment (or inherit a default from the project). Planasonix resolves configuration using that environment’s layer.
+
+<Tabs>
+  <Tab title="Development">
+    Use permissive sampling, smaller warehouses, and synthetic data where possible. Turn on verbose logging for authors without impacting production SLAs.
+  </Tab>
+  <Tab title="Staging">
+    Mirror production schema and volume *shape* where budget allows. Run integration tests and compare aggregates against production baselines before go-live.
+  </Tab>
+  <Tab title="Production">
+    Lock down who can edit schedules and overrides. Require peer review and, where enabled, [Git](/pipelines/git-integration) merge before promotion.
+  </Tab>
+</Tabs>
+
+## Variable overrides per environment
+
+Follow a predictable naming scheme for variables (`s3_bucket`, `db_schema`, `api_base_url`). Then:
+
+1. Set **pipeline defaults** to development-friendly values.
+2. Add **staging** and **production** overrides that point to the right infrastructure.
+3. Document any variable that *must* be set before first production run.
+
+<AccordionGroup>
+  <Accordion title="Handling secrets">
+    Prefer credential references or managed secrets over plain-text variables in production. Overrides should reference *which* secret to use, not embed passwords in the UI.
+  </Accordion>
+  <Accordion title="Partial promotions">
+    When only some nodes change, you still promote the whole graph definition; environment overrides ensure each stage talks to the correct systems. Avoid maintaining three separate pipelines unless compliance explicitly requires it.
+  </Accordion>
+</AccordionGroup>
+
+## Deployment workflows
+
+<Steps>
+  <Step title="Author in development">
+    Edit the pipeline, preview data, and run against dev connections.
+  </Step>
+  <Step title="Validate in staging">
+    Execute a full or sampled run with production-like schemas. Capture validation metrics (row counts, key uniqueness, hash totals).
+  </Step>
+  <Step title="Request approval (if required)">
+    Use your change-management process; attach run IDs and diff links when Git integration is on.
+  </Step>
+  <Step title="Deploy to production">
+    Enable schedules, triggers, or downstream [orchestration](/orchestration/overview) in the production environment. Monitor the first cycles closely.
+  </Step>
+</Steps>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Variables" icon="brackets-curly" href="/pipelines/variables">
+    Centralize values that differ by stage.
+  </Card>
+  <Card title="Git integration" icon="code-branch" href="/pipelines/git-integration">
+    Tie releases to tagged commits.
+  </Card>
+</CardGroup>

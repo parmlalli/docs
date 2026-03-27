@@ -1,0 +1,83 @@
+---
+title: "IP whitelisting"
+description: "Restrict platform access to approved IP addresses."
+---
+
+**IP whitelisting** limits who can reach the Planasonix web application and, when enabled for your contract, certain **API** and **agent** ingress paths to addresses you trust. Misconfiguration can lock out every administrator, so treat changes as **production changes** with a tested recovery path.
+
+## Adding IP ranges
+
+Organization admins maintain the allowlist under **Settings → IP whitelisting**.
+
+<Steps>
+  <Step title="Inventory egress">
+    Collect **office NAT** public IPs, **VPN concentrator** pools, and **cloud NAT** ranges used by automation that calls Planasonix. Include **IPv6** if your workforce uses it.
+  </Step>
+  <Step title="Enter CIDR blocks">
+    Add each range in **CIDR notation** (for example `203.0.113.0/24` or `2001:db8::/32`). Single hosts use `/32` (IPv4) or `/128` (IPv6).
+  </Step>
+  <Step title="Label and document">
+    Give each entry a **name** and **ticket reference** so future admins know why it exists and when to remove it.
+  </Step>
+  <Step title="Simulate before enforce">
+    Use **report-only** or **staging workspace** modes if your tenant offers them; otherwise add ranges **before** removing old access.
+  </Step>
+</Steps>
+
+### CIDR notation
+
+CIDR expresses an address **prefix**: the number after `/` is the **routing mask** size.
+
+| Example | Meaning |
+| ------- | ------- |
+| `198.51.100.17/32` | Exactly one IPv4 address |
+| `198.51.100.0/24` | 256 addresses from `198.51.100.0` to `198.51.100.255` |
+| `2001:db8:1::/48` | An IPv6 site prefix (size depends on your RIR allocation) |
+
+<Tip>
+  Prefer **aggregating** adjacent office subnets into one `/23` or `/22` only when you control the full block; do not over-allow neighboring tenants in shared carrier-NAT environments.
+</Tip>
+
+## IP recovery flow for lockouts
+
+If nobody can log in:
+
+1. **Use a registered break-glass path** – Many enterprises keep an **out-of-band admin VPN** or **corporate device** on an allowlisted carrier IP. Connect through that path and fix the list.
+2. **Contact Planasonix support** – Verify your identity per your support contract. Support can apply a **temporary bypass** or **scheduled maintenance window** that disables enforcement long enough for you to correct CIDRs.
+3. **Emergency contact** – Ensure **two** people hold credentials for the recovery VPN and that HR offboarding updates the break-glass runbook.
+
+<Warning>
+  Do not rely on a single home ISP IP; residential addresses change without notice. Use VPN or Zero Trust clients that map to stable corporate egress.
+</Warning>
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Pair with SSO session policy">
+    IP allowlists complement [SSO](/settings/sso) and [session policy](/settings/session-policy); they are not a substitute for MFA or device compliance.
+  </Accordion>
+  <Accordion title="Separate UI and API lists">
+    If your plan supports split policies, put **CI/CD** automation on its own CIDR set so rotating office IPs does not break nightly jobs.
+  </Accordion>
+  <Accordion title="Plan for SaaS egress">
+    Some third-party tools call Planasonix on your behalf. Either **proxy** those calls through your allowlisted egress or add **minimal** vendor egress ranges and review them quarterly.
+  </Accordion>
+  <Accordion title="Audit quarterly">
+    Remove stale entries tied to closed offices or decommissioned NAT gateways. Overgrown lists defeat the purpose of the control.
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+  Pipeline **agents** and **SSH bastions** may need distinct allowlisting on the **destination** side. This page covers access **to** Planasonix; database firewalls are configured in each connection or cloud console.
+</Info>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Session policy" icon="clock" href="/settings/session-policy">
+    Idle timeout and concurrent session rules.
+  </Card>
+  <Card title="Authentication troubleshooting" icon="key" href="/troubleshooting/authentication">
+    Resolve login failures after policy changes.
+  </Card>
+</CardGroup>

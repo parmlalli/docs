@@ -1,0 +1,76 @@
+---
+title: "Convert from Matillion"
+description: "Import Matillion ETL jobs and convert them to Planasonix pipelines."
+---
+
+Matillion **orchestration** and **transformation** components map into Planasonix **nodes** and **control-flow** constructs. Treat the converted graph as a **draft**: Matillion often embeds environment semantics and vendor-specific SQL that you must revalidate on the target warehouse.
+
+<Info>
+  See [Import and convert](/pipelines/import-and-convert) for artifact upload, connection mapping, and promotion practices.
+</Info>
+
+## Job export
+
+<Steps>
+  <Step title="Export the job or project">
+    From **Matillion ETL**, export the **orchestration job** or **project** package your administrator allows for migration (JSON/XML export varies by product line and version). Include **shared jobs** and **metadata** dependencies referenced by orchestration.
+  </Step>
+  <Step title="Gather connection metadata">
+    Collect **environment** names, **OAuth** details, and **warehouse sizing** notes separately—exports rarely include secrets, and you should not embed them in files.
+  </Step>
+  <Step title="Upload to Planasonix">
+    Start the **Matillion** profile in the import wizard, upload the archive, and select the **default warehouse dialect** Matillion targeted (Snowflake, Redshift, Delta on Databricks, BigQuery, etc.).
+  </Step>
+</Steps>
+
+## Component mapping
+
+| Matillion pattern | Planasonix direction |
+| ----------------- | -------------------- |
+| **Table Input** / **Query** | Source or SQL source node |
+| **Calculator** / **Filter** / **Aggregate** | Column/row transform nodes |
+| **Join** / **Union** | Join and union nodes |
+| **Rewrite** / **Load** | Destination or merge/upsert patterns |
+| **Orchestration** tasks | Sequences, branches, and error handlers on the canvas |
+
+<Tip>
+  Open Matillion’s **component tree** side by side with the Planasonix **conversion report**. Resolve **yellow** warnings before you tackle optional cosmetic rearrangements on the canvas.
+</Tip>
+
+## Environment variable translation
+
+Matillion **environment variables** and **project parameters** become Planasonix [pipeline variables](/pipelines/variables) or **environment-scoped** overrides.
+
+<AccordionGroup>
+  <Accordion title="Naming collisions">
+    Normalize names (`MATILLION_WH` → `warehouse_role`) when imports produce awkward identifiers. Keep a mapping sheet for operators who still search legacy names in runbooks.
+  </Accordion>
+  <Accordion title="Secrets vs parameters">
+    Move passwords and API keys into **Planasonix credential** stores. Keep non-secret defaults (bucket prefixes, file masks) in variables for readability.
+  </Accordion>
+</AccordionGroup>
+
+## Orchestration and error handling
+
+Matillion **orchestration** **success** and **failure** paths may map to Planasonix **branch** nodes or **try/catch** patterns depending on feature parity.
+
+<Warning>
+  **Python scripts** and **orchestration scripts** in Matillion are not guaranteed to have one-to-one equivalents. Plan **manual rewrites** for complex control scripts and file operations.
+</Warning>
+
+## Validation checklist
+
+<Note>
+  Re-run **row counts** and **key uniqueness** checks for every converted job. Matillion components sometimes hide implicit **DISTKEY/SORTKEY** or **clustering** assumptions that change performance after migration.
+</Note>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Control flow nodes" icon="code-branch" href="/nodes/control-flow">
+    Branching, iteration, and error paths on the canvas.
+  </Card>
+  <Card title="Destinations" icon="database" href="/nodes/destinations">
+    Load patterns and merge semantics.
+  </Card>
+</CardGroup>

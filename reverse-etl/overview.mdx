@@ -1,0 +1,61 @@
+---
+title: "Reverse ETL overview"
+description: "Sync data from your warehouse back to operational tools and SaaS applications."
+---
+
+Reverse ETL moves curated data from your warehouse or lake into the applications where teams work every day. Instead of leaving insights trapped in SQL, you push segments, scores, and attributes into CRMs, marketing tools, support platforms, and internal apps so operations stay aligned with analytics.
+
+## What reverse ETL does
+
+You define a query (or view) in your warehouse, map columns to fields in a destination system, and run sync jobs on a schedule or trigger. Planasonix reads rows from the warehouse, transforms them as needed, and writes them to the destination API or bulk endpoint. The flow is warehouse-first: your models stay the source of truth; the destination receives the same definitions your analysts already trust.
+
+<CardGroup cols={2}>
+  <Card title="Syncs" icon="arrows-rotate" href="/reverse-etl/syncs">
+    Create jobs, choose insert/update/upsert/delete behavior, and wire SQL sources.
+  </Card>
+  <Card title="Destinations" icon="bullseye-pointer" href="/reverse-etl/destinations">
+    Pick objects, fields, and connection targets for each sync.
+  </Card>
+  <Card title="Field mapping" icon="diagram-project" href="/reverse-etl/field-mapping">
+    Map warehouse columns to destination fields with clear typing rules.
+  </Card>
+  <Card title="Monitoring" icon="chart-line" href="/reverse-etl/monitoring">
+    Track runs, failures, and dead-letter records until everything is healthy.
+  </Card>
+</CardGroup>
+
+## When to use reverse ETL
+
+<Tabs>
+  <Tab title="Activation">
+    You ship audience lists and lead scores to marketing automation, ads platforms, or lifecycle email tools. Warehouse segments replace manual CSV exports and keep campaigns current.
+  </Tab>
+  <Tab title="Sales and support">
+    You enrich CRM records with product usage, billing health, or support ticket summaries so reps see context without opening a BI tool.
+  </Tab>
+  <Tab title="Product and internal tools">
+    You feed feature flags, entitlements, or routing data into internal services from models you already maintain in dbt or your semantic layer.
+  </Tab>
+</Tabs>
+
+## Premium feature
+
+Reverse ETL is included on **Premium** and **Enterprise** plans. If your workspace does not show Reverse ETL in the navigation, ask your admin to upgrade or enable the add-on. Starter and Professional tiers focus on batch ETL into the warehouse; reverse ETL extends that same platform outward to SaaS and APIs.
+
+<Info>
+  You need a valid warehouse connection and destination credentials with scopes that allow the operations you choose (for example, create and update on specific objects).
+</Info>
+
+## Next steps
+
+<Steps>
+  <Step title="Confirm plan access">
+    Verify reverse ETL is enabled for your organization and that you have permission to create syncs.
+  </Step>
+  <Step title="Prepare your warehouse query">
+    Build a query or view that outputs one row per destination record, with stable natural or surrogate keys for upserts.
+  </Step>
+  <Step title="Create your first sync">
+    Follow [Syncs](/reverse-etl/syncs) to connect a destination, map fields, and schedule the job.
+  </Step>
+</Steps>

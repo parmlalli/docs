@@ -1,0 +1,74 @@
+---
+title: "Convert from Fivetran"
+description: "Import and convert Fivetran sync configurations to Planasonix pipelines."
+---
+
+The Fivetran importer reads connector and sync metadata so you can recreate **ingestion intent** as Planasonix pipelines. You still map credentials to [connections](/connections/overview) and validate transforms on the canvas.
+
+<Info>
+  Start with [Import and convert](/pipelines/import-and-convert) for the shared wizard flow, batch import, and validation discipline.
+</Info>
+
+## Discovery API integration
+
+When Planasonix supports the **Fivetran REST API**, you authorize a read-scoped token and let the wizard **discover** connectors, destinations, and sync schedules.
+
+<Steps>
+  <Step title="Create API credentials">
+    In **Fivetran**, create an **API key** with permissions to list connectors and read configuration metadata. Store the key in Planasonix’s secret manager when prompted.
+  </Step>
+  <Step title="Run discovery">
+    Enter **account** identifiers the API requires. Planasonix pulls connector types, source schemas, table include/exclude rules, and column settings where exposed.
+  </Step>
+  <Step title="Select scope">
+    Choose specific connectors or tags to convert. Large accounts should migrate **by domain** (for example, finance vs product analytics) to keep review manageable.
+  </Step>
+</Steps>
+
+<Tip>
+  Export a **connector inventory** spreadsheet before migration. Use it to track owner, SLA, and whether the connector is still needed—API discovery can surface deprecated connectors you should retire instead of porting.
+</Tip>
+
+## Connector mapping
+
+Fivetran connectors map to Planasonix **source nodes**, **staging patterns**, and optional **orchestration** that mirrors sync frequency.
+
+<Tabs>
+  <Tab title="Database and SaaS sources">
+    Database connectors become ** JDBC/API source** configurations plus **incremental** or **full-table** strategies inferred from Fivetran **sync modes** (for example, history mode vs standard incremental). Verify **primary keys** and **cursor columns** after import; Fivetran sometimes hides complexity behind its own change-data layer.
+  </Tab>
+  <Tab title="Destinations">
+    Fivetran’s **destination** becomes your Planasonix **warehouse or lake connection**. You rebind the physical connection string or cloud identity to a Planasonix **environment**-scoped credential.
+  </Tab>
+</Tabs>
+
+## What transfers vs what needs manual work
+
+<AccordionGroup>
+  <Accordion title="Typically transfers">
+    - Source **type** and high-level **connection parameters** (host, database, API object selection)
+    - **Table and column** inclusion lists when exposed by the API
+    - **Schedule cadence** as a starting point for Planasonix schedules or triggers
+  </Accordion>
+  <Accordion title="Usually needs manual configuration">
+    - **Transforms** beyond Fivetran’s column blocking/hashing—Planasonix models these as explicit **transform nodes**
+    - **Webhook or event-based** loads if you replace sync schedules with cloud triggers
+    - **Secrets** and **network paths** (PrivateLink, SSH tunnels) that cannot be exported in clear text
+    - **Fivetran dbt transformations** if you used them—treat as dbt logic to merge separately or reimplement on the canvas
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  Fivetran **historical sync** behavior and **deleted record** handling are product-specific. Compare row counts and slowly changing dimensions in a sandbox warehouse before you cut over production consumers.
+</Warning>
+
+## After conversion
+
+<CardGroup cols={2}>
+  <Card title="Pipeline canvas" icon="diagram-project" href="/pipelines/canvas">
+    Refine graphs, preview data, and attach tests.
+  </Card>
+  <Card title="Variables" icon="brackets-curly" href="/pipelines/variables">
+    Externalize environment-specific names and paths.
+  </Card>
+</CardGroup>

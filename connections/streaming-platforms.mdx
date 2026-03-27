@@ -1,0 +1,90 @@
+---
+title: "Streaming platforms"
+description: "Connect to Kafka, Kinesis, Pulsar, and other streaming platforms for real-time data ingestion."
+---
+
+Streaming connections let Planasonix consume and produce events with low latency. You map topics or streams to pipeline steps, control offset management and consumer groups, and optionally enforce schemas through a registry so downstream transforms stay stable as producers evolve.
+
+## Supported platforms
+
+- **Apache Kafka** — Self-managed clusters and on-premises deployments.
+- **Confluent Cloud** — Managed Kafka with Schema Registry and enterprise security options.
+- **Redpanda** — Kafka-compatible API; configure broker URLs and SASL/SCRAM or TLS as your cluster requires.
+- **Amazon Kinesis Data Streams** — AWS-native streaming; IAM-based access to streams and shards.
+- **Apache Pulsar** — Multi-tenant messaging; web service URL, authentication, and tenant/namespace/topic paths per connector support.
+- **Upstash** — Serverless Kafka with REST and Kafka protocol endpoints depending on the connector mode.
+
+<Note>
+  Throughput, exactly-once semantics, and transactional guarantees depend on the connector, your cluster configuration, and how you design idempotent sinks. Validate behavior in a staging cluster before promoting to production.
+</Note>
+
+## Schema registry support
+
+When events carry **Avro**, **Protobuf**, or **JSON Schema**, a registry stores writer schema versions so consumers deserialize safely.
+
+<Tabs>
+  <Tab title="Confluent Schema Registry">
+    Point the connection at the **Schema Registry URL** and supply **API key and secret** or mutual TLS if your organization requires it.
+
+    Enable **auto-registration** only in non-production unless your governance team expects producer-side registration. In production, many teams register schemas through CI and treat the registry as the contract between teams.
+  </Tab>
+  <Tab title="AWS Glue Schema Registry">
+    For Kinesis and Kafka workloads on AWS, you can use **Glue** as the registry source. IAM on the connection must allow `glue:GetSchemaVersion` and related APIs for the registries and schemas you reference.
+
+    Align **registry name**, **schema name**, and **serialization format** with what your producers publish.
+  </Tab>
+</Tabs>
+
+## Configure a streaming connection
+
+<Steps>
+  <Step title="Choose the streaming connector">
+    In **Connections**, select **Kafka**, **Kinesis**, **Pulsar**, or the managed service tile (for example **Confluent Cloud**).
+  </Step>
+  <Step title="Enter broker or control-plane endpoints">
+    Provide **bootstrap servers**, **Kinesis stream ARN** or name, **Pulsar broker/web service URL**, or **Upstash** endpoint strings. Enable **TLS** and **SASL** for production clusters.
+  </Step>
+  <Step title="Attach credentials">
+    Store passwords, API keys, IAM roles, and trust material in [Credentials management](/connections/credentials). Reference them from the connection; do not paste secrets into topic or consumer property fields that might be logged.
+  </Step>
+  <Step title="Link schema registry when required">
+    If payloads are schema-encoded, configure **Confluent Schema Registry** or **Glue Schema Registry** URLs and auth in the same connection or companion settings panel, per your Planasonix version.
+  </Step>
+  <Step title="Define consumer groups and topic scope">
+    Assign a **consumer group** per critical pipeline so offsets do not collide. Allowlist **topic prefixes** or explicit topic lists when the UI supports it, and mirror restrictions with broker ACLs.
+  </Step>
+  <Step title="Test and tune backpressure">
+    Run **Test connection** and a short consume in non-production. Set **max poll records**, **fetch sizes**, and **commit** behavior to match broker limits and downstream sink capacity.
+  </Step>
+</Steps>
+
+## Configuration concepts
+
+<AccordionGroup>
+  <Accordion title="Consumer groups and offsets">
+    Each connection or pipeline step uses a **consumer group** so Kafka (or compatible brokers) track progress. Reusing a group across unrelated pipelines can cause skipped or replayed messages—give each critical pipeline its own group unless you intentionally share consumption.
+  </Accordion>
+  <Accordion title="Security">
+    Enable **SASL** (PLAIN, SCRAM, GSSAPI/Kerberos where supported) and **TLS** for production clusters. Store passwords and trust stores through [Credentials management](/connections/credentials), not in topic configuration fields.
+  </Accordion>
+  <Accordion title="Topic discovery">
+    You can allowlist **topic prefixes** or explicit topic lists to avoid accidental reads from sensitive namespaces. Pair with ACLs on the broker side for defense in depth.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Cloud storage" icon="cloud" href="/connections/cloud-storage">
+    Archive stream batches or dead-letter objects to object storage.
+  </Card>
+  <Card title="APIs and webhooks" icon="webhook" href="/connections/apis-and-webhooks">
+    Bridge HTTP callbacks into topics through an integration layer when needed.
+  </Card>
+  <Card title="Streaming overview" icon="radio" href="/streaming/overview">
+    How stream processing fits next to batch pipelines in Planasonix.
+  </Card>
+  <Card title="Credentials management" icon="key-round" href="/connections/credentials">
+    SASL passwords, IAM, and registry API keys.
+  </Card>
+</CardGroup>

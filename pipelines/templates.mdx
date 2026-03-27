@@ -1,0 +1,73 @@
+---
+title: "Templates"
+description: "Save and share pipeline templates to accelerate development."
+---
+
+**Templates** capture a working pipeline graph—nodes, edges, and parameterized settings—so you and your organization can start new pipelines from a reviewed baseline instead of an empty canvas.
+
+## Create a template
+
+<Steps>
+  <Step title="Build and validate a reference pipeline">
+    Complete a pipeline that represents the pattern you want to reuse: sources, key transforms, destinations, variables, and documentation in the description field.
+  </Step>
+  <Step title="Run and preview critical paths">
+    Execute in a non-production environment and preview at sensitive nodes (joins, aggregations, writes) so the template ships with realistic defaults.
+  </Step>
+  <Step title="Publish as template">
+    Use **Save as template** (or your workspace equivalent) from the pipeline menu. Provide a clear name, summary, and tags so others can discover it in the gallery.
+  </Step>
+  <Step title="Set variables and guardrails">
+    Expose only the parameters consumers should change. Use defaults that are safe in dev, and document required overrides for production.
+  </Step>
+</Steps>
+
+<Note>
+  Templates typically store graph structure and non-secret configuration. Confirm whether your organization strips environment-specific overrides when publishing, so you do not accidentally bake production resource names into a public template.
+</Note>
+
+## Share templates
+
+Sharing options depend on your tenant configuration:
+
+- **Project-scoped templates** are visible to members of the project—good for squad-owned patterns.
+- **Organization templates** propagate standards across business units (for example, a canonical “CDC to curated layer” skeleton).
+
+Owners can update templates; consumers receive a **new pipeline instance** from the template, so existing jobs are not rewritten automatically when the template changes.
+
+## Rate and review templates
+
+The template gallery often supports **star ratings**, thumbs feedback, or short reviews. When you use a template:
+
+- Rate it after your first successful run so quality rises to the top of search results.
+- Leave concrete notes when the product supports comments (for example, “works for Postgres 14, breaks on 12 without changing cast node”).
+
+Maintainers should read feedback when iterating templates and bump version notes in the description when behavior changes.
+
+## Use a template in a new pipeline
+
+<Steps>
+  <Step title="Open the template gallery">
+    From the pipeline list, choose **Create from template** and filter by tag, owner, or rating.
+  </Step>
+  <Step title="Instantiate">
+    Pick a template and name the new pipeline. Planasonix copies the graph into your chosen project or folder.
+  </Step>
+  <Step title="Wire credentials">
+    Map [connections](/connections/overview) to the template’s source and destination nodes. Replace placeholder variables with project-appropriate values.
+  </Step>
+  <Step title="Validate in a lower environment">
+    Run once with preview and small limits, then promote using your normal [environment](/pipelines/environments) or release process.
+  </Step>
+</Steps>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Variables" icon="brackets-curly" href="/pipelines/variables">
+    Make templates reusable across tenants and environments.
+  </Card>
+  <Card title="Import and convert" icon="file-import" href="/pipelines/import-and-convert">
+    Turn external assets into Planasonix graphs you can later save as templates.
+  </Card>
+</CardGroup>

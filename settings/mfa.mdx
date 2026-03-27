@@ -1,0 +1,57 @@
+---
+title: "Multi-factor authentication"
+description: "Enable MFA for enhanced account security."
+---
+
+Multi-factor authentication (MFA) adds a second proof of identity after your password or SSO session. Planasonix honors your organization’s policy: optional MFA, required for admins, or required for all users.
+
+## Authenticator app
+
+<Steps>
+  <Step title="Start enrollment">
+    Open **Security** → **Multi-factor authentication** and choose **Authenticator app**.
+  </Step>
+  <Step title="Scan the QR code">
+    Add the account to Google Authenticator, 1Password, Authy, or another TOTP client.
+  </Step>
+  <Step title="Save backup codes">
+    Store one-time **recovery codes** in a secure location; use them if you lose the device.
+  </Step>
+</Steps>
+
+Time-based codes rotate every 30 seconds; ensure your device clock is accurate.
+
+## SMS opt-in
+
+Where **SMS** is offered, you explicitly opt in because carriers charge and some regions restrict automated SMS.
+
+- Enter a mobile number and confirm the verification code
+- Understand that SMS is weaker than app-based TOTP against SIM-swap attacks; prefer authenticator apps when policy allows
+
+<Warning>
+  SMS delivery can fail during carrier outages. Keep backup codes or a second factor so you are not locked out during incidents.
+</Warning>
+
+## Enforcement policies
+
+Organization admins configure:
+
+- **Grace period** for users to enroll before MFA is mandatory
+- **Exemptions** for break-glass service accounts (discouraged; prefer API keys with scopes instead)
+
+SSO users often inherit MFA from the IdP; Planasonix may still offer a **step-up** challenge for sensitive actions (creating API keys, exporting secrets).
+
+## Recovery
+
+If you lose all factors, contact your **workspace admin** or IT helpdesk. They verify your identity out-of-band and reset MFA enrollment.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Session policy" icon="clock" href="/settings/session-policy">
+    Idle timeout and re-auth rules.
+  </Card>
+  <Card title="Profile" icon="user" href="/settings/profile">
+    Contact info used for recovery notices.
+  </Card>
+</CardGroup>

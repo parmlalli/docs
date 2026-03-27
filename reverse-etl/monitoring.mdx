@@ -1,0 +1,74 @@
+---
+title: "Monitoring"
+description: "Monitor sync runs, review errors, and manage the dead letter queue."
+---
+
+Operational reverse ETL depends on visibility: you need to know when a run succeeded, how many rows moved, and which rows failed validation or API rules. Planasonix surfaces run history, status, and a **dead letter queue (DLQ)** so you can fix data and reprocess without rerunning the entire warehouse.
+
+## Run history
+
+Each sync execution appears in **run history** with:
+
+- Start and end time, duration, and triggering user or schedule
+- Rows read from the warehouse vs rows accepted by the destination
+- API errors summarized by code and message
+
+Open a run to see step-level detail (query execution, batch uploads, per-batch responses). Export logs when you need to attach evidence to a vendor support ticket.
+
+## Sync status
+
+Syncs display a **current status** such as healthy, failing, or paused. Status rolls up from recent runs and configuration issues (for example, expired OAuth). Subscribe to notifications so owners learn about regressions before business teams report stale data.
+
+<Tabs>
+  <Tab title="Healthy">
+    Recent runs completed within thresholds you define; error rate is below alert rules.
+  </Tab>
+  <Tab title="Failing">
+    One or more consecutive runs failed or exceeded error budgets. Inspect the latest run and DLQ before retrying.
+  </Tab>
+  <Tab title="Paused">
+    The sync does not execute on schedule until you resume. Use pause during maintenance or credential rotation.
+  </Tab>
+</Tabs>
+
+## Dead letter queue (DLQ)
+
+The **DLQ** stores rows that could not be written after retries. Typical causes include validation errors, duplicate key conflicts, missing required fields, and permission errors on specific fields.
+
+<Steps>
+  <Step title="Open the DLQ for the sync">
+    From the sync detail page, open **Dead letter queue** to filter by error type, time range, and destination response code.
+  </Step>
+  <Step title="Inspect the payload">
+    Compare the stored payload to your warehouse row. Often the fix is a mapping change, a SQL correction, or a data quality rule upstream.
+  </Step>
+  <Step title="Fix upstream or in the mapper">
+    Update the view or mapping, then clear or reprocess affected DLQ entries as described below.
+  </Step>
+</Steps>
+
+## Error resolution
+
+<AccordionGroup>
+  <Accordion title="Transient API errors">
+    Rate limits and short outages usually resolve with automatic retries. If failures persist, check vendor status and reduce batch size or concurrency in sync advanced settings when available.
+  </Accordion>
+  <Accordion title="Permanent data errors">
+    Fix the row in the warehouse or adjust coercion in SQL, then **reprocess** from the DLQ so only corrected rows are resent.
+  </Accordion>
+  <Accordion title="Schema drift">
+    When the destination adds required fields or changes types, refresh connector schema, update mappings, and run a preview before clearing the DLQ backlog.
+  </Accordion>
+</AccordionGroup>
+
+## Bulk operations and export
+
+You can select multiple DLQ entries to **reprocess**, **discard**, or **export** (CSV/JSON) for analysis in a spreadsheet or ticket. Discarding acknowledges that a row should not be retried—for example, when the business retires a legacy ID space.
+
+<Warning>
+  Reprocessing after you change only the destination without fixing warehouse data can recreate the same error. Always confirm the root cause before large bulk retries.
+</Warning>
+
+## Tie-in to observability
+
+For organization-wide visibility, use the [Observability](/observability/overview) dashboard and [alerts](/observability/alerts) so reverse ETL failures appear next to batch pipeline incidents your team already monitors.

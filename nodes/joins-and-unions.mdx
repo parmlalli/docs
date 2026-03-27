@@ -1,0 +1,86 @@
+---
+title: "Joins and unions"
+description: "Combine data from multiple sources using joins, fuzzy joins, and unions."
+---
+
+**Joins and unions** combine multiple datasets into one rowset. Use **join** nodes when rows relate on keys (exact or fuzzy). Use **union** when schemas align and you want to stack similar tables.
+
+## Join
+
+**Join** merges two inputs on key columns using standard relational semantics.
+
+**Join types:**
+
+| Type | Result |
+| ---- | ------ |
+| **Inner** | Only keys present in **both** inputs. |
+| **Left** | All rows from the **left** input; matched right columns or nulls. |
+| **Right** | All rows from the **right** input; matched left columns or nulls. |
+| **Full** | All keys from either side; unmatched sides null-padded. |
+| **Cross** | Cartesian product—use sparingly and filter immediately. |
+
+**Configuration:**
+
+- **Left / right inputs**: Wire two upstream edges.
+- **Key mapping**: `customer_id` ↔ `cust_id` when names differ.
+- **Null-safe equality** (when offered): Treat `NULL = NULL` if your rule requires it—otherwise unexpected drops occur on inner joins.
+- **Select list**: Choose columns to carry forward; disambiguate names with aliases.
+
+**Example:** Enrich `orders` (left) with `customers` (right) on `orders.customer_id = customers.id` using a **left join** so unpaid carts still appear with nullable customer attributes.
+
+<Tip>
+  Filter each side *before* the join when you can—smaller inputs reduce shuffle cost and make skew issues easier to spot.
+</Tip>
+
+## Fuzzy Join
+
+**Fuzzy Join** matches rows when keys are **approximately** equal—names, addresses, or human-entered text with typos.
+
+**Configuration:**
+
+- **Similarity metric**: Edit distance, token overlap, or phonetic match—per product options.
+- **Threshold**: Minimum score to accept a match; tune on labeled samples.
+- **Blocking keys** (when available): Restrict comparisons to same `postal_code` prefix or first letter buckets to keep runtime feasible.
+
+**Example:** Match `vendor_name` from invoices to a reference `suppliers` table where strings differ (`"Acme LLC"` vs `"Acme Incorporated"`). Start with high thresholds; inspect unmatched rows in preview.
+
+<Warning>
+  Fuzzy joins can produce **many-to-many** candidates. Follow with ranking (window function) or additional rules to pick a single best match per row.
+</Warning>
+
+## Union
+
+**Union** stacks two or more inputs vertically when columns correspond.
+
+**Configuration:**
+
+- **Column alignment**: By name or position—prefer **by name** to reduce breakage when column order changes.
+- **Type coercion**: Harmonize types (`INT` vs `BIGINT`) before union when strict mode is enabled.
+- **Distinct**: Optional `UNION DISTINCT` behavior to drop identical rows across branches.
+
+**Example:** Combine `sales_us`, `sales_eu`, and `sales_apac` tables that share schema into `sales_all` for downstream aggregation.
+
+## Design checklist
+
+<Steps>
+  <Step title="Normalize keys first">
+    Trim strings, standardize casing, and parse dates before joins on those fields.
+  </Step>
+  <Step title="Profile cardinalities">
+    Preview row counts after inner joins; investigate explosion after cross joins or many-to-many fuzzy matches.
+  </Step>
+  <Step title="Document assumptions">
+    In the pipeline description, note grain (per order line vs per order) so future editors do not add joins that double-count revenue.
+  </Step>
+</Steps>
+
+## Related nodes
+
+<CardGroup cols={2}>
+  <Card title="Aggregation" icon="chart-column" href="/nodes/aggregation">
+    Summarize after you establish the correct grain.
+  </Card>
+  <Card title="Column transforms" icon="table-columns" href="/nodes/column-transforms">
+    Prepare join keys and handle type mismatches.
+  </Card>
+</CardGroup>

@@ -1,0 +1,76 @@
+---
+title: "Stream processing"
+description: "Process and transform streaming data in real-time."
+---
+
+Stream processing nodes sit between your sources and destinations to parse payloads, filter noise, enrich records, and aggregate over time. You build a graph the same way you build batch pipelines, but nodes operate on unbounded input with explicit state and window semantics.
+
+## Stream nodes
+
+Common node categories include:
+
+- **Ingress / parser** – Deserialize Avro, Protobuf, JSON, or CSV; validate envelopes and headers.
+- **Filter and route** – Drop test traffic, split by tenant, or branch poison messages to a DLQ path.
+- **Map and enrich** – Join reference data from a low-latency cache or warehouse snapshot table (with staleness you accept).
+- **Aggregate** – Compute counts, sums, or distinct estimates over windows.
+- **Sink** – Write to warehouses, lakes, queues, or APIs with batching tuned for the destination.
+
+Each node exposes metrics (throughput, error rate, state size) you can chart in [Observability](/observability/overview).
+
+<Tip>
+  Keep expensive enrichment off the critical path when possible: precompute dimension tables on a schedule and stream only key lookups.
+</Tip>
+
+## Windowing
+
+**Windows** bound unbounded streams into finite chunks for aggregation:
+
+<Tabs>
+  <Tab title="Tumbling">
+    **Tumbling** windows are fixed, non-overlapping intervals (for example, 1-minute buckets). Every event belongs to exactly one window.
+  </Tab>
+  <Tab title="Sliding">
+    **Sliding** windows move forward continuously and overlap; use when you need rolling metrics (last 5 minutes, evaluated every 10 seconds).
+  </Tab>
+  <Tab title="Session">
+    **Session** windows group by gaps of inactivity; common for clickstreams where bursts define a session.
+  </Tab>
+</Tabs>
+
+Choose **event time** when business logic depends on when something happened in the real world, and configure **watermarks** and **lateness** allowances so out-of-order events still land in the correct window. Choose **processing time** only when approximate, low-latency counts are acceptable.
+
+<Warning>
+  Late data beyond your lateness policy may drop or divert to a side output. Document that behavior for compliance reviews.
+</Warning>
+
+## Real-time transforms
+
+Transforms in streaming graphs should be **associative** and **deterministic** where state is involved:
+
+- Prefer idempotent sinks with natural keys so at-least-once delivery does not duplicate business facts.
+- Use side outputs for bad records instead of failing the whole job when a single malformed event arrives.
+- Cap state growth: evict TTL’d keys from enrichment caches; avoid unbounded distinct unless you intend approximate algorithms.
+
+<AccordionGroup>
+  <Accordion title="Stateful joins">
+    Joining two high-volume streams requires keyed state and retention policies. Size state from peak key cardinality, not average.
+  </Accordion>
+  <Accordion title="Complex event processing">
+    Patterns across multiple event types may need sequence matchers; test with recorded topics before production cutover.
+  </Accordion>
+</AccordionGroup>
+
+## Testing and promotion
+
+Replay captured samples in a staging environment, compare outputs to a reference batch pipeline for the same day, then promote. Pair stream jobs with [alerts](/observability/alerts) on lag and error percentage.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="CDC sources" icon="database" href="/streaming/cdc-sources">
+    Database and bus ingestion options.
+  </Card>
+  <Card title="Dead letter queue" icon="triangle-exclamation" href="/observability/dead-letter-queue">
+    Handle persistently bad stream records.
+  </Card>
+</CardGroup>

@@ -1,0 +1,914 @@
+---
+title: "User and settings"
+description: "Manage user profile, preferences, API keys, and organization settings."
+---
+
+These endpoints cover **user profile**, **MFA**, **API keys**, **session policy**, **user preferences**, **organization settings**, **IP allowlists**, **log retention**, **organization metadata**, and **notification channels and rules**.
+
+<Info>
+  Use `Authorization: Bearer <api_key>` or session-backed tokens as your deployment allows. Automation should prefer API keys; see [Authentication](/api-reference/authentication).
+</Info>
+
+## Base URL
+
+```text
+https://api.planasonix.com
+```
+
+---
+
+## Profile
+
+### Get profile
+
+```http
+GET /api/user/profile
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "id": "usr_01jq8me",
+    "email": "alex.morgan@example.com",
+    "display_name": "Alex Morgan",
+    "timezone": "America/Los_Angeles",
+    "locale": "en-US",
+    "avatar_url": "https://cdn.planasonix.com/avatars/usr_01jq8me.png",
+    "organization_id": "org_01jq8acme",
+    "roles": ["admin", "pipeline_editor"]
+  }
+}
+```
+
+### Update profile
+
+```http
+PUT /api/user/profile
+```
+
+**Request body**
+
+```json
+{
+  "display_name": "Alex Morgan",
+  "timezone": "America/Denver",
+  "locale": "en-US"
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "id": "usr_01jq8me",
+    "email": "alex.morgan@example.com",
+    "display_name": "Alex Morgan",
+    "timezone": "America/Denver",
+    "locale": "en-US",
+    "updated_at": "2025-03-27T15:00:00Z"
+  }
+}
+```
+
+### Change password
+
+```http
+POST /api/user/password
+```
+
+**Request body**
+
+```json
+{
+  "current_password": "hunter2-not-really",
+  "new_password": "a-long-random-passphrase-from-your-manager"
+}
+```
+
+**Response `204 No Content`**
+
+---
+
+## MFA
+
+### Get MFA status
+
+```http
+GET /api/user/mfa
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "enabled": true,
+    "methods": ["totp"],
+    "backup_codes_remaining": 6
+  }
+}
+```
+
+### Enable MFA (start enrollment)
+
+```http
+POST /api/user/mfa/enable
+```
+
+**Request body**
+
+```json
+{
+  "method": "totp"
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "method": "totp",
+    "secret": "JBSWY3DPEHPK3PXP",
+    "otpauth_uri": "otpauth://totp/Planasonix:alex.morgan%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Planasonix",
+    "enrollment_id": "mfaenr_01jq801"
+  }
+}
+```
+
+### Verify MFA enrollment
+
+```http
+POST /api/user/mfa/verify
+```
+
+**Request body**
+
+```json
+{
+  "enrollment_id": "mfaenr_01jq801",
+  "code": "482193"
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "enabled": true,
+    "backup_codes": [
+      "1111-2222-33",
+      "4444-5555-66"
+    ]
+  }
+}
+```
+
+### Disable MFA
+
+```http
+POST /api/user/mfa/disable
+```
+
+**Request body**
+
+```json
+{
+  "password": "current-password-or-reauth-token",
+  "code": "482193"
+}
+```
+
+**Response `204 No Content`**
+
+---
+
+## API keys
+
+### List API keys
+
+```http
+GET /api/user/api-keys
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": [
+    {
+      "id": "key_01jq8ci",
+      "name": "Airflow production",
+      "prefix": "plnx_live_01jq",
+      "scopes": ["pipelines:read", "pipelines:run"],
+      "created_at": "2025-01-15T10:00:00Z",
+      "last_used_at": "2025-03-27T14:00:00Z",
+      "expires_at": null
+    }
+  ]
+}
+```
+
+### Create API key
+
+```http
+POST /api/user/api-keys
+```
+
+**Request body**
+
+```json
+{
+  "name": "GitHub Actions deploy",
+  "scopes": ["pipelines:read", "connections:read"],
+  "expires_in_days": 90
+}
+```
+
+**Response `201 Created`**
+
+```json
+{
+  "data": {
+    "id": "key_01jq8new",
+    "name": "GitHub Actions deploy",
+    "secret": "plnx_live_01jq8fullsecretshownonce",
+    "prefix": "plnx_live_01jq",
+    "scopes": ["pipelines:read", "connections:read"],
+    "expires_at": "2025-06-25T15:00:00Z",
+    "created_at": "2025-03-27T15:00:00Z"
+  }
+}
+```
+
+### Get API key metadata
+
+```http
+GET /api/user/api-keys/{id}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "id": "key_01jq8ci",
+    "name": "Airflow production",
+    "prefix": "plnx_live_01jq",
+    "scopes": ["pipelines:read", "pipelines:run"],
+    "created_at": "2025-01-15T10:00:00Z",
+    "last_used_at": "2025-03-27T14:00:00Z"
+  }
+}
+```
+
+### Delete API key
+
+```http
+DELETE /api/user/api-keys/{id}
+```
+
+**Response `204 No Content`**
+
+### Regenerate API key
+
+```http
+POST /api/user/api-keys/{id}/regenerate
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "id": "key_01jq8ci",
+    "secret": "plnx_live_01jq8newsecretshownonce",
+    "prefix": "plnx_live_01jq",
+    "rotated_at": "2025-03-27T15:05:00Z"
+  }
+}
+```
+
+---
+
+## Session timeout
+
+### Get session timeout
+
+```http
+GET /api/session-timeout
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "idle_timeout_minutes": 60,
+    "absolute_timeout_minutes": 1440,
+    "extend_on_activity": true
+  }
+}
+```
+
+### Update session timeout
+
+```http
+PUT /api/session-timeout
+```
+
+**Request body**
+
+```json
+{
+  "idle_timeout_minutes": 30,
+  "absolute_timeout_minutes": 720,
+  "extend_on_activity": true
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "idle_timeout_minutes": 30,
+    "absolute_timeout_minutes": 720,
+    "extend_on_activity": true,
+    "updated_at": "2025-03-27T15:06:00Z"
+  }
+}
+```
+
+---
+
+## User preferences
+
+### List all preferences
+
+```http
+GET /api/user-preferences
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "canvas.snap_to_grid": true,
+    "canvas.show_minimap": false,
+    "notifications.email_digest": "weekly"
+  }
+}
+```
+
+### Get one preference
+
+```http
+GET /api/user-preferences/{key}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "key": "canvas.snap_to_grid",
+    "value": true,
+    "updated_at": "2025-03-10T09:00:00Z"
+  }
+}
+```
+
+### Set one preference
+
+```http
+PUT /api/user-preferences/{key}
+```
+
+**Request body**
+
+```json
+{
+  "value": false
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "key": "canvas.snap_to_grid",
+    "value": false,
+    "updated_at": "2025-03-27T15:07:00Z"
+  }
+}
+```
+
+---
+
+## Organization settings
+
+### Get settings (partial)
+
+```http
+GET /api/settings
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "default_timezone": "UTC",
+    "require_sso": false,
+    "data_residency": "us"
+  }
+}
+```
+
+### Update settings
+
+```http
+POST /api/settings
+```
+
+**Request body**
+
+```json
+{
+  "default_timezone": "America/New_York",
+  "require_sso": true
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "default_timezone": "America/New_York",
+    "require_sso": true,
+    "updated_at": "2025-03-27T15:08:00Z"
+  }
+}
+```
+
+### Get all settings
+
+```http
+GET /api/settings/all
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "default_timezone": "America/New_York",
+    "require_sso": true,
+    "data_residency": "us",
+    "feature_flags": {
+      "lineage_v2": true,
+      "git_integration": true
+    }
+  }
+}
+```
+
+---
+
+## IP whitelist
+
+### List IP whitelist entries
+
+```http
+GET /api/settings/ip-whitelist
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": [
+    {
+      "id": "ipw_01jq801",
+      "cidr": "203.0.113.0/24",
+      "label": "Corporate egress",
+      "created_at": "2025-02-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+### Add IP whitelist entry
+
+```http
+POST /api/settings/ip-whitelist
+```
+
+**Request body**
+
+```json
+{
+  "cidr": "198.51.100.10/32",
+  "label": "CI runner static IP"
+}
+```
+
+**Response `201 Created`**
+
+```json
+{
+  "data": {
+    "id": "ipw_01jq802",
+    "cidr": "198.51.100.10/32",
+    "label": "CI runner static IP",
+    "created_at": "2025-03-27T15:09:00Z"
+  }
+}
+```
+
+### Remove IP whitelist entry
+
+```http
+DELETE /api/settings/ip-whitelist/{id}
+```
+
+**Response `204 No Content`**
+
+### IP whitelist enforcement status
+
+```http
+GET /api/settings/ip-whitelist/status
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "enabled": true,
+    "applies_to": ["api", "ui"],
+    "entry_count": 4,
+    "last_evaluated_at": "2025-03-27T15:00:00Z"
+  }
+}
+```
+
+### Toggle IP whitelist
+
+```http
+POST /api/settings/ip-whitelist/toggle
+```
+
+**Request body**
+
+```json
+{
+  "enabled": false
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "enabled": false,
+    "updated_at": "2025-03-27T15:10:00Z"
+  }
+}
+```
+
+---
+
+## Log retention
+
+### Get log retention
+
+```http
+GET /api/settings/log-retention
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "run_logs_days": 30,
+    "audit_logs_days": 365,
+    "diagnostic_artifacts_days": 7
+  }
+}
+```
+
+### Update log retention
+
+```http
+PUT /api/settings/log-retention
+```
+
+**Request body**
+
+```json
+{
+  "run_logs_days": 14,
+  "diagnostic_artifacts_days": 14
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "run_logs_days": 14,
+    "audit_logs_days": 365,
+    "diagnostic_artifacts_days": 14,
+    "updated_at": "2025-03-27T15:11:00Z"
+  }
+}
+```
+
+---
+
+## Organization and entitlements
+
+### Get organization
+
+```http
+GET /api/organization
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "id": "org_01jq8acme",
+    "name": "Acme Analytics",
+    "slug": "acme-analytics",
+    "plan": "enterprise",
+    "created_at": "2024-06-01T00:00:00Z"
+  }
+}
+```
+
+### List enabled features
+
+```http
+GET /api/features
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "features": [
+      "lineage",
+      "git_integration",
+      "pipeline_agents",
+      "sso"
+    ]
+  }
+}
+```
+
+### Feature limits
+
+```http
+GET /api/features/limits
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "max_pipelines": 500,
+    "max_connections": 200,
+    "max_concurrent_runs": 25,
+    "max_agent_count": 50
+  }
+}
+```
+
+### Subscription tier
+
+```http
+GET /api/tier
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "tier": "enterprise",
+    "billing_period": "annual",
+    "renewal_date": "2026-06-01"
+  }
+}
+```
+
+---
+
+## Notifications
+
+### List notification channels
+
+```http
+GET /api/notifications/channels
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": [
+    {
+      "id": "nch_01jq801",
+      "type": "slack",
+      "name": "#data-alerts",
+      "enabled": true,
+      "config": {
+        "workspace": "acme",
+        "channel": "C01234567"
+      }
+    }
+  ]
+}
+```
+
+### Create notification channel
+
+```http
+POST /api/notifications/channels
+```
+
+**Request body**
+
+```json
+{
+  "type": "email",
+  "name": "Data platform on-call",
+  "config": {
+    "recipients": ["oncall@example.com"],
+    "severity_filter": ["high", "critical"]
+  }
+}
+```
+
+**Response `201 Created`**
+
+```json
+{
+  "data": {
+    "id": "nch_01jq802",
+    "type": "email",
+    "name": "Data platform on-call",
+    "enabled": true,
+    "created_at": "2025-03-27T15:12:00Z"
+  }
+}
+```
+
+### Update notification channel
+
+```http
+PUT /api/notifications/channels/{id}
+```
+
+**Request body**
+
+```json
+{
+  "name": "Data platform on-call (updated)",
+  "enabled": false
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "id": "nch_01jq802",
+    "name": "Data platform on-call (updated)",
+    "enabled": false,
+    "updated_at": "2025-03-27T15:13:00Z"
+  }
+}
+```
+
+### Delete notification channel
+
+```http
+DELETE /api/notifications/channels/{id}
+```
+
+**Response `204 No Content`**
+
+### Test notification channel
+
+```http
+POST /api/notifications/channels/{id}/test
+```
+
+**Response `202 Accepted`**
+
+```json
+{
+  "data": {
+    "delivery_id": "ndl_01jq8test",
+    "status": "queued"
+  }
+}
+```
+
+### List notification rules
+
+```http
+GET /api/notifications/rules
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": [
+    {
+      "id": "nrl_01jq801",
+      "name": "Pipeline failure to Slack",
+      "event": "pipeline.run.failed",
+      "channel_ids": ["nch_01jq801"],
+      "filters": {
+        "pipeline_ids": ["pl_01hqxyz"]
+      },
+      "enabled": true
+    }
+  ]
+}
+```
+
+### Create or replace notification rules
+
+```http
+POST /api/notifications/rules
+```
+
+**Request body**
+
+```json
+{
+  "name": "DLQ growth alert",
+  "event": "dlq.threshold_exceeded",
+  "channel_ids": ["nch_01jq802"],
+  "filters": {
+    "pipeline_ids": ["pl_01hqxyz"],
+    "threshold": 100
+  },
+  "enabled": true
+}
+```
+
+**Response `201 Created`**
+
+```json
+{
+  "data": {
+    "id": "nrl_01jq899",
+    "name": "DLQ growth alert",
+    "event": "dlq.threshold_exceeded",
+    "channel_ids": ["nch_01jq802"],
+    "enabled": true,
+    "created_at": "2025-03-27T15:14:00Z"
+  }
+}
+```
+
+---
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Profile" icon="user" href="/settings/profile">
+    Account fields in the UI.
+  </Card>
+  <Card title="API keys" icon="key" href="/settings/api-keys">
+    Creating and rotating keys in the product.
+  </Card>
+  <Card title="Notifications" icon="bell" href="/settings/notifications">
+    Channels and delivery behavior.
+  </Card>
+  <Card title="IP whitelisting" icon="shield" href="/settings/ip-whitelisting">
+    Network restrictions for API and UI.
+  </Card>
+</CardGroup>

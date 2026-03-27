@@ -1,0 +1,76 @@
+---
+title: "APIs and webhooks"
+description: "Connect to REST APIs, GraphQL endpoints, and receive data via webhooks."
+---
+
+HTTP-based connections let Planasonix pull from vendor APIs, call AI endpoints with structured prompts, query GraphQL services, and integrate with SAP landscapes. Webhook connections let external systems push payloads into Planasonix when you expose a secured ingress URL.
+
+## Connection types
+
+| Type | When you use it |
+| --- | --- |
+| **REST API** | JSON or XML resources over HTTPS with standard verbs, pagination, and rate limits. |
+| **AI REST** | LLM or embedding endpoints that accept HTTP JSON bodies; often paired with [AI providers](/connections/ai-providers) for first-class hosted models. |
+| **GraphQL** | Single endpoint with queries and mutations; you shape the selection set to control payload size and round trips. |
+| **SAP OData** | SAP S/4HANA, SAP Business Suite, and cloud solutions exposing OData v2/v4 services. |
+| **SAP RFC/BAPI** | ABAP-backed remote calls when your deployment includes the SAP connector stack and network routes to the application server. |
+| **Webhook** | Inbound HTTP listener that authenticates callers and maps payloads into a pipeline or queue. |
+
+## OpenAPI and Swagger import
+
+When a vendor publishes **OpenAPI 2.x (Swagger)** or **OpenAPI 3.x**, you can import the spec to accelerate setup:
+
+- **Operations** become selectable endpoints with method, path, and documented parameters.
+- **Security schemes** in the spec map to credential types where Planasonix supports them (API key headers, OAuth2 flows, basic auth).
+- **Models** help pre-fill response parsing when the connector generates suggested field mappings.
+
+After import, review **servers** and **base URLs** for environment accuracy (production vs sandbox). Specs sometimes embed example hosts that you must override on the connection.
+
+<Tip>
+  Pin imports to a **version-controlled copy** of the OpenAPI file in your repository rather than a moving URL, so pipeline behavior does not change when the vendor publishes a breaking spec update without notice.
+</Tip>
+
+## Endpoint discovery and parameter configuration
+
+<Steps>
+  <Step title="Choose base URL and default headers">
+    Set the scheme, host, and optional global headers (for example `Accept: application/json` or a required `X-API-Version`). Store secrets in credentials, not as static header values in shared connections.
+  </Step>
+  <Step title="Discover or define operations">
+    If you imported OpenAPI, pick the operation from the catalog. Otherwise, define the path template, HTTP method, query parameters, and body schema manually to match the vendor’s documentation.
+  </Step>
+  <Step title="Configure pagination and rate limits">
+    Map cursor, offset, or link-header pagination patterns so Planasonix can walk large result sets. Set backoff and concurrency to stay inside vendor quotas and your own SLOs.
+  </Step>
+  <Step title="Map responses to tabular or document shape">
+    Choose JSONPath or equivalent extraction rules so nested payloads flatten into columns or variant structures your downstream warehouse expects.
+  </Step>
+  <Step title="Test with recorded fixtures in lower environments">
+    Run sample calls against sandbox keys, capture status codes and error bodies, and adjust retry rules for idempotent `GET` vs non-idempotent `POST` behavior.
+  </Step>
+</Steps>
+
+## Webhook security
+
+For inbound webhooks, configure **HMAC signature verification** or **mTLS** when the sender supports it. Rotate shared secrets on the same schedule as API keys. Reject requests that lack required headers or fall outside allowed source IP ranges if your gateway enforces network rules.
+
+<Warning>
+  Do not log full webhook payloads at `INFO` if they contain PII or payment data. Use structured logging with field redaction and retain raw bodies only in approved secure storage if compliance requires it.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="SaaS applications" icon="building-2" href="/connections/saas-applications">
+    Curated connectors with OAuth and object metadata when a packaged connector exists.
+  </Card>
+  <Card title="AI providers" icon="sparkles" href="/connections/ai-providers">
+    First-class OpenAI, Anthropic, and Google AI connections for transforms and Copilot.
+  </Card>
+  <Card title="Credentials management" icon="key-round" href="/connections/credentials">
+    API keys, OAuth clients, and basic auth material for HTTP connections.
+  </Card>
+  <Card title="Orchestration webhooks" icon="webhook" href="/orchestration/webhooks">
+    Outbound notifications and pipeline triggers from Planasonix.
+  </Card>
+</CardGroup>

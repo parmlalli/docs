@@ -1,97 +1,63 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Planasonix Documentation"
+description: "Build, orchestrate, and monitor enterprise data pipelines with Planasonix."
 ---
 
-## Setting up
-
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
+<div
+  style={{
+    background: "linear-gradient(135deg, #FFE100 0%, #F97316 100%)",
+    borderRadius: "12px",
+    padding: "2rem 2rem 1.75rem",
+    marginBottom: "2rem",
+    color: "#1a1a1a",
+  }}
 >
-  Follow our three step quickstart guide.
-</Card>
+  <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.75rem", fontWeight: 700 }}>
+    Planasonix documentation
+  </h1>
+  <p style={{ margin: 0, maxWidth: "42rem", lineHeight: 1.55, opacity: 0.92 }}>
+    You use Planasonix to design pipelines, move data between systems, and keep analytics stores fresh—whether you batch nightly loads, stream changes, or push curated metrics back into business apps.
+  </p>
+</div>
 
-## Make it yours
+## Start here
 
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<Columns cols={3}>
+  <Card title="Getting started" icon="rocket" href="/getting-started/introduction">
+    Learn how Planasonix fits into your stack, then follow the quickstart to run your first pipeline.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Connections" icon="plug" href="/connections/overview">
+    Authenticate to databases, warehouses, SaaS APIs, and files—then reuse credentials across projects.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Pipelines" icon="git-branch" href="/pipelines/overview">
+    Build directed graphs of sources, transforms, and destinations with versioning and promotion workflows.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Nodes" icon="box" href="/nodes/overview">
+    Configure extract, transform, load, quality checks, and control-flow steps on the visual canvas.
+  </Card>
+  <Card title="Reverse ETL" icon="arrow-left-right" href="/reverse-etl/overview">
+    Sync modeled warehouse data into CRMs, ads platforms, and support tools for operational teams.
+  </Card>
+  <Card title="AI Copilot" icon="sparkles" href="/ai-copilot/overview">
+    Generate SQL, suggest mappings, and troubleshoot failures using context from your workspace metadata.
   </Card>
 </Columns>
 
-## Create beautiful pages
+## Popular topics
 
-Everything you need to create world-class documentation.
+Pick a topic to go deeper on how Planasonix runs in production: how data moves continuously, how jobs are scheduled and retried, how access is governed, and how you observe health end to end.
 
 <Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+  <Card title="Streaming and CDC" icon="radio" href="/streaming/overview">
+    Capture inserts, updates, and deletes from operational systems with low-latency change streams and exactly-once semantics where the destination supports it.
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="Orchestration" icon="calendar-clock" href="/orchestration/overview">
+    Define schedules, dependencies, backfills, and failure policies so pipelines run reliably across regions and maintenance windows.
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="Governance" icon="shield-check" href="/governance/overview">
+    Apply organizations, roles, data classifications, and audit trails so the right teams can build without exposing sensitive data.
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
+  <Card title="Observability" icon="activity" href="/observability/overview">
+    Inspect run history, row counts, schema drift, and alerts—then drill into logs and lineage for a single failing step.
   </Card>
 </Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>

@@ -1,0 +1,74 @@
+---
+title: "Pipelines overview"
+description: "Design, build, and manage data pipelines with Planasonix's visual canvas."
+---
+
+A **pipeline** in Planasonix is a directed graph of nodes that moves data from sources through transforms to destinations. You define how data flows, how it changes at each step, and how runs are triggered—without writing orchestration glue code by hand.
+
+## What you build on the canvas
+
+Each pipeline is a **graph**: nodes are steps (read, transform, write), and **edges** connect outputs to inputs. Planasonix executes the graph in dependency order, so downstream nodes always receive data from the nodes you connected upstream.
+
+You work in a **visual canvas** powered by [React Flow](https://reactflow.dev/). You drag nodes from the palette, drop them on the canvas, and draw connections between handles. Pan and zoom to work on large graphs; group related steps visually so your team can read the flow at a glance.
+
+<CardGroup cols={2}>
+  <Card title="Pipeline canvas" icon="diagram-project" href="/pipelines/canvas">
+    Learn how to edit graphs, preview data, and run or debug pipelines.
+  </Card>
+  <Card title="Variables" icon="brackets-curly" href="/pipelines/variables">
+    Parameterize connections, paths, and SQL with pipeline and global variables.
+  </Card>
+</CardGroup>
+
+## Projects and folders
+
+Planasonix organizes pipelines inside **projects**. A project is the workspace boundary for collaboration: members, default connections, and shared assets (such as templates or variables scoped to that project) typically live there.
+
+Within a project, you use **folders** to group pipelines by domain, team, or lifecycle (for example, `finance/ingestion` vs `product/reverse-etl`). You can nest folders when your catalog grows so related graphs stay together in the navigator. Folders reduce clutter in the sidebar and mirror how your organization thinks about data products—not as a single flat list of hundreds of graphs.
+
+<Tip>
+  Name folders after outcomes (customer 360, billing reconciliation) rather than only technology names. That makes handoffs easier when someone new opens the project.
+</Tip>
+
+<AccordionGroup>
+  <Accordion title="How pipelines use connections">
+    Sources and destinations reference **connections**—reusable credential and endpoint profiles defined in the project. The canvas shows the graph; connections live in the connection library. See [Connections overview](/connections/overview) to create and validate connectors before you wire nodes.
+  </Accordion>
+  <Accordion title="When to split one pipeline into several">
+    Split when schedules, owners, or failure domains differ (for example, hourly events vs daily finance extracts). Keep one pipeline when steps always run together and share the same SLA—branching with [control flow](/nodes/control-flow) is often cheaper than duplicating shared transforms.
+  </Accordion>
+</AccordionGroup>
+
+## Typical workflow
+
+<Steps>
+  <Step title="Create or open a project">
+    Pick the project where the pipeline belongs. Create a folder if you are starting a new area of work.
+  </Step>
+  <Step title="Add nodes and wire the graph">
+    Place source, transform, and destination nodes on the canvas and connect edges so data flows in the right order.
+  </Step>
+  <Step title="Configure and validate">
+    Set credentials via connections, add variables where values differ by environment, and use preview to confirm row counts and schemas.
+  </Step>
+  <Step title="Run, schedule, or promote">
+    Run on demand, attach a schedule or trigger, and—on eligible plans—use environments and Git workflows to move the same definition through dev, staging, and production.
+  </Step>
+</Steps>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Templates" icon="copy" href="/pipelines/templates">
+    Reuse approved patterns across projects.
+  </Card>
+  <Card title="Import and convert" icon="file-import" href="/pipelines/import-and-convert">
+    Bring in definitions from other ETL and orchestration tools.
+  </Card>
+  <Card title="Git integration" icon="code-branch" href="/pipelines/git-integration">
+    Version pipelines with Git (enterprise).
+  </Card>
+  <Card title="Environments" icon="server" href="/pipelines/environments">
+    Deploy the same pipeline with per-environment configuration (enterprise).
+  </Card>
+</CardGroup>

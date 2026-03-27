@@ -1,0 +1,107 @@
+---
+title: "Destination nodes"
+description: "Write pipeline output to databases, warehouses, cloud storage, and APIs."
+---
+
+**Destination nodes** persist or deliver the results of your graph. They define *where* data lands, *how* conflicts resolve, and *what* happens to existing target data on each run.
+
+## Write
+
+**Write** is the standard relational or warehouse **table writer**.
+
+**Configuration:**
+
+- **Connection** and **target object**: Database, schema, table (or equivalent).
+- **Write mode**: See [Write modes](#write-modes) below.
+- **Key columns** (for upserts): Primary or business keys used for merge semantics.
+- **Column map**: Source to target names and casts.
+- **Pre/post SQL** (when supported): Run maintenance statements cautiously—document and review.
+
+**Typical use:** Load curated fact and dimension tables consumed by BI tools or downstream pipelines.
+
+## Cloud Destination
+
+**Cloud Destination** writes to **object stores** (Amazon S3, Google Cloud Storage, Azure Blob) or similar with format options.
+
+**Configuration:**
+
+- **Path template**: Partition folders (`year=2025/month=03/`) for query engines.
+- **File format**: Parquet, CSV, JSON Lines, Avro—match consumers.
+- **Compression**: Snappy, ZSTD, gzip—balance CPU vs storage.
+- **Credentials**: Via connections; avoid embedding keys in paths.
+
+**Typical use:** Data lake landing zones feeding Iceberg or external tables.
+
+## Iceberg Destination (professional+)
+
+**Iceberg Destination** commits **Apache Iceberg** snapshots with ACID properties when your catalog is wired correctly.
+
+**Configuration:**
+
+- **Table identifier** and **catalog**.
+- **Write mode**: Append vs overwrite partitions vs merge (per support matrix).
+- **Schema evolution**: Coordinate with [Schema Evolution](/nodes/advanced) nodes when columns change.
+
+**Typical use:** Lakehouse marts where readers expect snapshot isolation and time travel.
+
+## Webhook Action
+
+**Webhook Action** POSTs (or otherwise invokes) an HTTP endpoint with a payload built upstream—often from a [JSON Builder](/nodes/parsers-and-builders).
+
+**Configuration:**
+
+- **URL, method, headers**: Include auth headers via secret references.
+- **Body**: Template bound to row batches or single aggregate payloads.
+- **Batching**: Rows per request to respect API limits.
+- **Retry / timeout**: Align with partner SLAs.
+
+**Typical use:** Push alerts or small transactional updates to SaaS APIs that do not warrant a full reverse ETL sync.
+
+<Warning>
+  Webhooks can duplicate on retries. Use idempotency keys or destination-side deduplication when the API supports it.
+</Warning>
+
+## Write modes
+
+<Tabs>
+  <Tab title="Insert">
+    **Insert** appends new rows only. The run fails on unique-key violations if the target enforces constraints—good for append-only facts with surrogate keys generated upstream.
+  </Tab>
+  <Tab title="Upsert">
+    **Upsert** (merge) inserts new keys and updates existing ones. Configure **key columns** that uniquely identify business entities. Watch out for **NULL keys**—they can collapse many rows into one ambiguous match.
+  </Tab>
+  <Tab title="Truncate and load">
+    **Truncate and load** removes existing rows (or partitions) before writing. Use for small reference tables or full snapshots where downtime is acceptable. Dangerous on large fact tables without coordination.
+  </Tab>
+  <Tab title="Append">
+    **Append** behaves like insert for file and some lake writers—new files or new snapshots without deleting prior data. Pair with partition retention policies so storage costs stay bounded.
+  </Tab>
+</Tabs>
+
+## Pre-flight checklist
+
+<Steps>
+  <Step title="Confirm environment">
+    Verify [variables](/pipelines/variables) and [environments](/pipelines/environments) so you do not write to production with dev credentials—or the reverse.
+  </Step>
+  <Step title="Align grain and keys">
+    Upsert keys must match the grain you intend (per line item vs per order). Test with duplicate-source scenarios.
+  </Step>
+  <Step title="Dry run or preview">
+    Preview upstream nodes; for relational targets, run against staging schemas first.
+  </Step>
+  <Step title="Observe first production cycles">
+    Watch row counts, reject files, and warehouse credit usage after go-live.
+  </Step>
+</Steps>
+
+## Related nodes
+
+<CardGroup cols={2}>
+  <Card title="Sources" icon="database" href="/nodes/sources">
+    Read back what you wrote for reconciliation jobs.
+  </Card>
+  <Card title="Data quality" icon="circle-check" href="/nodes/data-quality">
+    Validate before and after loads.
+  </Card>
+</CardGroup>

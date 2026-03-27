@@ -1,0 +1,70 @@
+---
+title: "Dead letter queue"
+description: "Review, resolve, and reprocess failed records."
+---
+
+The **dead letter queue (DLQ)** holds records that failed processing after retries: validation errors, schema mismatches, API rejections, or transform exceptions. You triage DLQ items to fix data, adjust pipelines, and reprocess without rerunning entire historical loads when the platform supports targeted replay.
+
+## DLQ management
+
+Open **Observability** → **Dead letter queue** (or the DLQ tab on a pipeline/sync detail page). Filters include:
+
+- Pipeline or sync name
+- Error code or message substring
+- Time range
+- Destination or stage
+
+Select an entry to inspect the **payload snapshot**, stack summary, and links to the run that produced it.
+
+<Tip>
+  Create saved views per error fingerprint so recurring issues are easy to track to resolution.
+</Tip>
+
+## Stats
+
+The DLQ **summary** charts depth over time, top error types, and affected partitions. Sudden spikes after a deploy often point to mapping or parser changes; slow growth may indicate upstream source quality decay.
+
+## Bulk operations
+
+Perform bulk actions on selected entries:
+
+- **Reprocess** after you fix SQL, mappings, or credentials
+- **Discard** when records are invalid by business rule and should never retry
+- **Assign** to an owner for investigation when workflow integrations are enabled
+
+<Warning>
+  Bulk reprocess can amplify API rate-limit issues; start with small batches when talking to strict SaaS endpoints.
+</Warning>
+
+## Export
+
+Export DLQ entries to CSV or JSON for spreadsheet analysis or ticketing systems. Redact regulated fields before attaching exports to external tickets.
+
+## Reprocessing
+
+Reprocessing sends the stored payload back through the configured path:
+
+1. Confirm the root cause is fixed.
+2. Select entries or filter by error type.
+3. Choose **Reprocess** and monitor the child run IDs.
+4. Verify DLQ depth decreases and downstream counts match expectations.
+
+<Tabs>
+  <Tab title="Reverse ETL">
+    See also [Reverse ETL monitoring](/reverse-etl/monitoring) for SaaS-specific DLQ semantics.
+  </Tab>
+  <Tab title="Streaming">
+    Streaming DLQ entries may include offset metadata—ensure consumers resume correctly after fixes.
+  </Tab>
+</Tabs>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Dashboard" icon="gauge-high" href="/observability/dashboard">
+    Watch DLQ depth alongside other health tiles.
+  </Card>
+  <Card title="Alerts" icon="bell" href="/observability/alerts">
+    Page when DLQ depth crosses thresholds.
+  </Card>
+</CardGroup>

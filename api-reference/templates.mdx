@@ -1,0 +1,218 @@
+---
+title: "Templates"
+description: "Save and share reusable pipeline templates."
+---
+
+Templates capture a pipeline definition so teams can reuse patterns, onboard faster, and publish approved flows. Use the API to list templates, create them from existing pipelines, share with other workspaces or users, and collect ratings.
+
+```http
+Authorization: Bearer YOUR_API_KEY_HERE
+```
+
+<Info>
+  If your workspace uses URL versioning, insert `/v1` before `/api` in the path. See [API reference](/api-reference/introduction).
+</Info>
+
+## List templates
+
+```http
+GET https://api.planasonix.com/api/templates
+```
+
+Supports standard list query parameters where implemented (search, tags, visibility, sort).
+
+```json
+{
+  "data": [
+    {
+      "id": "tmpl_01j9k5h6i7j8k9l0",
+      "name": "CDC to warehouse — standard",
+      "description": "Debezium-style capture with SCD2 landing in Snowflake",
+      "visibility": "organization",
+      "tags": ["cdc", "snowflake", "scd2"],
+      "pipeline_id": "pl_01hqxyz",
+      "version": 3,
+      "rating_avg": 4.7,
+      "rating_count": 18,
+      "created_at": "2025-02-10T08:00:00Z",
+      "updated_at": "2025-03-25T19:30:00Z",
+      "created_by": "usr_01h8abc"
+    }
+  ],
+  "meta": {
+    "page": { "limit": 25, "cursor": null }
+  }
+}
+```
+
+## Create template from pipeline
+
+```http
+POST https://api.planasonix.com/api/templates
+Content-Type: application/json
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `pipeline_id` | string | Source pipeline to snapshot |
+| `name` | string | Template title |
+| `description` | string | Optional markdown-friendly summary |
+| `visibility` | string | Typical values: `private`, `organization`, `public` |
+| `tags` | string[] | Optional labels for discovery |
+
+```json
+{
+  "pipeline_id": "pl_01hqxyz",
+  "name": "Daily sales rollup",
+  "description": "Extracts from Postgres, dimensions in dbt-style transforms, load to BigQuery",
+  "visibility": "organization",
+  "tags": ["sales", "postgres", "bigquery"]
+}
+```
+
+```json
+{
+  "data": {
+    "id": "tmpl_01j9k6m7n8o9p0q1",
+    "name": "Daily sales rollup",
+    "pipeline_id": "pl_01hqxyz",
+    "version": 1,
+    "created_at": "2025-03-27T11:12:00Z"
+  }
+}
+```
+
+## Get template
+
+```http
+GET https://api.planasonix.com/api/templates/{id}
+```
+
+Returns template metadata and the serialized pipeline graph (nodes, edges, parameters) your key is allowed to read.
+
+```json
+{
+  "data": {
+    "id": "tmpl_01j9k5h6i7j8k9l0",
+    "name": "CDC to warehouse — standard",
+    "description": "Debezium-style capture with SCD2 landing in Snowflake",
+    "visibility": "organization",
+    "tags": ["cdc", "snowflake", "scd2"],
+    "version": 3,
+    "definition": {
+      "nodes": [
+        {
+          "id": "n_source",
+          "type": "postgres_cdc",
+          "config": { "slot_name": "planasonix_sales" }
+        },
+        {
+          "id": "n_transform",
+          "type": "sql",
+          "config": { "query": "SELECT * FROM cdc.sales WHERE op != 'd'" }
+        }
+      ],
+      "edges": [{ "from": "n_source", "to": "n_transform" }]
+    },
+    "created_at": "2025-02-10T08:00:00Z",
+    "updated_at": "2025-03-25T19:30:00Z"
+  }
+}
+```
+
+## Update template
+
+```http
+PUT https://api.planasonix.com/api/templates/{id}
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "CDC to warehouse — standard (v4)",
+  "description": "Adds dead-letter handling for poison messages",
+  "tags": ["cdc", "snowflake", "scd2", "dlq"]
+}
+```
+
+## Delete template
+
+```http
+DELETE https://api.planasonix.com/api/templates/{id}
+```
+
+```json
+{
+  "data": {
+    "id": "tmpl_01j9k5h6i7j8k9l0",
+    "deleted": true
+  }
+}
+```
+
+## Share template
+
+```http
+POST https://api.planasonix.com/api/templates/{id}/share
+Content-Type: application/json
+```
+
+```json
+{
+  "share_with": "workspace",
+  "workspace_ids": ["ws_01demo", "ws_01partner"],
+  "permission": "use",
+  "message": "Approved for partner analytics onboarding"
+}
+```
+
+```json
+{
+  "data": {
+    "template_id": "tmpl_01j9k5h6i7j8k9l0",
+    "shares": [
+      {
+        "workspace_id": "ws_01demo",
+        "permission": "use",
+        "shared_at": "2025-03-27T12:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+## Rate a template
+
+```http
+POST https://api.planasonix.com/api/templates/{id}/rate
+Content-Type: application/json
+```
+
+```json
+{
+  "score": 5,
+  "comment": "Saved us two weeks wiring CDC correctly."
+}
+```
+
+```json
+{
+  "data": {
+    "template_id": "tmpl_01j9k5h6i7j8k9l0",
+    "your_score": 5,
+    "rating_avg": 4.8,
+    "rating_count": 19
+  }
+}
+```
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Templates (guides)" icon="layout-template" href="/pipelines/templates">
+    Using templates in the UI.
+  </Card>
+  <Card title="API reference" icon="book" href="/api-reference/introduction">
+    Base URL and response envelopes.
+  </Card>
+</CardGroup>

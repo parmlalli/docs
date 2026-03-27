@@ -1,0 +1,96 @@
+---
+title: "Pipeline canvas"
+description: "Build data pipelines visually with the drag-and-drop canvas editor."
+---
+
+The **pipeline canvas** is where you assemble graphs: add nodes, connect them with edges, inspect data, and run or debug executions. The editor is built on [React Flow](https://reactflow.dev/), so you get familiar canvas interactions: pan by dragging the background, zoom with trackpad or controls, and snap connections to input and output **handles** on each node.
+
+## Drag-and-drop nodes
+
+Open a pipeline and use the **node palette** (or shortcuts) to place nodes on the canvas. Each node type has a distinct role—sources pull data in, transforms reshape it, destinations write it out, and container nodes group subgraphs for readability.
+
+- **Drag** a node from the palette onto empty space, or onto a suggested drop target when the UI offers one.
+- **Select** a node to open its configuration panel. Settings apply to that node only unless you use shared variables.
+- **Move** nodes to document your intent: left-to-right flows match how most readers scan a pipeline.
+
+## Connect with edges
+
+Edges carry **datasets** from an output handle on one node to an input handle on another.
+
+1. Click and drag from an **output** handle (often on the right side of a node).
+2. Release on an **input** handle on the downstream node.
+3. Planasonix validates that the connection is allowed for those node types and shows errors if the graph would be invalid.
+
+You can have multiple outgoing edges from a node when the graph branches (for example, into a conditional or split). Multiple incoming edges usually mean a join, union, or merge—depending on the downstream node you chose.
+
+<Tip>
+  Keep edge crossings low and align major stages in columns. Your future self (and reviewers) will thank you during incident response.
+</Tip>
+
+## Preview data at any node
+
+**Data preview** lets you sample rows at a selected node without running the full production workload.
+
+- Select a node and open **Preview** (or the equivalent action in your workspace).
+- Planasonix executes the subgraph needed to produce that node’s output, up to configured limits.
+- Inspect column types, null rates, and sample values to catch schema drift or bad joins early.
+
+Preview uses the same definitions as a full run but typically caps rows and may route work to a smaller compute context depending on your organization’s settings.
+
+## Run and debug
+
+When you **run** a pipeline, Planasonix walks the graph in topological order, materializing intermediate results according to your plan and infrastructure.
+
+- **Run from here**: Start execution from a selected node (upstream dependencies run as needed).
+- **Full run**: Execute the entire graph from all root sources through to destinations.
+- **Debug**: Step through stages, inspect metrics per node, and correlate failures with input row counts or error messages in the run detail view.
+
+<Warning>
+  Writes to production destinations respect the destination node’s mode (insert, upsert, truncate and load, append). Confirm the target environment and variable values before you run against shared systems.
+</Warning>
+
+## Node types at a glance
+
+<Tabs>
+  <Tab title="Source">
+    **Source** nodes read data into the graph: databases, APIs, files, CDC streams, webhooks, and similar. They define *where* data enters and often *what* slice (table, query, path, or subscription).
+  </Tab>
+  <Tab title="Transform">
+    **Transform** nodes change shape or content: filters, joins, aggregations, parsers, SQL, and more. They never persist to an external system by themselves unless explicitly designed to (for example, calling an API as part of a transform).
+  </Tab>
+  <Tab title="Destination">
+    **Destination** nodes write pipeline output to warehouses, lakes, applications, or messaging systems. You choose write semantics (insert, upsert, truncate and load, append) per node.
+  </Tab>
+  <Tab title="Container">
+    **Container** nodes group a subgraph for clarity—useful for reusable patterns, team boundaries, or collapsing complex sections in reviews. They do not replace execution semantics; the inner graph still runs according to edge dependencies.
+  </Tab>
+</Tabs>
+
+See the [Nodes overview](/nodes/overview) for the full catalog by category.
+
+## Right-click context menu
+
+**Right-click** (or use the context menu shortcut) on the canvas background to add nodes without returning to the palette.
+
+Typical actions include:
+
+- **Add node**: Pick a type and drop it at the cursor position.
+- **Paste** (when you copied nodes): Duplicate a subgraph with wiring.
+- **Fit view** / **Zoom**: Adjust the viewport when working on large pipelines.
+
+Exact menu entries can vary by plan and enabled features; enterprise workspaces may surface Git or environment actions in adjacent menus.
+
+## Canvas navigation
+
+Use the **canvas toolbar** (and keyboard shortcuts where your browser allows) to **fit the graph to the viewport**, reset zoom, and toggle helpers such as a **minimap** or grid when your workspace exposes them. On large graphs, collapse or expand **container** nodes so reviewers focus on one subgraph at a time without losing the overall structure.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Variables" icon="brackets-curly" href="/pipelines/variables">
+    Externalize hostnames, paths, and flags so one graph works in many contexts.
+  </Card>
+  <Card title="Source nodes" icon="database" href="/nodes/sources">
+    Configure reads, CDC, webhooks, and iterators.
+  </Card>
+</CardGroup>

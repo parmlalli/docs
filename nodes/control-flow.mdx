@@ -1,0 +1,105 @@
+---
+title: "Control flow"
+description: "Add conditional logic, error handling, and iteration to your pipelines."
+---
+
+**Control flow** nodes orchestrate *how* and *when* parts of the graph execute—branching on data, isolating failures, looping over sets, fanning out partitions, and kicking off other pipelines.
+
+## Conditional
+
+**Conditional** implements **if / else** branching based on expressions or parameter values.
+
+**Configuration:**
+
+- **Predicate**: Boolean expression or rule set evaluated at the decision point.
+- **True / false paths**: Distinct downstream subgraphs wired from each branch output.
+
+**Typical use:** When `load_type = 'full_refresh'`, run a truncate-and-load subgraph; otherwise run incremental merge logic.
+
+<Info>
+  Clearly label branch outputs in large graphs so reviewers know which path corresponds to which business case.
+</Info>
+
+## Error Handler
+
+**Error Handler** wraps a **try / catch** region around a subgraph.
+
+**Configuration:**
+
+- **Protected region**: Nodes whose failures should not abort the entire run (when configured).
+- **Catch path**: Steps for logging, notifications, dead-letter writes, or compensating actions.
+- **Retry policy** (when available): Backoff and max attempts for transient failures.
+
+**Typical use:** Isolate calls to flaky partner APIs—on failure, write the payload to a quarantine table and alert on-call.
+
+## ForEach
+
+**ForEach** iterates over **records** or a list parameter, executing a child graph per item.
+
+**Configuration:**
+
+- **Iterator source**: Query, parameter list, or column collection.
+- **Loop body**: Downstream nodes referencing the current item via variables.
+- **Parallelism**: Limit concurrent iterations to protect shared systems.
+
+**Typical use:** Process ten regional exports with the same logic—parameterize bucket names per row instead of cloning pipelines.
+
+## Split
+
+**Split** **partitions** a dataset into multiple outputs by predicate, hash, or key ranges—useful for parallel writes or A/B processing paths.
+
+**Configuration:**
+
+- **Rules per output**: Mutually exclusive filters or modulo buckets.
+- **Default branch**: Catch-all for unexpected values.
+
+**Typical use:** Send `country = 'US'` rows to one warehouse share and `EU` rows to another while keeping one authoring graph.
+
+## Trigger Pipeline
+
+**Trigger Pipeline** starts another Planasonix pipeline by reference.
+
+**Configuration:**
+
+- **Target pipeline** and **version** or label (per product).
+- **Parameters / variables** passed into the child run.
+- **Wait behavior**: Fire-and-forget vs wait for completion for chaining SLAs.
+
+**Typical use:** A lightweight orchestrator graph that sequences domain-specific jobs after a shared staging refresh completes.
+
+## Trigger Reverse ETL
+
+**Trigger Reverse ETL** kicks off a **reverse ETL sync** or related outbound job defined in your workspace.
+
+**Configuration:**
+
+- **Sync identifier**: Which reverse ETL configuration to run.
+- **Rowset or keys** (when supported): Limit the sync to a cohort produced upstream.
+
+**Typical use:** After curated metrics land in the warehouse, push refreshed segments to Salesforce or an ads platform on demand.
+
+<Warning>
+  Chained triggers can amplify load. Rate-limit downstream SaaS APIs and respect partner daily quotas.
+</Warning>
+
+## Modeling patterns
+
+<AccordionGroup>
+  <Accordion title="Prefer small orchestrator graphs">
+    Keep “traffic cop” pipelines thin—Trigger Pipeline nodes and parameters—while heavy transforms live in dedicated graphs you can test independently.
+  </Accordion>
+  <Accordion title="Combine with notifications">
+    Pair **Error Handler** catch paths with [Notification](/nodes/data-quality) nodes so failures become tickets, not silent skips.
+  </Accordion>
+</AccordionGroup>
+
+## Related reading
+
+<CardGroup cols={2}>
+  <Card title="Orchestration" icon="clock" href="/orchestration/overview">
+    Schedules, triggers, and platform-level execution.
+  </Card>
+  <Card title="Pipeline canvas" icon="diagram-project" href="/pipelines/canvas">
+    Wire control-flow outputs like any other node.
+  </Card>
+</CardGroup>

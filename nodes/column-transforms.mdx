@@ -1,0 +1,84 @@
+---
+title: "Column transforms"
+description: "Transform column values with date formatting, window functions, and more."
+---
+
+**Column transforms** change *fields* within each row—types, formats, derived values, and ordered analytics. Use them after sources and row-level filters when the schema is mostly stable but values need normalization or enrichment.
+
+## Date Format
+
+**Date Format** converts strings and temporal types into consistent representations.
+
+**Configuration:**
+
+- **Source column**: Input field containing dates or timestamps.
+- **Input pattern / locale**: ISO-8601, `MM/dd/yyyy`, epoch seconds, and so on.
+- **Output type**: `DATE`, `TIMESTAMP`, or formatted string for downstream APIs.
+- **Time zone**: Normalize to UTC for analytics, or retain local zone for regulatory reporting—pick one policy per dataset.
+
+**Typical use:** Landing files ship `order_date` as `01-Feb-24`; you cast to `DATE` before joining to a warehouse dimension keyed by real dates.
+
+<Tip>
+  Fail fast on parse errors in development; in production, route bad rows to a quarantine path with an **Error Handler** or **Validation** node.
+</Tip>
+
+## Window Functions
+
+**Window Functions** compute per-row analytics over a **partition** and **order** without collapsing the dataset (unlike aggregate nodes that group to fewer rows).
+
+**Configuration:**
+
+- **Partition columns**: `customer_id`, `session_id`, etc.
+- **Order columns**: Event time with tie-breakers.
+- **Frame**: `ROWS` or `RANGE` bounds when you compute rolling metrics.
+- **Functions**: `ROW_NUMBER`, `RANK`, `LAG`, `LEAD`, running sums, rolling averages—per product support.
+
+**Typical use:** Flag the **first** purchase per customer with `ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY purchase_ts)`, keep `= 1`.
+
+## Data Prep (professional+)
+
+**Data Prep** provides a guided interface for multi-step column operations—cleansing, splitting, typing, and simple derivations—without writing SQL.
+
+**Configuration:**
+
+- **Recipe steps**: Visual transforms applied in order; preview after each step.
+- **Profiling hooks**: Use suggested fixes when the product surfaces them; still verify on a full run sample.
+
+**Typical use:** Analyst-owned pipelines where repeatability matters but not every author maintains raw SQL.
+
+## Schema Mapping
+
+**Schema Mapping** aligns incoming columns to a **target schema**: renames, type casts, default values for missing fields, and drops of unexpected columns.
+
+**Configuration:**
+
+- **Source → target map**: One row per column with optional expressions.
+- **Strictness**: **Strict** mode fails on unknown columns; **lenient** logs or drops them depending on settings.
+- **Defaults**: Fill `NULL` keys with sentinels only when business rules require it—otherwise keep nullability visible.
+
+**Typical use:** Normalize third-party feeds before unioning multiple vendors into one canonical model.
+
+## Ordering with other transforms
+
+<AccordionGroup>
+  <Accordion title="Before joins">
+    Cast join keys (`DATE` to `DATE`, trim strings) in **Schema Mapping** or **Date Format** so joins do not silently fail due to type coercion.
+  </Accordion>
+  <Accordion title="Before aggregation">
+    Derive grouping keys (for example, `order_month`) as new columns here, then feed **Summarize**.
+  </Accordion>
+  <Accordion title="With window + dedupe">
+    Compute `ROW_NUMBER` in **Window Functions**, then filter `rn = 1` or pair with **Unique** on business keys for readability.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Row transforms" icon="filter" href="/nodes/row-transforms">
+    Reduce row counts before heavy column work.
+  </Card>
+  <Card title="Parsers and builders" icon="file-code" href="/nodes/parsers-and-builders">
+    Turn raw payloads into typed columns first when data is not flat.
+  </Card>
+</CardGroup>

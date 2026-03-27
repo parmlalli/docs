@@ -1,0 +1,78 @@
+---
+title: "Convert from Informatica"
+description: "Import Informatica PowerCenter or IICS mappings to Planasonix pipelines."
+---
+
+Informatica migrations start from **exported metadata**—XML for **PowerCenter** repository objects or cloud exports for **Intelligent Cloud Services (IICS)**. The importer maps **sources**, **targets**, **transformations**, and **dataflow** links into Planasonix nodes; complex expressions and procedural steps often need **manual follow-up**.
+
+<Info>
+  Review [Import and convert](/pipelines/import-and-convert) for wizard flow and how to read conversion warnings at scale.
+</Info>
+
+## XML and export formats
+
+<Steps>
+  <Step title="PowerCenter export">
+    Export **mappings**, **mapplets**, **sessions**, and **workflows** as **XML** using repository manager or `pmrep`/`repoutil` workflows your organization approves. Include **shortcut** dependencies or resolve them before export.
+  </Step>
+  <Step title="IICS export">
+    For IICS, export **tasks**, **mappings**, and **taskflows** using the **Asset Management** or **CLI** patterns Informatica documents for your edition. Bundle dependent **connections** and **parameter files** as instructed by Planasonix.
+  </Step>
+  <Step title="Upload and select scope">
+    Upload the archive to Planasonix, choose **PowerCenter** or **IICS** profile, and limit scope to a **folder** or **project** to keep reports readable.
+  </Step>
+</Steps>
+
+<Tip>
+  Prefer **small, vertical slices** (one subject area) per import batch. Informatica graphs can be enormous; slicing reduces merge conflict risk on the canvas.
+</Tip>
+
+## Transformation mapping
+
+| Informatica construct | Planasonix direction |
+| --------------------- | -------------------- |
+| **Source Qualifier** / **Application Source Qualifier** | SQL source or API source with inferred filters |
+| **Expression**, **Filter**, **Router** | Column transforms, predicates, and branches |
+| **Joiner**, **Union**, **Lookup** | Join, union, and lookup-style transforms (verify caching semantics) |
+| **Aggregator**, **Sorter** | Aggregation and sort nodes |
+| **Update Strategy** | Merge/upsert or delete handling—validate warehouse-specific behavior |
+
+<AccordionGroup>
+  <Accordion title="Unsupported transforms">
+    **Custom transformations**, **External Procedure**, and **Java** transforms become **manual tasks** in the conversion report. Replace them with **SQL**, **Python**, or supported **native** nodes.
+  </Accordion>
+  <Accordion title="Hierarchical and unstructured data">
+    **XML**, **JSON**, or **Unstructured** readers may map partially. Expect to rebuild parsers using Planasonix **parser** nodes or external staging.
+  </Accordion>
+</AccordionGroup>
+
+## Session and workflow conversion
+
+**PowerCenter sessions** and **workflows** provide **parallelism**, **dependencies**, and **recovery** configuration.
+
+- **Session** **pre-SQL** and **post-SQL** may map to **pre/post hooks** or explicit SQL nodes—confirm execution order.
+- **Workflow** **links** and **conditions** map to **control-flow** edges; time-based waits become **schedule** or **delay** patterns.
+- **Checkpoints** and **recovery** semantics differ from Planasonix orchestration—revalidate **restart** behavior for long-running loads.
+
+<Warning>
+  **Parameter files** and **session-level overrides** are easy to miss. Cross-check Informatica **$PM** variables and **session parameters** against Planasonix variables before production runs.
+</Warning>
+
+## Connections and loaders
+
+Rebind Informatica **connections** to Planasonix **connections**. Native **bulk loaders** (Teradata TPT, Snowflake COPY patterns, etc.) may translate to **destination** node options or require you to pick an equivalent **load strategy**.
+
+<Note>
+  Row-based **commit intervals** and **transaction** boundaries in Informatica do not always have direct analogs. Test **failure mid-batch** behavior explicitly.
+</Note>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Joins and unions" icon="merge" href="/nodes/joins-and-unions">
+    Rebuild and validate join logic after import.
+  </Card>
+  <Card title="Orchestration overview" icon="diagram-project" href="/orchestration/overview">
+    Schedules, triggers, and chaining compared to workflows.
+  </Card>
+</CardGroup>

@@ -1,0 +1,82 @@
+---
+title: "JDBC gateway"
+description: "Connect to databases via JDBC drivers including Teradata, Hive, Druid, and more."
+---
+
+The **JDBC gateway** runs queries through vendor **JDBC drivers** when Planasonix does not ship a first-class connector for your engine. You upload approved driver JARs, define connection URLs, and use SQL nodes against the gateway-managed pools.
+
+## JDBC gateway concept
+
+Instead of embedding drivers in every worker, the gateway:
+
+- Hosts **driver isolation** per database type and version
+- Pools connections with configurable limits
+- Translates Planasonix SQL requests into JDBC calls your database understands
+- Surfaces errors back to pipeline logs with JDBC SQLState context
+
+Admins operate the gateway cluster; analysts reference **connections** the admin published.
+
+<Tip>
+  Prefer first-class connectors when available—they include tuned pagination, metadata discovery, and CDC hooks the generic JDBC path may lack.
+</Tip>
+
+## Supported databases
+
+The JDBC path supports many engines when you supply a compatible driver. Common enterprise examples include:
+
+| Engine | Notes |
+| ------ | ----- |
+| Teradata | Use official JDBC; respect session limits on shared appliances |
+| Apache Hive | Connect to HiveServer2; watch metastore latency on wide scans |
+| Apache Druid | JDBC exposes SQL; complex ingest still uses native batch tooling |
+| Exasol | High-performance analytics; tune fetch size for wide rows |
+| Netezza (PureData) | Verify supported driver generation for your appliance firmware |
+| Firebolt | Use Firebolt JDBC; align warehouse scaling with burst workloads |
+
+Exact support depends on driver licensing—your legal team must approve redistribution if drivers are not publicly downloadable.
+
+## Driver upload
+
+<Steps>
+  <Step title="Obtain the JAR">
+    Download from the vendor or your internal artifact repository; verify checksums.
+  </Step>
+  <Step title="Upload in admin console">
+    Navigate to **Connectors** → **JDBC gateway** → **Drivers** and upload with a descriptive label (`teradata-17.20-jdbc4`).
+  </Step>
+  <Step title="Create a connection template">
+    Supply JDBC URL pattern, default properties, and credential mapping.
+  </Step>
+  <Step title="Test connectivity">
+    Run `SELECT 1` from a privileged admin account, then validate least-privilege service accounts for pipelines.
+  </Step>
+</Steps>
+
+<Warning>
+  Mismatched driver and database versions cause opaque protocol errors—pin versions in change management.
+</Warning>
+
+## Operational guidance
+
+<AccordionGroup>
+  <Accordion title="Network paths">
+    Open firewall rules from gateway hosts to database listeners; avoid NAT ambiguity with multi-subnet clusters.
+  </Accordion>
+  <Accordion title="Secrets">
+    Store passwords and keytabs in your vault; rotate on the same schedule as native DB users.
+  </Accordion>
+  <Accordion title="Performance">
+    Tune fetch size and parallel readers based on DBA guidance; JDBC defaults are rarely optimal for ETL throughput.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Connections overview" icon="link" href="/connections/overview">
+    How credentials and networking fit together.
+  </Card>
+  <Card title="SQL assistance" icon="database" href="/ai-copilot/sql-assistance">
+    Author JDBC-backed SQL with Copilot help.
+  </Card>
+</CardGroup>

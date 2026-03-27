@@ -1,0 +1,80 @@
+---
+title: "Shared items"
+description: "View and manage pipelines, connections, and resources shared with you or by you."
+---
+
+**Shared items** centralize collaboration: you see what others granted you, what you shared outward, and which **global connections** the organization exposes for reuse. Use this area when you inherit a pipeline from another team or when you need to audit who can run work against a credential.
+
+## Shared with me
+
+The **Shared with me** view lists pipelines, connections, and related resources where you are an explicit recipient or member of a granted team.
+
+- **Pipelines** appear with the access level you received (for example view, edit, or run). You open them like your own drafts; saves respect your role.
+- **Connections** show only when you have **use** permission. You still cannot read secret values without the roles your admin configured.
+- Updates from owners sync automatically; you do not maintain a separate copy.
+
+<Info>
+  Workspace defaults can grant broad read access without listing every asset here. **Shared with me** highlights *explicit* shares and team grants so you can find handoffs quickly.
+</Info>
+
+## Shared by me
+
+**Shared by me** is the mirror: resources you own or administer and have shared with users, teams, or link recipients.
+
+- Revoke or narrow access from this list without opening each pipeline.
+- See **pending** invitations if your org requires acceptance for external collaborators.
+
+<Tip>
+  Before offboarding or changing teams, open **Shared by me** and remove shares you no longer intend to maintain.
+</Tip>
+
+## Global connections
+
+**Global connections** are organization-approved credentials (often read-only service principals) that admins publish for standard sources—warehouses, lakes, or internal APIs.
+
+- Editors with permission can **attach** global connections to pipelines without cloning secrets.
+- You still choose which pipelines reference them; global does not mean “every run everywhere” unless policy says so.
+
+<Warning>
+  Treat global connections like shared keys: over-sharing increases blast radius if a pipeline is compromised. Prefer scoped connections when data classification differs by project.
+</Warning>
+
+## Permissions model
+
+Sharing in Planasonix layers on top of organization and team roles:
+
+| Layer | What it controls |
+| ----- | ---------------- |
+| Organization role | Baseline ability to create pipelines, use catalog features, or administer billing |
+| Team membership | Default visibility for projects and tags your org maps to teams |
+| Resource share | Per-pipeline or per-connection grants to users or teams |
+| Connection use | Whether a principal can execute jobs that read credentials (without necessarily seeing secret material) |
+
+Pipelines and credentials are **independent**: sharing a pipeline diagram does not automatically grant warehouse credentials. Recipients need compatible connection access or must use connections you explicitly share.
+
+## Link sharing
+
+**Link sharing** generates a time-limited or revocable URL so reviewers, auditors, or partners can open a read-only view without a full seat, when your plan and admin policy allow it.
+
+- Links can require sign-in to the same organization or accept guests according to SSO settings.
+- Owners can **rotate** or **invalidate** links from the share panel; expired links return a clear denial.
+
+<AccordionGroup>
+  <Accordion title="Audit considerations">
+    Export link access events from your audit log where available, and align guest link TTL with your data retention policy.
+  </Accordion>
+  <Accordion title="Replacing email attachments">
+    Prefer links over exporting pipeline JSON to email; links respect current permissions and revocation.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Teams and permissions" icon="users" href="/settings/teams-and-permissions">
+    Detailed RBAC, teams, and role patterns.
+  </Card>
+  <Card title="Credentials" icon="key" href="/connections/credentials">
+    How secrets are stored and scoped.
+  </Card>
+</CardGroup>

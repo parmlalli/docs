@@ -1,0 +1,62 @@
+---
+title: "Alerts and notifications"
+description: "Set up alerts for pipeline failures, data anomalies, and volume changes."
+---
+
+**Alerts** turn passive metrics into action. You define rules on pipeline outcomes, duration, DLQ depth, freshness, and anomaly signals, then route notifications to email, chat, PagerDuty-style endpoints, or SMS where your plan supports it.
+
+## Alert rules
+
+Create a rule from a template or from scratch:
+
+1. **Scope** – pipeline, tag, connection, or workspace-wide policies
+2. **Condition** – failure, success after prior failure, duration > threshold, row count delta beyond band
+3. **Window** – rolling 1h/24h/7d evaluation windows
+4. **Severity** – informational vs paging
+5. **Channels** – map to [notification preferences](/settings/notifications)
+
+<Tip>
+  Start with failure + duration alerts; add volume and anomaly alerts once baselines stabilize.
+</Tip>
+
+## Notification channels
+
+<Tabs>
+  <Tab title="Email">
+    Best for non-urgent summaries; include run links in the template so recipients land in context.
+  </Tab>
+  <Tab title="Chat">
+    Slack or Microsoft Teams webhooks post to team channels; thread replies with run IDs for handoff.
+  </Tab>
+  <Tab title="On-call">
+    Route sev-1 rules to your incident tool; keep sev-2 in chat to reduce fatigue.
+  </Tab>
+</Tabs>
+
+## Smart anomaly alerts
+
+**Anomaly alerts** use forecasting on volume, latency, or error rates. They catch issues that static thresholds miss—like a job that always succeeds but returns zero rows on a day you expect millions.
+
+<AccordionGroup>
+  <Accordion title="Training period">
+    Allow a few weeks of history before enabling strict anomaly paging; early models misread seasonality.
+  </Accordion>
+  <Accordion title="Explainability">
+    Read the anomaly card’s drivers (which metric component spiked) before muting; muting hides real outages.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  Alert storms erode trust. Use correlation suppression so the same root cause does not open fifty tickets.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Dashboard" icon="gauge-high" href="/observability/dashboard">
+    Spot trends before they breach alert thresholds.
+  </Card>
+  <Card title="Diagnostics" icon="stethoscope" href="/observability/diagnostics">
+    Investigate anomalies surfaced by smart alerts.
+  </Card>
+</CardGroup>

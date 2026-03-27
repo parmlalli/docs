@@ -1,0 +1,49 @@
+---
+title: "Compute"
+description: "Configure compute resources and execution environments."
+---
+
+**Compute** settings define where pipeline and notebook jobs run: managed workers, your Kubernetes cluster, Databricks jobs, or warehouse-native execution. Correct sizing reduces cost and avoids queueing during peak loads.
+
+## Execution environments
+
+<Tabs>
+  <Tab title="Planasonix managed">
+    You pick a **size profile** (small/medium/large) and region. The platform provisions ephemeral workers per run; you do not manage VMs.
+  </Tab>
+  <Tab title="Bring-your-own cluster">
+    Attach a **Kubernetes** or **container** endpoint your team operates; jobs run as pods with resource requests you declare in project defaults.
+  </Tab>
+  <Tab title="Warehouse or Spark">
+    Heavy transforms may push work to **Snowflake warehouses**, **BigQuery slots**, or **Spark** clusters—credentials and quotas come from the linked connection.
+  </Tab>
+</Tabs>
+
+## Defaults and overrides
+
+- **Workspace defaults** apply to new pipelines until authors override per pipeline or per node.
+- **Concurrency limits** cap simultaneous runs so you do not exhaust warehouse credits or API partner rate limits.
+- **Timeouts** stop runaway jobs; tune them per environment (longer in prod batch, shorter in dev).
+
+<Warning>
+  Raising concurrency without checking destination limits can trigger mass throttling. Increase gradually and watch [Observability](/observability/overview) for error spikes.
+</Warning>
+
+## Secrets and networking
+
+Compute that reaches private data stores may require **VPC peering**, **PrivateLink**, or **SSH tunnels** configured alongside the connection—not only in compute settings. Confirm egress allowlists for SaaS APIs.
+
+## Notebooks and interactive workloads
+
+[Notebooks](/notebooks/overview) may use a different profile than batch pipelines so exploratory kernels do not compete with nightly SLA jobs.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Environments" icon="layer-group" href="/pipelines/environments">
+    Dev/stage/prod separation for runs.
+  </Card>
+  <Card title="Usage and limits" icon="chart-column" href="/settings/usage">
+    Track consumption against your plan.
+  </Card>
+</CardGroup>

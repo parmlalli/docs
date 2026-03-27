@@ -1,0 +1,85 @@
+---
+title: "Logging"
+description: "Configure pipeline logging levels, retention, and log streaming."
+---
+
+Pipeline logs help you prove what ran, debug failures, and satisfy audit requests without logging into every warehouse or agent host. The **Logging** tab in organization settings defines defaults for verbosity, how long logs stay available, and whether you stream structured logs to external systems.
+
+## Log levels
+
+You assign a **default log level** for new pipelines and can override it per pipeline or per environment where your plan allows.
+
+<Tabs>
+  <Tab title="Error">
+    Records failures and aborted steps only. Use for high-volume production jobs where you already capture metrics elsewhere.
+  </Tab>
+  <Tab title="Warn">
+    Includes deprecations, retries that eventually succeed, and threshold breaches. A practical default for most production workloads.
+  </Tab>
+  <Tab title="Info">
+    Adds stage boundaries, row counts (where supported), and connection handshakes. Expect higher volume and storage use.
+  </Tab>
+  <Tab title="Debug">
+    Verbose operator and SDK messages. Enable temporarily during incidents; avoid leaving it on globally in production.
+  </Tab>
+</Tabs>
+
+<Note>
+  Debug-level logs may include query fragments, file paths, or parameter names. Treat them as sensitive and restrict who can view exported bundles.
+</Note>
+
+## Retention settings
+
+**Retention** controls how long Planasonix keeps log records in the product UI and search APIs before automatic purge.
+
+- **Hot retention** – fast lookup in run details and the log viewer; typically shorter and capped by tier.
+- **Archive retention** (where available) – cheaper storage for compliance; retrieval may be asynchronous.
+
+You can set different defaults for **production** and **non-production** workspaces if your organization uses environment tags.
+
+<Tip>
+  Align retention with your internal log policy: if security requires 400 days of evidence, set Planasonix retention to match or exceed the minimum you need before relying on external SIEM copies.
+</Tip>
+
+## Log viewer
+
+Open any pipeline run and use the **Logs** panel to:
+
+- Filter by **node**, **severity**, and **time range**
+- Search **free text** across message bodies (subject to retention)
+- **Follow** live logs for in-progress runs
+
+The viewer correlates messages with **run attempt** and **retry** indices so you can tell first-failure noise from a successful retry.
+
+## Enhanced logging
+
+**Enhanced logging** (when enabled for your workspace) attaches structured fields such as **connection id**, **job id**, **shard**, and **checkpoint offset** where the engine exposes them. You use these fields in external log pipelines without scraping unstructured text.
+
+<Info>
+  Enhanced logging increases per-event size. If you export to a third-party system, confirm daily ingest limits and sampling rules on that side.
+</Info>
+
+## Log export
+
+Configure **log streaming** or **batch export** to send copies to:
+
+- **HTTPS** endpoints (often a collector or SIEM HTTP API)
+- **Object storage** buckets for long-term archive
+- **Syslog-compatible** receivers (organization-dependent)
+
+Exports respect **redaction rules** you define for known secret patterns (tokens, connection strings) so downstream systems do not store raw credentials.
+
+<Warning>
+  Turning on export does not retroactively backfill historical logs. Plan a one-time archive job if you need logs that predate the integration.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Diagnostics" icon="stethoscope" href="/observability/diagnostics">
+    Deep dives into run health beyond raw log lines.
+  </Card>
+  <Card title="Alerts" icon="bell" href="/observability/alerts">
+    Notify the team when error rates or log patterns spike.
+  </Card>
+</CardGroup>

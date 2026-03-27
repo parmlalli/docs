@@ -1,0 +1,91 @@
+---
+title: "Azure Blob triggers"
+description: "Trigger pipeline runs when blobs are created in Azure Storage."
+---
+
+Azure Blob triggers start Planasonix pipelines when new blobs appear in **Azure Storage** containers. You wire **Event Grid** to emit **Blob Created** events, then point Planasonix at the event destination (webhook, queue, or event hub pattern) your deployment supports.
+
+<Info>
+  See [Triggers](/orchestration/triggers) for shared guidance on filters, duplicate events, and idempotent processing.
+</Info>
+
+## Event Grid subscription setup
+
+<Steps>
+  <Step title="Choose the storage account scope">
+    In **Azure Portal → your Storage account → Events**, or in **Event Grid → Subscriptions → + Event subscription**, select the **storage account** or a specific **container** as the event source, depending on how narrowly you want to scope emissions.
+  </Step>
+  <Step title="Select the blob created event">
+    For new files, subscribe to **Blob Created** (`Microsoft.Storage.BlobCreated`). Omit unrelated event types to reduce volume and cost.
+  </Step>
+  <Step title="Configure the endpoint">
+    Choose the endpoint type Planasonix documents for your tenant—often **Web Hook** with a validation handshake, **Storage Queue** for durable buffering, or **Event Hubs** for high throughput. Apply filters before the endpoint when possible.
+  </Step>
+  <Step title="Name and save the subscription">
+    Use a descriptive name (`planasonix-landing-created`). Confirm **metrics** show deliveries after you upload a test blob.
+  </Step>
+</Steps>
+
+## Container and blob path filters
+
+Event Grid supports **subject begins with** and **subject ends with** filters on blob events. Typical patterns:
+
+<Tabs>
+  <Tab title="Single container">
+    Filter **subject begins with** to `/blobServices/default/containers/<container-name>/blobs/<optional-prefix>` so only that container (and optional virtual folder) emits events.
+  </Tab>
+  <Tab title="File type suffix">
+    Add **ends with** `.parquet`, `.csv`, or `.json` when only certain extensions should start a pipeline. Combine with a prefix for `raw/sales/`.
+  </Tab>
+</Tabs>
+
+<Tip>
+  Align Event Grid filters with Planasonix trigger filters so you do not pay to deliver events the pipeline will ignore—or worse, accidentally broaden filters later without updating both places.
+</Tip>
+
+<Note>
+  Blob events can arrive more than once or out of order relative to producer intent. Design loads to tolerate duplicates (ETag, file name manifests, merge keys).
+</Note>
+
+## Authentication: managed identity or connection string
+
+Choose how Planasonix (or your middleware) authenticates to Azure when it reads blobs or pulls from queues.
+
+<AccordionGroup>
+  <Accordion title="Managed identity (recommended)">
+    Register Planasonix as an **enterprise application** or use a **user-assigned managed identity** your team controls. Grant **Storage Blob Data Reader** (or a custom role) on the container or account. For **Key Vault**-backed secrets, grant **Get** on secrets the pipeline needs.
+  </Accordion>
+  <Accordion title="Connection string or SAS">
+    Some integrations accept a **connection string** or **SAS token** scoped to the container and allowed operations (`rl` read/list as needed). Rotate SAS before expiry; prefer short-lived SAS with IP restrictions when you must use tokens.
+  </Accordion>
+  <Accordion title="Event Grid delivery auth">
+    When Event Grid pushes to a **webhook**, complete the **validation handshake** Planasonix exposes. For **queue** endpoints, ensure the **data plane** role can enqueue and Planasonix can dequeue with matching credentials.
+  </Accordion>
+</AccordionGroup>
+
+## Network rules and private endpoints
+
+If the storage account uses **firewalls** or **private endpoints**, allow Event Grid infrastructure and Planasonix egress paths as required by Microsoft’s documentation for your endpoint type. Misconfigured networks produce **delivery failures** in Event Grid metrics with no application-level error in Planasonix.
+
+<Warning>
+  Turning on storage firewalls without updating trusted services and subnet rules breaks both blob reads and event delivery. Test with a non-production storage account first.
+</Warning>
+
+## Link the subscription to Planasonix
+
+In Planasonix, create or edit an **Azure Blob** trigger:
+
+- Provide subscription identifiers, endpoint URLs, or connection references as prompted.
+- Mirror **prefix/suffix** logic if the product applies a second filter layer.
+- Run a test upload and confirm a pipeline run (or a queued run) appears in orchestration history.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Triggers overview" icon="bolt" href="/orchestration/triggers">
+    Event ordering, security, and batching concepts.
+  </Card>
+  <Card title="Cloud storage connections" icon="cloud" href="/connections/cloud-storage">
+    Azure Storage credential patterns.
+  </Card>
+</CardGroup>

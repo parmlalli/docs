@@ -1,0 +1,97 @@
+---
+title: "Backfill"
+description: "Reprocess historical data ranges in your pipelines."
+---
+
+**Backfill** replays your pipeline logic across a **date range** (or other partition keys) that already passed. You use it after fixing bugs, adding columns, or onboarding a new destination that needs history.
+
+## Concepts
+
+A backfill is still a **pipeline run**, but the orchestration supplies **bounded partitions** instead of only “latest” state.
+
+- **Source** nodes read each slice (for example one day of events) according to parameters you pass.
+- **Destination** nodes must handle **overwrite**, **merge**, or **append** semantics you designed.
+- **Downstream** schedules may need pausing so backfill and incremental loads do not fight for locks.
+
+<Note>
+  Backfill does not magically change **retention** in object storage or warehouses; ensure upstream data still exists for the range you request.
+</Note>
+
+## Configuring date ranges
+
+<Steps>
+  <Step title="Choose boundaries">
+    Pick **inclusive** start and end partition values (often `YYYY-MM-DD`). Align to how the source is partitioned.
+  </Step>
+  <Step title="Set run parameters">
+    Map range tokens to pipeline **variables** (`start_date`, `end_date`, `hours`, etc.) your nodes reference.
+  </Step>
+  <Step title="Select environment">
+    Run backfills in **staging** first when volumes are large or logic recently changed.
+  </Step>
+  <Step title="Launch">
+    Start from **Orchestration** → **Backfill** (or the pipeline action menu). Confirm estimated cost if the UI surfaces projections.
+  </Step>
+</Steps>
+
+<Tabs>
+  <Tab title="Calendar days">
+    Best for nightly batch warehouses partitioned by `dt`.
+  </Tab>
+  <Tab title="Hourly slices">
+    Use for high-volume logs when day-level replay would exceed memory or slot limits.
+  </Tab>
+  <Tab title="Custom keys">
+    Non-time partitions (region, tenant id) require explicit lists or generated manifests.
+  </Tab>
+</Tabs>
+
+## Incremental vs full strategies
+
+| Strategy | When to use | Risk |
+| -------- | ----------- | ---- |
+| **Incremental backfill** | Reprocess only missing or corrected partitions | Must trust watermark metadata; bugs can skip slices |
+| **Full table rebuild** | Schema overhaul or corrupted dimension | Highest load; requires maintenance window |
+| **Merge / upsert** | Idempotent writes keyed by business id | Depends on warehouse merge performance and locks |
+
+<Tip>
+  For **incremental** models, add **assertions** (row count floors, null rate checks) per slice so a silent skip does not mark success.
+</Tip>
+
+<Info>
+  **Full** backfills often pair with **temporary** tables and atomic swap patterns to keep production readers consistent mid-run.
+</Info>
+
+## Monitoring backfill progress
+
+During execution, watch:
+
+- **Completed vs remaining** partitions in the run detail view
+- **Per-slice duration** trends (slowdown hints at skewed keys or hot partitions)
+- **Warehouse** slot usage and **retry** counts
+
+<Warning>
+  Parallelism that works for nightly incremental loads may **throttle** sources during backfill. Cap concurrency to respect API quotas and DBA limits.
+</Warning>
+
+Cancel oversized jobs from the run page; document whether partial partitions committed so you can resume safely.
+
+<AccordionGroup>
+  <Accordion title="Chained pipelines">
+    Backfill upstream **facts** before **dimensions** when foreign keys must exist; or use DAG ordering in an external orchestrator.
+  </Accordion>
+  <Accordion title="Streaming + batch">
+    Pause **CDC** consumers if they compete for the same destination table during full rebuilds.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Schedules" icon="calendar-days" href="/orchestration/schedules">
+    Ongoing incremental loads after backfill completes.
+  </Card>
+  <Card title="Run history" icon="clock-rotate-left" href="/platform/run-history">
+    Inspect slice-level status and logs.
+  </Card>
+</CardGroup>

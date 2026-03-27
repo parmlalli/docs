@@ -1,0 +1,85 @@
+---
+title: "GCS event triggers"
+description: "Trigger pipeline runs when objects arrive in Google Cloud Storage."
+---
+
+Google Cloud Storage (GCS) can notify Planasonix when objects are finalized through **Pub/Sub** notifications on a bucket. You configure **OBJECT_FINALIZE** (and optionally other event types), then connect the resulting **subscription** to Planasonix.
+
+<Info>
+  For shared orchestration concepts, read [Triggers](/orchestration/triggers) before you tune GCS-specific filters.
+</Info>
+
+## Pub/Sub notification setup
+
+<Steps>
+  <Step title="Create a Pub/Sub topic">
+    In **Google Cloud Console → Pub/Sub**, create a **topic** dedicated to bucket notifications (for example, `gcs-planasonix-landing`). Avoid reusing a topic that mixes unrelated workloads unless you partition with subscriptions carefully.
+  </Step>
+  <Step title="Attach the notification to the bucket">
+    Using **Cloud Console → Cloud Storage → bucket → Configuration → Pub/Sub notifications**, or `gcloud storage buckets notifications create`, register the topic on the bucket. Grant the GCS service account permission to publish to the topic (`roles/pubsub.publisher` on the topic).
+  </Step>
+  <Step title="Create a subscription for Planasonix">
+    Create a **pull** or **push** subscription as Planasonix requires. For pull, Planasonix (or a connector) uses the Google client libraries with service account credentials. For push, configure the **push endpoint** and authentication Planasonix provides.
+  </Step>
+  <Step title="Verify with a test object">
+    Upload a small file to the monitored prefix. Confirm the message appears in Pub/Sub **Metrics** and that Planasonix records an event or test receipt.
+  </Step>
+</Steps>
+
+## Object finalize events and path filters
+
+GCS sends **OBJECT_FINALIZE** when an object is successfully written (including composite uploads completing). That is the usual signal for “file ready to process.”
+
+<Tabs>
+  <Tab title="Prefix and suffix filters">
+    When you create the notification, set **object name prefix** (for example, `ingest/sales/`) and optional **suffix** (`.avro`, `.parquet`) so only relevant objects publish messages.
+  </Tab>
+  <Tab title="Multiple notifications">
+    For distinct pipelines, use **separate Pub/Sub topics** (or distinct subscriptions with filters) rather than one overloaded topic. That keeps IAM and retry policies isolated per workload.
+  </Tab>
+</Tabs>
+
+<Tip>
+  If producers use **resumable uploads**, rely on **OBJECT_FINALIZE** rather than early create events so you do not process partially written objects.
+</Tip>
+
+## Service account permissions
+
+Planasonix needs credentials that can **consume Pub/Sub messages** and **read objects** from GCS.
+
+<AccordionGroup>
+  <Accordion title="Pub/Sub consumer">
+    Grant **`roles/pubsub.subscriber`** on the subscription (or parent project if your org assigns at project level). If Planasonix acknowledges messages, ensure it also has **`pubsub.subscriptions.consume`** coverage via that role or a custom role.
+  </Accordion>
+  <Accordion title="Storage object reader">
+    Grant **`roles/storage.objectViewer`** on the bucket or finer-grained **IAM Conditions** on a prefix when supported. For **Customer-Managed Encryption Keys (CMEK)**, grant **`cloudkms.cryptoKeyDecrypter`** on the key used by the bucket.
+  </Accordion>
+  <Accordion title="Cross-project buckets">
+    When the bucket and subscription live in different projects, create the service account in the project Planasonix uses and grant cross-project IAM bindings on the bucket and subscription resources explicitly.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  **Uniform bucket-level access** should be enabled for consistent IAM. Mixed ACL models complicate least-privilege reviews and can block service accounts unexpectedly.
+</Warning>
+
+## Message payload and pipeline context
+
+Pub/Sub messages include **attributes** such as `bucketId` and `objectId`. Planasonix maps these to run parameters so nodes can open the correct `gs://` URI. Confirm your pipeline reads the **trigger payload** or environment variables the product injects for GCS triggers.
+
+## Operational notes
+
+<Note>
+  GCS notifications are **at-least-once**. The same finalize event may surface more than once; design deduplication using generation and metageneration, or object ETags, in your load logic.
+</Note>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Triggers overview" icon="bolt" href="/orchestration/triggers">
+    Idempotency, ordering, and security practices.
+  </Card>
+  <Card title="Cloud storage connections" icon="cloud" href="/connections/cloud-storage">
+    GCS authentication and connectivity.
+  </Card>
+</CardGroup>

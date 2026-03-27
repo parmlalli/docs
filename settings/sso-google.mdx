@@ -1,0 +1,81 @@
+---
+title: "Google Workspace SSO setup"
+description: "Configure Google Workspace as your SAML identity provider."
+---
+
+Google Workspace can act as a SAML IdP for Planasonix through a **custom SAML app**. You need **Google Workspace super admin** (or delegated admin with **Services → Settings** for SAML apps) and **organization admin** in Planasonix.
+
+## Gather Planasonix URLs
+
+From **Settings → Security → SSO**, copy:
+
+- **ACS URL** (Assertion Consumer Service URL)
+- **Entity ID** (SP entity identifier)
+
+Google’s admin console asks for these as **ACS URL** and **Entity ID** (or equivalent labels in the SAML app form).
+
+## Create the custom SAML application
+
+<Steps>
+  <Step title="Open SAML app configuration">
+    In **Google Admin console**, go to **Apps → Web and mobile apps → Add app → Add custom SAML app**.
+  </Step>
+  <Step title="Name and optional branding">
+    Enter an app name (for example, `Planasonix`) and optional icon, then continue.
+  </Step>
+  <Step title="Enter service provider details">
+    Choose **I have SP metadata** if Planasonix provides a metadata XML file; otherwise select **Set up connection manually** and enter:
+
+    - **ACS URL**: paste the Planasonix ACS URL exactly.
+    - **Entity ID**: paste the Planasonix Entity ID exactly.
+    - **Start URL** (optional): your organization’s Planasonix login URL if Google prompts for it.
+
+    Set **Name ID** to **EMAIL** unless your Planasonix admin specifies **PERSISTENT** or another format aligned with your user matching rules.
+  </Step>
+  <Step title="Map attributes">
+    Add attribute mappings so Planasonix receives **email**, **first name**, and **last name** using the attribute names shown on the Planasonix SSO configuration screen. Add **group** mappings only if your tenant uses group-based authorization from SAML.
+  </Step>
+  <Step title="Finish and turn the app on">
+    Complete the wizard. Under **User access**, turn the SAML app **ON for everyone** or restrict to an **Organizational Unit** or **Group** for phased rollout.
+  </Step>
+</Steps>
+
+## X.509 certificate management
+
+Google signs SAML assertions with an **IdP certificate**. Planasonix needs the current certificate (via metadata upload or manual paste) to validate signatures.
+
+<Tabs>
+  <Tab title="Initial setup">
+    Download **IDP metadata** from the Google SAML app page or copy the **X.509 certificate** block into Planasonix along with **SSO URL** and **Entity ID** from Google.
+  </Tab>
+  <Tab title="Renewal before expiry">
+    Google may show **primary** and **secondary** signing certificates during rotation. Upload updated metadata to Planasonix **before** the primary certificate expires. After Planasonix trusts the new certificate, complete the rotation in Google and retire the old cert per your security process.
+  </Tab>
+</Tabs>
+
+<Note>
+  Certificate renewal does not change your ACS URL or Entity ID. You typically update only the signing certificate or full IdP metadata in Planasonix.
+</Note>
+
+<Tip>
+  Set a calendar reminder 30 days before certificate expiration. Pair renewal with a test login from an incognito browser using a non-production pilot account when possible.
+</Tip>
+
+## Manual ACS and entity URLs
+
+When you configure manually (no SP metadata file), double-check for typos, **http** vs **https**, and **trailing slashes**. Google and Planasonix both treat URLs as exact strings.
+
+<Warning>
+  If users see Google authenticate successfully but Planasonix returns an error, verify ACS URL and Entity ID character-for-character against the Planasonix SSO screen. Mismatches are the most common root cause after certificate issues.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="SSO overview" icon="shield-halved" href="/settings/sso">
+    SAML setup summary and enforcing SSO for the org.
+  </Card>
+  <Card title="Teams and permissions" icon="users" href="/settings/teams-and-permissions">
+    Group and role mapping after Google SSO.
+  </Card>
+</CardGroup>

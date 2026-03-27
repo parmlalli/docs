@@ -1,0 +1,64 @@
+---
+title: "Data catalog"
+description: "Discover, document, and organize your organization's data assets."
+---
+
+The **data catalog** is your searchable inventory of tables, streams, pipelines, and related assets. Teams document purpose, freshness, ownership, and sensitivity so newcomers and adjacent teams stop relying on tribal knowledge.
+
+## Enterprise feature
+
+Full catalog capabilities—automated harvesting from connections, curated business glossary, and team-scoped visibility—ship with **Enterprise** plans. Lower tiers may expose read-only subsets or manual entries only. Ask your admin if harvesting jobs are enabled for your warehouse and lake connections.
+
+## Table discovery
+
+Planasonix can **crawl** connected systems on a schedule you define:
+
+- Schemas, tables, and columns with inferred types
+- Row count or profile snapshots where permitted
+- Tags suggested from naming patterns (you approve before promotion)
+
+Harvest jobs use read-only credentials. Large estates should scope crawls to approved databases or schemas to control cost.
+
+<Tabs>
+  <Tab title="Warehouses">
+    Register Snowflake, BigQuery, Redshift, Databricks SQL, and similar endpoints; choose databases to include.
+  </Tab>
+  <Tab title="Lakes">
+    Register object storage-backed tables (Iceberg, Delta, Hive metastore) when connectors support metadata extraction.
+  </Tab>
+  <Tab title="Applications">
+    Some SaaS connectors expose object metadata for documentation even when you do not ingest the data yet.
+  </Tab>
+</Tabs>
+
+## Search
+
+Use **keyword search** across names, descriptions, column names, and tags. Filters narrow by domain, owner, freshness, certification status, or sensitivity. Save frequent searches for onboarding checklists.
+
+<Tip>
+  Standardize tags (`domain:finance`, `pii:email`) early so search stays usable as the catalog grows.
+</Tip>
+
+## Documentation
+
+Each asset supports **markdown descriptions**, **column-level notes**, and links to runbooks or dbt model pages. Certified assets display a badge when stewards approve accuracy.
+
+<AccordionGroup>
+  <Accordion title="Deprecation workflow">
+    Mark tables as deprecated with a replacement link and sunset date; impact analysis highlights downstream pipelines still referencing legacy names.
+  </Accordion>
+  <Accordion title="PII and compliance">
+    Tag regulated fields; integrate with access reviews so catalog truth matches actual grants.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Data contracts" icon="file-contract" href="/governance/data-contracts">
+    Enforce expectations on cataloged assets.
+  </Card>
+  <Card title="Lineage" icon="route" href="/governance/lineage">
+    See how catalog tables connect to pipelines.
+  </Card>
+</CardGroup>

@@ -1,0 +1,80 @@
+---
+title: "Data stewardship"
+description: "Assign data stewards and manage ownership of data assets."
+---
+
+**Data stewardship** assigns accountable owners for datasets, pipelines, and glossary terms so questions about quality, lineage, and policy route to a named team instead of dissipating in chat threads.
+
+## Enterprise feature
+
+Full stewardship workflows—steward roles in the catalog, approval queues, and ownership reports—ship with **Enterprise** deployments. Smaller plans may expose basic **owner** fields without workflow automation.
+
+## Steward roles
+
+Organizations typically define:
+
+| Role | Responsibility |
+| ---- | -------------- |
+| **Business steward** | Defines metrics, acceptable use, and domain definitions; approves business glossary changes |
+| **Technical steward** | Owns pipeline health, schema evolution, and incident response for the asset |
+| **Delegate** | Acts when the primary steward is unavailable; time-bounded in some orgs |
+
+Stewards appear on **catalog** pages, **marketplace** listings, and **impact analysis** results so engineers know whom to page.
+
+<Note>
+  Stewardship complements **RBAC**: stewards may not have super-admin rights; they are accountability contacts, not necessarily credential holders.
+</Note>
+
+## Ownership assignment
+
+<Steps>
+  <Step title="Identify the asset">
+    Open the table, stream, or pipeline in the **data catalog** or **governance** views.
+  </Step>
+  <Step title="Assign stewards">
+    Set **business** and **technical** stewards (and optional delegates) from directory-backed users or teams.
+  </Step>
+  <Step title="Document scope">
+    Add a short **charter**: refresh SLA, primary consumers, and escalation path.
+  </Step>
+  <Step title="Publish">
+    Save; dependent **certification** badges may require steward sign-off before displaying.
+  </Step>
+</Steps>
+
+<Tip>
+  Prefer **team** stewards for bus domains so vacation coverage does not stall approvals.
+</Tip>
+
+## Accountability workflows
+
+Common patterns enabled with stewardship:
+
+- **Certification requests** route to stewards before an asset is promoted to “trusted.”
+- **Deprecation** requires steward-approved replacement links and sunset dates.
+- **Access reviews** list assets by steward so quarterly attestations stay tractable.
+- **Incident bridges** auto-include stewards when pipelines touching their assets fail repeatedly.
+
+<AccordionGroup>
+  <Accordion title="Handoffs">
+    When reorganizations occur, bulk reassign stewards from governance reports; notify subscribers via catalog announcements.
+  </Accordion>
+  <Accordion title="External data">
+    For purchased feeds, assign a business steward who owns vendor relationship and a technical steward who monitors ingestion jobs.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  Orphaned assets—no steward for 90+ days—often correlate with stale documentation and surprise schema changes. Run stewardship coverage reports monthly.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Data catalog" icon="book" href="/governance/data-catalog">
+    Where ownership and documentation surface to consumers.
+  </Card>
+  <Card title="Impact analysis" icon="chart-network" href="/governance/impact-analysis">
+    See downstream effects before steward-approved changes.
+  </Card>
+</CardGroup>

@@ -1,0 +1,88 @@
+---
+title: "Convert from SSIS"
+description: "Import SQL Server Integration Services packages to Planasonix pipelines."
+---
+
+SSIS **.dtsx** packages combine **control flow** (precedence constraints, containers, tasks) and **data flow** (sources, transformations, destinations). Planasonix maps **data flow** elements to **pipeline nodes** and **control flow** to **orchestration** constructs where supported.
+
+<Info>
+  Use [Import and convert](/pipelines/import-and-convert) for batch uploads of `.dtsx` files and governance around draft pipelines.
+</Info>
+
+## .dtsx package parsing
+
+<Steps>
+  <Step title="Export packages cleanly">
+    Save `.dtsx` from **Visual Studio SSDT** or export from **SSIS catalog** per your standards. Include **project-level** connection managers when the wizard asks for the **ispac** or companion files.
+  </Step>
+  <Step title="Resolve parent/child patterns">
+    If execution uses **parent packages** or **package parameters**, include those `.dtsx` files in the same upload batch so parameter bindings resolve.
+  </Step>
+  <Step title="Choose SQL Server dialect">
+    Select **T-SQL** semantics when your packages target SQL Server; choose the dialect matching your **actual destination** if packages were retargeted to Synapse or another warehouse.
+  </Step>
+</Steps>
+
+## Data flow to pipeline mapping
+
+| SSIS data flow component | Planasonix direction |
+| ------------------------ | -------------------- |
+| **OLE DB Source** / **ADO.NET Source** | SQL or table source nodes |
+| **Flat File Source** | File source with delimiter and encoding metadata |
+| **Lookup** | Join or lookup transform—verify cache and no-match behavior |
+| **Derived Column**, **Conditional Split** | Column transforms and branches |
+| **Aggregate**, **Sort** | Aggregation and sort nodes |
+| **OLE DB Destination** / **SQL Server Destination** | Destination nodes with insert or merge options |
+
+<Tip>
+  Annotate **Data Flow** task names in SSIS before export (`DF_Load_FactSales`) so Planasonix subgraphs inherit readable titles.
+</Tip>
+
+## Control flow translation
+
+**Control flow** items outside data flow translate unevenly:
+
+<AccordionGroup>
+  <Accordion title="Sequences and precedence">
+    **Precedence constraints** map to **ordered edges** and sometimes **conditions** on success/failure/expression. Validate that **expression constraints** referencing SSIS variables became equivalent **branch conditions** or were flagged for manual work.
+  </Accordion>
+  <Accordion title="For loops and Foreach">
+    **For Loop** and **Foreach** containers may become **parameterized** runs or **loop** constructs when supported. Complex **Foreach File** enumerators may require **file watcher triggers** or scripted file lists instead.
+  </Accordion>
+  <Accordion title="Execute SQL tasks">
+    Standalone **Execute SQL** tasks map to **SQL** nodes or **pre/post** hooks. Watch for **temp table** scopes that depended on a single SSIS session—databases without shared session semantics need redesign.
+  </Accordion>
+</AccordionGroup>
+
+## Script tasks and custom components
+
+**Script Task** and **Script Component** code (C#/VB) does not execute in Planasonix.
+
+<Warning>
+  Replace **.NET** logic with **Python nodes**, **SQL**, or **stored procedures**. Budget time for security review when script tasks touched **filesystems** or **COM** APIs.
+</Warning>
+
+## Connection managers and parameters
+
+Map **OLE DB**, **ADO.NET**, **Flat File**, and **FTP** connection managers to Planasonix [connections](/connections/overview). Use [variables](/pipelines/variables) for **package parameters** and **project parameters**.
+
+<Note>
+  **EncryptSensitiveWithUserKey** packages are painful to migrate on a different host. Re-encrypt with **EncryptSensitiveWithPassword** or deploy via catalog **project parameters** before export when possible.
+</Note>
+
+## Validation
+
+<Info>
+  SSIS **error outputs** and **row disposition** (redirect rows) map to **data quality** or **branch** patterns inconsistently. Inspect every **red** or **yellow** item in the conversion report before scheduling production runs.
+</Info>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Control flow nodes" icon="code-branch" href="/nodes/control-flow">
+    Containers, branching, and error paths after import.
+  </Card>
+  <Card title="Data quality" icon="circle-check" href="/nodes/data-quality">
+    Recreate SSIS error outputs as explicit checks.
+  </Card>
+</CardGroup>

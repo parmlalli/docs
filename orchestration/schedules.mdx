@@ -1,0 +1,75 @@
+---
+title: "Schedules"
+description: "Run pipelines on a recurring schedule with cron-based scheduling."
+---
+
+Schedules run pipelines automatically using **cron** expressions. You define when a run should start, in which time zone legal and business cutoffs are evaluated, and how overlaps are handled when a previous run is still executing.
+
+## Cron expressions
+
+Planasonix accepts standard five-field cron strings (minute, hour, day of month, month, day of week) unless your deployment documents extended syntax. Examples:
+
+```text
+0 * * * *        # Every hour at minute 0
+15 6 * * 1-5     # 06:15 on weekdays
+0 */4 * * *      # Every 4 hours on the hour
+30 14 1 * *      # 14:30 on the 1st of each month
+```
+
+<Tabs>
+  <Tab title="High frequency">
+    Sub-hourly schedules suit streaming backfill or small incremental jobs. Watch warehouse spend and API quotas.
+  </Tab>
+  <Tab title="Daily and weekly">
+    Align with business reporting calendars; use explicit minute offsets to avoid thundering herds across teams.
+  </Tab>
+  <Tab title="Month-end">
+    Use explicit calendar day cron for closes; verify behavior on short months and leap years.
+  </Tab>
+</Tabs>
+
+Use the schedule preview in the UI to confirm the next few firing times before saving.
+
+## Timezone support
+
+Attach a **time zone** (IANA name such as `America/New_York`) so daylight saving shifts match local business expectations. Without an explicit zone, schedules may interpret times in UTC and shift relative to local operators.
+
+<Warning>
+  The week surrounding DST changes can produce duplicate or skipped local times. For critical financial jobs, prefer UTC schedules or validate firing times around the transition.
+</Warning>
+
+## Schedule management
+
+<Steps>
+  <Step title="Open the pipeline">
+    Navigate to **Orchestration** → **Schedules** on the pipeline (or workspace schedules list, depending on UI layout).
+  </Step>
+  <Step title="Create a schedule">
+    Enter cron, time zone, and concurrency policy (skip, queue, or allow parallel when supported).
+  </Step>
+  <Step title="Set notifications">
+    Choose who receives failure notices via [Notifications](/settings/notifications) defaults or pipeline-specific routes.
+  </Step>
+  <Step title="Enable">
+    Toggle the schedule active only after a successful test run on representative data volumes.
+  </Step>
+</Steps>
+
+## Overlaps and catch-up
+
+If a run exceeds the interval before the next firing, decide whether the platform should **queue** another run, **coalesce** into one, or **skip** to avoid backlog storms. Document the policy for on-call engineers.
+
+<Tip>
+  Pair long-running batch jobs with duration alerts so you detect slowdown before the next cron slot collides.
+</Tip>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Triggers" icon="cloud-bolt" href="/orchestration/triggers">
+    Event-based alternatives to fixed cron.
+  </Card>
+  <Card title="Pipeline chaining" icon="diagram-project" href="/orchestration/pipeline-chaining">
+    Chain downstream work after scheduled loads.
+  </Card>
+</CardGroup>

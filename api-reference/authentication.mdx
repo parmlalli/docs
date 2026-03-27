@@ -1,0 +1,89 @@
+---
+title: "Authentication"
+description: "Authenticate API requests using API keys."
+---
+
+All Planasonix REST endpoints require **authentication**. You use **API keys** tied to your workspace; username/password flows apply to the browser only and are not supported for automation.
+
+## API key creation
+
+Create keys in **[API keys](/settings/api-keys)** under organization settings.
+
+<Steps>
+  <Step title="Choose principal">
+    Decide whether the key acts as **you** (inherits your RBAC) or as a **service principal** with explicit scopes.
+  </Step>
+  <Step title="Set scopes">
+    Enable only what the integration needs: read pipelines, trigger runs, manage connections, or admin operations.
+  </Step>
+  <Step title="Store securely">
+    Copy the secret once into a vault; treat rotation as a normal operational task.
+  </Step>
+</Steps>
+
+## Header format
+
+Send the key in the `Authorization` header using the Bearer scheme:
+
+```http
+Authorization: Bearer YOUR_API_KEY_HERE
+```
+
+Some legacy integrations accept:
+
+```http
+X-Planasonix-Api-Key: YOUR_API_KEY_HERE
+```
+
+Prefer **Bearer** for new code; your workspace documentation marks deprecated headers if both exist during a transition.
+
+## Scopes
+
+Scopes limit blast radius when a key leaks. Examples (names illustrative—match your OpenAPI `security` definitions):
+
+| Scope | Allows |
+| ----- | ------ |
+| `pipelines:read` | List and fetch pipeline definitions and metadata |
+| `pipelines:run` | Start and cancel runs |
+| `connections:read` | View connection metadata (not secret values) |
+| `connections:write` | Create and rotate connections |
+| `admin:organization` | Manage users, SSO, billing interfaces |
+
+<Tip>
+  CI jobs that only trigger runs should use `pipelines:run` plus `pipelines:read`—not full admin scopes.
+</Tip>
+
+## User keys vs service keys
+
+<Tabs>
+  <Tab title="User API keys">
+    Bound to your account; permissions match your team memberships until an admin removes you. Good for personal scripts; avoid for production automation tied to a person.
+  </Tab>
+  <Tab title="Service API keys">
+    Owned by the organization; permissions come only from scopes. Rotate on a calendar independent of employee offboarding.
+  </Tab>
+</Tabs>
+
+## Failed authentication
+
+| Status | Meaning |
+| ------ | ------- |
+| **401 Unauthorized** | Missing header, malformed token, or revoked key |
+| **403 Forbidden** | Valid key but insufficient scope or resource policy |
+
+Error bodies include a machine-readable `code` and human-readable `message`. Do not log full keys in application logs when debugging 401s.
+
+## IP and session policies
+
+If your workspace enables [Session policy](/settings/session-policy) **IP allowlists**, API calls from disallowed networks fail with **403** even when the key is valid. Add automation egress ranges explicitly.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="API reference" icon="book" href="/api-reference/introduction">
+    Base URL, rate limits, and JSON envelopes.
+  </Card>
+  <Card title="Teams and permissions" icon="users" href="/settings/teams-and-permissions">
+    How human roles relate to API access for user-bound keys.
+  </Card>
+</CardGroup>

@@ -1,0 +1,81 @@
+---
+title: "CDC sources"
+description: "Capture database changes in real-time with change data capture."
+---
+
+Change data capture (CDC) sources read inserts, updates, and deletes from operational databases or their transaction logs and emit them as a stream Planasonix can process. You choose capture mode, initial snapshot behavior, and tables to include, then connect downstream transforms and destinations.
+
+## Database CDC
+
+Planasonix supports CDC for common relational engines. Exact prerequisites (binary logging, supplemental logging, permissions) appear in each connector’s setup wizard.
+
+<AccordionGroup>
+  <Accordion title="PostgreSQL">
+    Use logical decoding (for example, `pgoutput` or plugin-based slots) with replication permissions. Monitor replication slot lag on the database to avoid disk growth from idle consumers.
+  </Accordion>
+  <Accordion title="MySQL">
+    Enable row-based binary logging and grant replication client privileges. Large wide tables benefit from careful primary key design to keep event size predictable.
+  </Accordion>
+  <Accordion title="SQL Server">
+    Use change tracking or CDC features as supported by the connector; ensure agents can read from the capture instance without blocking OLTP workloads.
+  </Accordion>
+  <Accordion title="Oracle">
+    Configure LogMiner or vendor-recommended equivalents per connector docs; archive log retention must exceed your worst-case consumer downtime.
+  </Accordion>
+  <Accordion title="MongoDB">
+    Capture change streams on collections you authorize; consider resume tokens and schema evolution when documents are polymorphic.
+  </Accordion>
+</AccordionGroup>
+
+Always test **initial snapshots** on a replica before pointing at production primaries if your DBA policy requires it.
+
+## Event buses and cloud streaming
+
+In addition to database CDC, you can ingest from high-throughput buses and managed streaming services:
+
+| Platform | Typical use |
+| -------- | ----------- |
+| Apache Kafka | Durable topics from microservices or CDC Debezium connectors |
+| Amazon Kinesis | AWS-native streaming with shard-based scaling |
+| Apache Pulsar | Multi-tenant messaging with geo replication |
+| Google Cloud Pub/Sub | Asynchronous work queues and GCP-native events |
+| Azure Event Hubs | Kafka-compatible endpoints on Azure |
+| NATS | Lightweight messaging for edge and internal services |
+| Vendor webhooks | HTTPS push endpoints normalized into an internal stream |
+
+<Tabs>
+  <Tab title="Kafka and compatible">
+    Configure bootstrap servers, SASL/SSL, consumer groups, and topic patterns. Set partition-aware parallelism only when your downstream processing is associative per key.
+  </Tab>
+  <Tab title="Cloud-managed">
+    Use IAM or cloud-specific auth as guided by the connection wizard; rotate keys on the schedule your security team defines.
+  </Tab>
+  <Tab title="Webhooks">
+    Expose a secured HTTPS ingress that validates signatures, then treat the payload as a stream of events with schema validation early in the graph.
+  </Tab>
+</Tabs>
+
+## Operational checklist
+
+<Steps>
+  <Step title="Rightsize retention">
+    Ensure broker and database retention cover maintenance windows plus worst-case recovery time.
+  </Step>
+  <Step title="Schema strategy">
+    Define how additive schema changes propagate; use parsers and [data contracts](/governance/data-contracts) where you enforce compatibility.
+  </Step>
+  <Step title="Backpressure">
+    Monitor consumer lag; scale processors or destinations before lag triggers SLA breaches.
+  </Step>
+</Steps>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Stream processing" icon="water" href="/streaming/stream-processing">
+    Windows and transforms on live data.
+  </Card>
+  <Card title="Observability" icon="gauge-high" href="/observability/overview">
+    Metrics and alerts for streaming health.
+  </Card>
+</CardGroup>

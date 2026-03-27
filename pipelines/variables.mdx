@@ -1,0 +1,87 @@
+---
+title: "Variables"
+description: "Use variables to parameterize your pipelines and make them reusable."
+---
+
+**Variables** let you keep a single pipeline definition while changing behavior by context—environment, tenant, or run-time input. You reference variables in node configuration fields instead of hard-coding values that differ between development and production.
+
+## Pipeline variables vs global variables
+
+<Tabs>
+  <Tab title="Pipeline variables">
+    **Pipeline variables** belong to one pipeline (or a closely related set of graphs you treat as one product). Use them for values that are specific to that flow: landing-zone paths, topic names, feature flags for that job, or default batch sizes.
+
+    Typical properties:
+
+    - **Name**: Identifier you use in expressions (for example, `landing_bucket`).
+    - **Default value**: Used when nothing else overrides the variable.
+    - **Type or validation** (when exposed in the UI): Reduces misconfiguration before run time.
+
+    Pipeline variables travel with the pipeline definition when you export, template, or version it in Git—so reviewers see both the graph and the parameter surface.
+  </Tab>
+  <Tab title="Global variables">
+    **Global variables** are defined at project or organization scope (depending on your workspace settings). Use them for shared constants: regional endpoints, standard schema names, or org-wide prefixes.
+
+    Global variables keep large catalogs consistent: many pipelines can reference the same name, and administrators update the value in one place.
+
+    <Info>
+      Resolution order is usually **most specific wins**: a pipeline-level override beats a global default when both exist for the same logical parameter. Confirm the exact precedence in your tenant’s settings if you rely on layered overrides.
+    </Info>
+  </Tab>
+</Tabs>
+
+## Variable syntax and usage
+
+You insert variables into text fields that support interpolation—connection parameters, paths, SQL fragments, JSON templates, and similar.
+
+Common patterns:
+
+```text
+{{ variable_name }}
+```
+
+Some fields accept **expressions** that combine literals and variables:
+
+```text
+s3://{{ env_bucket }}/{{ dataset }}/year={{ run_year }}/
+```
+
+Guidelines:
+
+- **Use descriptive names**: `raw_sales_bucket` beats `b1`.
+- **Avoid secrets in variables** when your organization provides a secret store or credential references; store credentials in [connections](/connections/overview) and pass non-secret locators via variables.
+- **Document required variables** in the pipeline description or template readme so consumers know what they must set.
+
+<Tip>
+  If a node offers both a “full text” field and structured sub-fields, prefer structured fields when available. They validate types earlier and produce clearer errors than a single free-form string.
+</Tip>
+
+## Environment-specific overrides
+
+On plans with **environments**, you map the same pipeline to `development`, `staging`, `production`, or custom stages. **Environment-specific variable overrides** replace defaults when you deploy or run in that environment.
+
+Typical workflow:
+
+1. Define pipeline variables with safe defaults (often dev-like values).
+2. In each environment, set overrides for buckets, databases, API base URLs, and batch limits.
+3. Run or schedule the pipeline in an environment; Planasonix resolves variables using that environment’s layer.
+
+<AccordionGroup>
+  <Accordion title="Why override per environment instead of duplicating pipelines?">
+    Duplication drifts: one copy gets a fix, the other does not. Variables plus environments keep one graph, one review story, and a clear matrix of “what changes between stages.”
+  </Accordion>
+  <Accordion title="Coordinating with Git (enterprise)">
+    When Git integration is enabled, variable *names* and default metadata often live in versioned artifacts, while **secret values** and some override values may remain in the managed platform. That split supports PR review without leaking production credentials into the repository.
+  </Accordion>
+</AccordionGroup>
+
+## Related reading
+
+<CardGroup cols={2}>
+  <Card title="Environments" icon="server" href="/pipelines/environments">
+    Deploy across stages with consistent override behavior.
+  </Card>
+  <Card title="Git integration" icon="code-branch" href="/pipelines/git-integration">
+    Version pipeline definitions alongside application code.
+  </Card>
+</CardGroup>

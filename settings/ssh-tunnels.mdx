@@ -1,0 +1,95 @@
+---
+title: "SSH tunnels"
+description: "Connect to databases behind firewalls using SSH tunnel configuration."
+---
+
+Many source systems live on private networks with no public database listener. An **SSH tunnel** forwards a local port on a **bastion** (jump host) to the database host and port Planasonix needs. You configure tunnel parameters once in settings or per connection, then the platform opens the tunnel before JDBC or native drivers connect.
+
+## When to use SSH tunnels
+
+Use a tunnel when:
+
+- The database has **no public IP** or listens only on **RFC1918** addresses
+- **VPN** to every analyst is not practical, but you already operate a hardened **bastion**
+- Cloud vendors offer **Session Manager** or similar, yet you standardize on **SSH keys** for third-party tools
+
+You usually **do not** need a tunnel if the warehouse exposes a **private link**, **VPC peering**, or a **managed gateway** Planasonix connects to directly.
+
+<Info>
+  Tunnels add latency and a moving part (the bastion). Prefer native private connectivity when your network team can provision it.
+</Info>
+
+## Configuration
+
+You provide:
+
+| Field | Purpose |
+| ----- | ------- |
+| **Bastion host** | Public hostname or IP of the jump server |
+| **Bastion port** | Usually `22`; change if your SSH daemon listens elsewhere |
+| **Bastion username** | OS account used for forwarding (often dedicated `planasonix-tunnel`) |
+| **Private key** | PEM or OpenSSH key stored in the org secret manager; never embed in pipeline JSON |
+| **Known hosts** (recommended) | Pin the bastion host key to prevent MITM on first connect |
+| **Remote bind** | Database **hostname as seen from the bastion** and **port** (for example `db.internal.corp:5432`) |
+| **Local port** | Often auto-assigned; fixed ports help when debugging from agents |
+
+<Tabs>
+  <Tab title="Key-based auth">
+    Upload or reference an **RSA** or **Ed25519** key. Rotate on the same schedule as database passwords.
+  </Tab>
+  <Tab title="Certificate-based SSH">
+    Some enterprises issue short-lived SSH certificates. Configure the **CA** and **principals** your bastion expects.
+  </Tab>
+</Tabs>
+
+## Steps to set up with different providers
+
+<Steps>
+  <Step title="AWS EC2 bastion">
+    Use a small instance in a **public subnet** with **security group** ingress restricted to Planasonix [egress IPs](/settings/ip-whitelisting) (if you use allowlisting). Install `sshd`, harden `sshd_config` (`PasswordAuthentication no`), and attach an **IAM instance profile** only if the bastion must call AWS APIs—otherwise omit extra privileges.
+  </Step>
+  <Step title="Azure VM jump box">
+    Place the VM behind **Azure Firewall** or **NSG** rules. Enable **Azure AD login** for admins if you disable password auth entirely. Document the **private DNS** name the bastion uses to reach Azure Database for PostgreSQL or SQL managed instances.
+  </Step>
+  <Step title="GCP Compute Engine">
+    Use **IAP TCP forwarding** or a traditional bastion with **OS Login** and **2FA** for human access. Ensure the bastion can resolve **Cloud SQL private IP** via **VPC** or **PSC**.
+  </Step>
+  <Step title="Colocation or on-prem">
+    Publish the bastion on a **stable DNS** name. Coordinate with network teams for **reverse path** checks—some firewalls drop return traffic if SNAT pools differ from allowlisted ranges.
+  </Step>
+</Steps>
+
+<Tip>
+  Create a **dedicated** OS user on the bastion with `ForceCommand` or `authorized_keys` options that only permit port forwarding, not interactive shells, if your security baseline allows it.
+</Tip>
+
+## Troubleshooting tunnel issues
+
+<AccordionGroup>
+  <Accordion title="Connection timed out to bastion">
+    Verify **security groups**, **NACLs**, and **host firewalls** allow **TCP/22** (or your port) from Planasonix egress. Confirm DNS resolves to the intended IP and that no **geo block** applies.
+  </Accordion>
+  <Accordion title="Authentication failed">
+    Confirm the **username**, **key format**, and that the public half is in `authorized_keys`. Check **SELinux** or **home directory permissions** on the bastion if key auth silently fails.
+  </Accordion>
+  <Accordion title="Tunnel opens but database still fails">
+    The database error is often **auth** or **SSL**. From the bastion, run `nc -zv db-host 5432` (or the right port) to prove reachability. Ensure the **database user** is allowed from the **Planasonix runner IP** or the bastion’s forwarded source, depending on how the DB ACLs are written.
+  </Accordion>
+  <Accordion title="Intermittent drops">
+    Idle timeouts on **load balancers** or **NAT gateways** close long SSH sessions. Enable **keepalive** in tunnel settings if offered, or shorten connection reuse intervals in the driver.
+  </Accordion>
+  <Accordion title="Agent-specific failures">
+    When using a [pipeline agent](/troubleshooting/agents), the tunnel may originate from the **agent’s network**. Allowlist the agent egress IP on the bastion, not only the SaaS region IPs.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Databases" icon="database" href="/connections/databases">
+    Connection parameters after the tunnel is in place.
+  </Card>
+  <Card title="Connection troubleshooting" icon="plug" href="/troubleshooting/connections">
+    Deep dive on timeouts, SSL, and firewall errors.
+  </Card>
+</CardGroup>

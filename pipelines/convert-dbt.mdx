@@ -1,0 +1,86 @@
+---
+title: "Convert from dbt"
+description: "Import dbt projects and convert models to Planasonix pipelines."
+---
+
+The dbt importer parses your **project structure**—models, sources, tests, and dependencies—and materializes a Planasonix graph where each **model** becomes a logical **node** (often **Custom SQL** or warehouse-native SQL nodes) with edges derived from **`ref`** relationships.
+
+<Info>
+  Read [Import and convert](/pipelines/import-and-convert) for wizard steps, bulk upload tips, and promotion discipline.
+</Info>
+
+## dbt project structure parsing
+
+<Steps>
+  <Step title="Package the project">
+    Upload a **zip** of the dbt project root containing `dbt_project.yml`, `models/`, `macros/`, `tests/`, and `packages.yml` if you use package dependencies.
+  </Step>
+  <Step title="Select target and dialect">
+    Choose the **warehouse dialect** Planasonix should assume when it normalizes SQL (Snowflake, BigQuery, Databricks SQL, and so on). Mismatched dialect produces invalid SQL in generated nodes.
+  </Step>
+  <Step title="Resolve packages">
+    If you rely on **dbt packages**, include `dbt deps` output in the archive or vendor the `dbt_packages/` tree so macros resolve during parsing.
+  </Step>
+</Steps>
+
+## Model to node mapping
+
+| dbt artifact | Typical Planasonix representation |
+| ------------ | --------------------------------- |
+| `models/*.sql` | SQL transform node per model |
+| `schema.yml` tests | Data quality checks or annotations (coverage varies) |
+| Seeds | Static file ingest nodes or manual upload steps |
+| Snapshots | Slowly changing dimension patterns—you verify keys and strategy |
+
+<Tip>
+  Keep **staging models** (`stg_`) as separate nodes even if you later collapse them. Preserving layers speeds diffing against legacy dbt runs during validation.
+</Tip>
+
+## Handling refs
+
+The importer expands **`{{ ref('model_name') }}`** into **edges** between nodes so execution order mirrors the dbt DAG.
+
+<Note>
+  **Ephemeral** models inline into parents in dbt; Planasonix may merge them into dependent SQL or keep them as separate nodes depending on importer version. Read the **conversion report** for merges and inlining notes.
+</Note>
+
+## Handling sources
+
+**`{{ source('src', 'table') }}`** declarations bind to **logical sources**. After import, map each source to a Planasonix [connection](/connections/overview) and physical relation (database/schema/table or equivalent).
+
+<AccordionGroup>
+  <Accordion title="Source freshness">
+    dbt **freshness** blocks become advisory metadata or scheduled checks in Planasonix where supported. You may recreate freshness as **orchestration gates** or **observability monitors**.
+  </Accordion>
+  <Accordion title="Overrides and aliases">
+    Custom **aliases**, **schemas**, and **database overrides** in `dbt_project.yml` must appear in the Planasonix **environment** configuration so runtime objects resolve correctly.
+  </Accordion>
+</AccordionGroup>
+
+## Macros
+
+**Jinja macros** do not execute inside Planasonix the way they do in `dbt run`.
+
+<Tabs>
+  <Tab title="Supported macros">
+    Simple macros that expand to static SQL may inline successfully during import. Review generated SQL for correctness.
+  </Tab>
+  <Tab title="Unsupported or complex macros">
+    Macros with **Python**, **exceptions**, or **dynamic branching** may become **TODO** stubs. Reimplement logic with **Planasonix-native** transforms, **Python nodes**, or **warehouse procedures** as appropriate.
+  </Tab>
+</Tabs>
+
+<Warning>
+  **Incremental models** depend on dbt’s merge strategies and `is_incremental()` guards. Rebuild incremental logic explicitly in Planasonix merge/upsert patterns; do not assume identical performance or locking behavior across warehouses.
+</Warning>
+
+## After import
+
+<CardGroup cols={2}>
+  <Card title="Environments" icon="layer-group" href="/pipelines/environments">
+    Bind dev vs prod connections and variables.
+  </Card>
+  <Card title="Git integration" icon="git-branch" href="/pipelines/git-integration">
+    Track post-import changes in version control.
+  </Card>
+</CardGroup>

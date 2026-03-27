@@ -1,0 +1,84 @@
+---
+title: "Git integration"
+description: "Version control your pipelines with Git integration for collaboration and deployment."
+---
+
+**Git integration** is an **enterprise** capability that stores pipeline definitions in a Git repository alongside application code. You get pull requests, diff review, rollback, and alignment with existing SDLC practices.
+
+<Info>
+  Git integration is included on **enterprise** editions. Your administrator configures the Git host, repository access, branch protections, and which artifacts Planasonix reads and writes (for example, graph definitions, variable metadata, and companion docs).
+</Info>
+
+<Note>
+  Supported providers, sync direction, and conflict behavior can vary by tenant. Confirm the exact mapping with your platform team before you rely on Git as the sole source of truth.
+</Note>
+
+## What you gain
+
+- **Collaboration**: Propose changes in branches; reviewers comment on graph diffs the same week they review services.
+- **Auditability**: Every merge records who changed which node configuration and when.
+- **Recovery**: Revert a bad deploy by checking out a known-good commit and syncing back to Planasonix.
+
+## Push and pull
+
+| Action | When you use it |
+| ------ | ---------------- |
+| **Push** | Publish canvas changes from Planasonix to the remote branch after you finish an edit session. |
+| **Pull** | Bring remote commits into Planasonix when teammates merged updates or when CI generated changes. |
+
+Workflow tips:
+
+- **Push** before opening a PR if your team treats Planasonix as the authoring surface of record.
+- **Pull** at the start of a session if developers sometimes edit exported definitions in the repo (discourage concurrent edits in both places without coordination).
+
+<Warning>
+  Conflicts can occur if the same pipeline changes in Git and on the canvas without syncing. Establish a single primary editor per branch, or use a short-lived branch per change.
+</Warning>
+
+## Status and history
+
+The Git panel shows:
+
+- **Branch** and **remote** you are bound to.
+- **Ahead / behind** counts relative to the default integration branch.
+- **Last sync** time and any errors from the provider (permissions, large files, hook failures).
+
+**History** lists commits that touched pipeline artifacts. Click through to your Git host for full blame and compare views.
+
+## Branch management
+
+<Steps>
+  <Step title="Create a working branch">
+    Branch from your integration branch (`main`, `develop`, or your org standard) before large refactors.
+  </Step>
+  <Step title="Author in Planasonix or locally">
+    Edit on the canvas, or—if supported—edit checked-out files in your IDE. Keep commits small and message them with intent (“fix join key on orders”).
+  </Step>
+  <Step title="Push and open a pull request">
+    Use your Git host’s PR workflow. Attach run evidence (screenshots of preview, sample metrics) when behavior changes.
+  </Step>
+  <Step title="Merge and deploy">
+    After merge, sync Planasonix with the integration branch and promote through [environments](/pipelines/environments) if applicable.
+  </Step>
+</Steps>
+
+## PR validation
+
+Many organizations attach **checks** to pipeline PRs:
+
+- **Schema diff** warnings when destination columns change.
+- **Policy** checks that block new nodes without owners or data classification.
+- **Dry-run** jobs that execute against a sandbox warehouse on a sample partition.
+
+Planasonix may expose webhook or API hooks so your CI can trigger validation when PRs touch pipeline paths—coordinate with your platform admin for the exact integration.
+
+## Related reading
+
+<CardGroup cols={2}>
+  <Card title="Environments" icon="server" href="/pipelines/environments">
+    Pair Git merges with staged rollouts.
+  </Card>
+  <Card title="Variables" icon="brackets-curly" href="/pipelines/variables">
+    Keep secrets out of Git; use variables and secret stores.
+  </Card>
+</CardGroup>

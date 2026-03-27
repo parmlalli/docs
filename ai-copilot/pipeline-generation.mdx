@@ -1,0 +1,77 @@
+---
+title: "Pipeline generation"
+description: "Generate complete pipelines from natural language descriptions."
+---
+
+Pipeline generation turns a short natural language brief into a draft graph: sources, transforms, joins, quality checks, and destinations connected with edges. You treat the result as a starting point—review credentials, partitioning, and orchestration before production.
+
+## Describe what you want
+
+In Copilot chat or the dedicated **Generate pipeline** flow, write what the pipeline should accomplish. Effective briefs include:
+
+- **Sources** (systems, buckets, tables, APIs)
+- **Transformations** (parsing, deduplication, typing, aggregations)
+- **Destination** and load strategy (truncate, merge, append)
+- **Freshness** (batch vs near-real-time) if it changes node choice
+
+Example prompt:
+
+```text
+Ingest gzipped JSON from s3://analytics-lake/raw/events/, parse nested
+`properties`, dedupe on event_id, write daily partitions to Snowflake
+table analytics.stg_events, and run a row-count check against source.
+```
+
+## Generated nodes and edges
+
+The assistant proposes a **node set** wired in order: extract, flatten, validate, load. It may add:
+
+- Parser nodes for semi-structured formats
+- Column mapping or type enforcement nodes
+- Data quality rules (null checks, uniqueness)
+- Basic orchestration placeholders (manual trigger until you attach a schedule)
+
+Open each node and confirm parameters match your environment names, not the placeholders Copilot guessed.
+
+<Steps>
+  <Step title="Generate the draft">
+    Submit your brief and wait for the graph preview. Decline and rephrase if the topology misses a critical step.
+  </Step>
+  <Step title="Bind connections">
+    Replace placeholder connections with real credentials and test connectivity.
+  </Step>
+  <Step title="Run preview">
+    Execute a limited preview to validate parsing and schema. Adjust SQL or mappings based on errors.
+  </Step>
+  <Step title="Add orchestration">
+    Attach [schedules](/orchestration/schedules), [triggers](/orchestration/triggers), or [webhooks](/orchestration/webhooks) as needed.
+  </Step>
+</Steps>
+
+## Enhance existing pipelines
+
+Open an existing pipeline and ask Copilot to **add** or **refactor** sections:
+
+- “Insert a null-safe email normalization step before the warehouse load.”
+- “Split the JSON array `line_items` into a child table load with keys from the parent.”
+- “Add a failure branch that writes bad rows to a quarantine bucket.”
+
+The assistant inserts nodes and reconnects edges where the editor API allows; you verify that edge order and fan-in/fan-out still match runtime semantics.
+
+<Warning>
+  Generated graphs may omit secrets handling, PII masking, or region constraints. Apply your organization’s standards before merge.
+</Warning>
+
+## Quality checklist
+
+<AccordionGroup>
+  <Accordion title="Keys and idempotency">
+    Confirm merge keys and incremental cursors so reruns do not duplicate production data.
+  </Accordion>
+  <Accordion title="Cost">
+    Large cluster defaults may be oversized for dev; downscale compute in [Compute](/settings/compute) settings for tests.
+  </Accordion>
+  <Accordion title="Documentation">
+    Add a short pipeline description for teammates; Copilot text is not a substitute for owned runbooks.
+  </Accordion>
+</AccordionGroup>

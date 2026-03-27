@@ -1,0 +1,62 @@
+---
+title: "Plans and pricing"
+description: "Understand Planasonix subscription tiers and feature availability."
+---
+
+Planasonix subscriptions bundle **connectors**, **compute**, **governance**, and **support** into tiers that match team maturity. You see your current tier under **Billing** or **Organization** settings; upgrades are handled by your account executive or self-serve checkout where enabled.
+
+## Tiers at a glance
+
+<CardGroup cols={2}>
+  <Card title="Starter" icon="seedling">
+    Core batch ETL for small teams: essential connectors, shared workspace, standard support. Reverse ETL, streaming CDC, and advanced governance are typically not included.
+  </Card>
+  <Card title="Professional" icon="briefcase">
+    Broader connector gallery, multiple environments, Git integration, and collaboration features suited to growing data teams.
+  </Card>
+  <Card title="Premium" icon="gem">
+    Adds reverse ETL, streaming and CDC, lineage, impact analysis, and higher throughput limits for organizations operating at scale.
+  </Card>
+  <Card title="Enterprise" icon="building">
+    Data catalog, contracts, notebooks, SSO, SCIM options, VPC deployments, custom SLAs, and knowledge-base grounded AI where contracted.
+  </Card>
+</CardGroup>
+
+Exact entitlements vary by contract; use the in-product **feature matrix** as the source of truth for your workspace.
+
+## Feature comparison
+
+| Capability | Starter | Professional | Premium | Enterprise |
+| ---------- | ------- | ------------ | ------- | ---------- |
+| Connector gallery (full) | Subset | Yes | Yes | Yes |
+| Reverse ETL | — | — | Yes | Yes |
+| Streaming / CDC | — | — | Yes | Yes |
+| Data catalog (harvest + search) | — | — | Limited | Full |
+| Data contracts | — | — | — | Yes |
+| Column lineage | — | — | Premium+ add-on possible | Yes |
+| Notebooks in product | — | — | — | Yes |
+| SSO / SAML | — | Optional add-on | Yes | Yes |
+| AI Copilot (platform or BYO) | Varies | Varies | Often included | Configurable |
+
+<Tip>
+  Tag internal RFCs with the tier required so procurement and engineering align before you design on Enterprise-only features.
+</Tip>
+
+## Add-ons
+
+You may purchase **extra compute credits**, **additional environments**, **premium support**, or **region-specific** deployments. Your invoice lists active add-ons separately from base seats.
+
+## Billing contacts
+
+Designate **billing admins** who receive invoices and can update payment methods but cannot necessarily edit pipelines—segregation of duties for SOX-style controls.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Usage and limits" icon="chart-column" href="/settings/usage">
+    Consumption against plan caps.
+  </Card>
+  <Card title="Compute" icon="microchip" href="/settings/compute">
+    Right-size spend after you upgrade.
+  </Card>
+</CardGroup>

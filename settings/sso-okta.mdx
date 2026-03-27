@@ -1,0 +1,89 @@
+---
+title: "Okta SSO setup"
+description: "Configure Okta as your SAML identity provider for Planasonix."
+---
+
+Use this guide when you register Planasonix as a SAML 2.0 application in Okta. You need **organization admin** access in Planasonix and **application administrator** (or equivalent) rights in Okta.
+
+<Info>
+  If you have not enabled SSO yet, read [SSO](/settings/sso) for workspace eligibility and the high-level flow before you follow the steps below.
+</Info>
+
+## Copy values from Planasonix
+
+Open **Settings → Security → SSO** in Planasonix and copy:
+
+- **ACS URL** (Assertion Consumer Service URL)
+- **Entity ID** (sometimes called SP Entity ID or Audience URI)
+
+You paste these into Okta when you create the SAML integration. Keep the window open until Okta accepts the values.
+
+## Create the SAML app in Okta
+
+<Steps>
+  <Step title="Start a new SAML integration">
+    In the Okta Admin Console, go to **Applications → Applications → Create App Integration**. Choose **SAML 2.0**, then continue.
+  </Step>
+  <Step title="Name the application">
+    Enter a clear name (for example, `Planasonix`) and optional logo. Finish the initial wizard; you configure SAML on the next screen.
+  </Step>
+  <Step title="Configure SAML settings">
+    Under **General**:
+
+    - **Single sign on URL**: paste the **ACS URL** from Planasonix exactly as shown.
+    - **Audience URI (SP Entity ID)**: paste the **Entity ID** from Planasonix exactly as shown.
+    - **Name ID format**: choose **EmailAddress** unless your Planasonix tenant documentation specifies **Unspecified** or another format your admin agreed on.
+
+    Under **Advanced Sign-on Settings**, enable **Response** and **Assertion** signing as your security team requires. Planasonix expects a signed assertion in typical enterprise setups.
+  </Step>
+  <Step title="Save and view setup instructions">
+    Save the SAML configuration. Open **Sign On** for the app and use **View SAML setup instructions** or **Identity Provider metadata** when Planasonix asks for metadata XML or individual endpoints.
+  </Step>
+</Steps>
+
+## Attribute mapping
+
+Map Okta profile and group attributes to SAML assertions so Planasonix can identify users and optional group membership.
+
+<Tabs>
+  <Tab title="Recommended claims">
+    | Okta attribute | SAML attribute name (typical) | Purpose |
+    | -------------- | ----------------------------- | ------- |
+    | User email | `email` or `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress` | Unique user identity |
+    | First name | `firstName` | Display and directory |
+    | Last name | `lastName` | Display and directory |
+    | Groups | `groups` or a custom claim | [Teams and permissions](/settings/teams-and-permissions) when group sync is enabled |
+
+    Use the exact attribute names your Planasonix SSO screen lists under **Required** and **Optional** claims.
+  </Tab>
+  <Tab title="Group assignment">
+    Assign users or **Okta groups** to the application under **Assignments**. If you rely on group-based roles in Planasonix, ensure the same groups appear in the SAML assertion (expression or **Group Filter** in the SAML settings) so membership is consistent.
+  </Tab>
+</Tabs>
+
+<Tip>
+  Pilot with a small Okta group before you toggle **Require SSO** org-wide. Confirm login, attribute values, and group claims in Planasonix audit or admin diagnostics if available.
+</Tip>
+
+## Name ID format
+
+Planasonix usually expects the **Name ID** to be a stable, unique identifier tied to the user’s email. **EmailAddress** is the most common choice. If you use a transient or opaque Name ID, confirm with your Planasonix admin that JIT provisioning and user matching are configured for that pattern.
+
+<Warning>
+  A mismatch between Name ID format in Okta and what Planasonix expects causes intermittent “user not found” or duplicate-account issues after profile changes. Align formats with your implementation owner before production cutover.
+</Warning>
+
+## Finish in Planasonix
+
+Upload Okta’s **metadata XML** or paste **SSO URL**, **issuer**, and **X.509 signing certificate** into Planasonix. Run a test login from an incognito window, then enforce SSO when you are ready.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="SSO overview" icon="shield-halved" href="/settings/sso">
+    SAML vs OIDC, certificate rotation, and org-wide enforcement.
+  </Card>
+  <Card title="Teams and permissions" icon="users" href="/settings/teams-and-permissions">
+    How group claims map to workspace access.
+  </Card>
+</CardGroup>

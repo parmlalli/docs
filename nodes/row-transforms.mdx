@@ -1,0 +1,96 @@
+---
+title: "Row transforms"
+description: "Filter, sort, sample, and deduplicate rows in your data pipeline."
+---
+
+**Row transforms** operate on *records* without changing the fundamental column layout (except where a node explicitly adds helper columns). You use them to cut volume, impose ordering for deterministic processing, probe datasets, and remove duplicates.
+
+## Filter
+
+**Filter** keeps rows that match a boolean expression.
+
+**Configuration:**
+
+- **Expression**: A predicate evaluated per row (for example, `order_status = 'paid'` and `order_total > 0`).
+- **Null handling**: Decide how `NULL` comparisons behave; explicit `IS NULL` checks avoid surprises.
+
+**Example:** You ingest clickstream events but only want rows where `event_name` is `purchase_completed` and `currency` is `USD`:
+
+```sql
+event_name = 'purchase_completed' AND currency = 'USD'
+```
+
+(Exact expression syntax follows your workspace dialect—use the in-app helper and preview.)
+
+**When to use:** Early in the graph to reduce bytes moved through expensive joins.
+
+## Sample
+
+**Sample** takes a **random or stratified subset** of rows for exploration, testing, or cost control.
+
+**Configuration:**
+
+- **Sample rate or row limit**: Fixed fraction (`10%`) or max rows (`50_000`).
+- **Seed** (when available): Reproducible samples for tests.
+- **Stratification keys** (when available): Preserve rare segment representation.
+
+**Example:** Before training a fraud model downstream, sample `5%` of transactions **stratified by `country`** so evaluation metrics are not dominated by one region.
+
+**When to use:** Development pipelines, QA harnesses, or staged rollouts where full scans are unnecessary.
+
+## Sort
+
+**Sort** orders rows by one or more keys.
+
+**Configuration:**
+
+- **Sort keys**: Columns with ascending or descending order.
+- **Nulls first/last**: Explicit placement prevents flaky joins or window partitions.
+- **Stability**: Pair sort with a tie-breaker column (such as `event_id`) when duplicates on sort keys exist.
+
+**Example:** You batch-update a warehouse table keyed by `(customer_id, effective_date)`; sort by those columns so merge operators observe deterministic runs and easier diffing in logs.
+
+**When to use:** Before nodes that assume order (some window setups, certain file writers), or when breaking ties for deduplication.
+
+## Unique (deduplicate)
+
+**Unique** removes duplicate rows—either full-row duplicates or duplicates by a **key** subset.
+
+**Configuration:**
+
+- **Key columns**: Deduplicate on `user_id` while keeping the first or last row per key according to sort order.
+- **Keep policy**: First vs last requires an upstream **Sort** when order matters.
+- **Hash vs key**: Full-row unique is cheap mentally; key-based unique matches business keys.
+
+**Example:** CDC delivers occasional at-least-once duplicates on `event_id`. Sort by `ingest_timestamp` descending, then **Unique** on `event_id` keeping the first row to retain the latest version.
+
+**When to use:** After merges of streams, before cardinality-sensitive aggregations, or prior to loads that enforce primary keys.
+
+<Tip>
+  If you need “best record wins” logic beyond first/last (for example, prefer non-null email), use a **Window** or **Summarize** pattern upstream of **Unique**, or move the rule to **Custom SQL** for clarity.
+</Tip>
+
+## Patterns on the canvas
+
+<Steps>
+  <Step title="Shrink early">
+    Place **Filter** and column projection (where available) close to the source to save compute on joins.
+  </Step>
+  <Step title="Sort before deterministic dedupe">
+    When duplicate resolution depends on time or version columns, **Sort** then **Unique**.
+  </Step>
+  <Step title="Validate with preview">
+    After **Sample**, confirm distributions still reflect production skew if you use samples for QA sign-off.
+  </Step>
+</Steps>
+
+## Related nodes
+
+<CardGroup cols={2}>
+  <Card title="Column transforms" icon="table-columns" href="/nodes/column-transforms">
+    Change types, derive fields, and apply window logic.
+  </Card>
+  <Card title="Aggregation" icon="chart-column" href="/nodes/aggregation">
+    Roll up after you have narrowed and cleaned rows.
+  </Card>
+</CardGroup>

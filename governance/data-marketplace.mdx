@@ -1,0 +1,89 @@
+---
+title: "Data marketplace"
+description: "Discover, publish, and install reusable data packages across your organization."
+---
+
+The **data marketplace** is where teams **publish** curated datasets, semantic models, and pipeline bundles so other groups can **install** consistent copies without re-implementing joins and business rules.
+
+## Enterprise feature
+
+Marketplace capabilities—governed publishing workflows, semantic versioning, and org-wide discovery—are included on **Enterprise** plans. Other tiers may offer read-only consumption or no marketplace at all. Your account executive or admin confirms availability.
+
+## Publishing packages
+
+A **package** bundles metadata and artifacts your admin allows: for example dbt-style models, Planasonix pipeline templates, catalog entries, or documentation manifests.
+
+<Steps>
+  <Step title="Prepare the artifact">
+    Validate the pipeline or model set in a staging project; capture tests and owner contacts.
+  </Step>
+  <Step title="Create a package manifest">
+    Define name, summary, tags, **semantic version**, and compatibility constraints (minimum platform version, required connectors).
+  </Step>
+  <Step title="Submit for review">
+    Route through stewardship or platform approval if your org requires it.
+  </Step>
+  <Step title="Publish">
+    After approval, publish to a **channel** (for example `production`, `experimental`) consumers can subscribe to.
+  </Step>
+</Steps>
+
+<Tip>
+  Treat packages like internal open source: include **changelog** notes and **breaking change** flags when bumping major versions.
+</Tip>
+
+## Installing packages
+
+Consumers browse the marketplace, inspect **README** and **lineage** hints, then **install** into a target project.
+
+- **Pin** a version for reproducible builds; floating `latest` suits sandboxes only.
+- **Upgrades** may run migration helpers when the publisher supplies them.
+- **Conflicts** appear when local resources share names; resolve by renaming or namespacing.
+
+<Tabs>
+  <Tab title="Greenfield teams">
+    Install baseline finance or product analytics packages to align metrics definitions on day one.
+  </Tab>
+  <Tab title="Existing projects">
+    Merge package nodes carefully; diff against local changes before overwriting transforms.
+  </Tab>
+  <Tab title="Regulated domains">
+    Require certified channels only; block experimental feeds via policy.
+  </Tab>
+</Tabs>
+
+## Versioning
+
+Packages use **semantic versioning** (`MAJOR.MINOR.PATCH`):
+
+- **Major**: Breaking schema or API changes for downstream consumers
+- **Minor**: Backward-compatible additions
+- **Patch**: Fixes that do not alter contracts
+
+<Info>
+  Pair marketplace versions with **data contracts** so automated checks fail CI when a publisher violates column guarantees.
+</Info>
+
+## Marketplace governance
+
+Admins configure:
+
+- **Who can publish** (roles, teams, or approval queues)
+- **Which channels** appear in production catalogs
+- **License** or **data classification** labels required before listing
+- **Deprecation** rules and minimum support windows
+
+<Warning>
+  Publishing wide **PII** packages without classification tags creates compliance debt. Enforce tags at publish time, not only in the warehouse.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Data catalog" icon="book" href="/governance/data-catalog">
+    Search and document assets consumers discover.
+  </Card>
+  <Card title="Data contracts" icon="file-contract" href="/governance/data-contracts">
+    Enforce expectations on published datasets.
+  </Card>
+</CardGroup>

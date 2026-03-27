@@ -1,0 +1,51 @@
+---
+title: "Orchestration overview"
+description: "Schedule, trigger, and chain pipeline executions."
+---
+
+Orchestration controls **when** and **how** pipelines run. You move from manual execution to repeatable operations by attaching schedules, file or cloud event triggers, signed webhooks, and dependencies between pipelines.
+
+## Building blocks
+
+<CardGroup cols={2}>
+  <Card title="Schedules" icon="calendar" href="/orchestration/schedules">
+    Run pipelines on cron expressions with explicit time zones.
+  </Card>
+  <Card title="Triggers" icon="cloud-bolt" href="/orchestration/triggers">
+    Start runs when objects land in S3, GCS, Azure Blob, or related event feeds.
+  </Card>
+  <Card title="Webhooks" icon="link" href="/orchestration/webhooks">
+    Invoke pipelines from external systems over HTTPS with optional signatures.
+  </Card>
+  <Card title="Pipeline chaining" icon="diagram-project" href="/orchestration/pipeline-chaining">
+    Model multi-step workflows with trigger nodes and dependencies.
+  </Card>
+</CardGroup>
+
+## Design principles
+
+- **Idempotency**: Assume retries. Design loads so a second run does not corrupt facts (merge keys, dedupe stages).
+- **SLA clarity**: Match schedule cadence to business deadlines; faster is not always better if cost or contention rises.
+- **Blast radius**: Isolate experimental pipelines on separate triggers so a noisy upstream does not block critical loads.
+
+## Permissions
+
+Creating or editing orchestration rules requires roles that can **execute** the target pipeline and **read** the connections those pipelines use. Service principals used for cloud triggers need least-privilege policies on bucket notifications or queue subscriptions.
+
+<Info>
+  Orchestration metadata (who triggered a run, from which webhook or schedule) appears in run history for audit.
+</Info>
+
+## Next steps
+
+<Steps>
+  <Step title="Choose a trigger style">
+    Pick schedule vs event vs webhook based on how upstream systems signal readiness.
+  </Step>
+  <Step title="Prototype runs">
+    Execute manual test runs, then attach automation once outputs stabilize.
+  </Step>
+  <Step title="Add monitoring">
+    Wire [alerts](/observability/alerts) for failures and duration anomalies.
+  </Step>
+</Steps>

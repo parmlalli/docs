@@ -1,0 +1,116 @@
+---
+title: "Source nodes"
+description: "Read data from connections, tables, webhooks, and other sources into your pipeline."
+---
+
+**Source nodes** bring data into the graph. They define where rows originate (database, lake table, file landing zone, CDC stream, or HTTP webhook) and how Planasonix should read them. Downstream nodes always depend on at least one source path unless data is injected by a control-flow or trigger node.
+
+## Read
+
+The **Read** node is the default tabular source for most pipelines.
+
+**Configuration highlights:**
+
+- **Connection**: Choose a saved [connection](/connections/overview) with the right permissions (read-only where possible).
+- **Relation or query**: Point at a table or view, or supply SQL / dialect-specific text that returns a rowset.
+- **Partitioning / predicates** (when shown): Limit scanned data for cost and time—prefer partitions aligned to your physical layout.
+- **Schema hints**: Confirm types; fix obvious mismatches before heavy joins.
+
+Use Read when you have a stable relational or warehouse object and want straightforward lineage from *connection → relation*.
+
+## Data Product (enterprise)
+
+The **Data Product** source exposes a curated dataset published through your data mesh or catalog layer (exact metadata fields depend on your integration).
+
+**Configuration highlights:**
+
+- **Product selector**: Pick the registered data product version consumers are allowed to run.
+- **Contract fields**: Read required parameters (for example, date range, market) exposed by the product owner.
+- **Access policy**: Execution respects entitlements; denied runs fail fast with an auditable error.
+
+Use this node when governance requires consumers to pull from approved products instead of ad hoc tables.
+
+## Table Iterator
+
+**Table Iterator** runs the downstream subgraph once per input table from a list—useful for landing zones with many homogenous files mapped to tables, or metadata-driven ingestion.
+
+**Configuration highlights:**
+
+- **Iterator input**: A list of table names or a query that returns one name per row.
+- **Subgraph attachment**: Wire the iterator body so each iteration receives the current table context (often via variables).
+- **Concurrency**: Tune parallel iterations to avoid overwhelming the source or warehouse.
+
+<Tip>
+  Pair iterators with [variables](/pipelines/variables) like `{{ current_table }}` in child Read nodes to avoid duplicating graphs per table.
+</Tip>
+
+## CDC Source
+
+**CDC Source** ingests **change data capture** events—inserts, updates, deletes—as they occur or as micro-batches from your log-based CDC tool.
+
+**Configuration highlights:**
+
+- **Stream or topic**: Map to the CDC landing stream your platform supports.
+- **Starting offset**: Choose initial position (earliest, latest, or saved checkpoint).
+- **Delete semantics**: Decide how deletes appear in the rowset (tombstone column, record type, or physical delete propagation).
+
+Downstream you often normalize to a **Type 2** history or apply merges in a destination with upsert semantics.
+
+## Iceberg Source (professional+)
+
+**Iceberg Source** reads [Apache Iceberg](https://iceberg.apache.org/) tables with time travel and snapshot awareness when your catalog integration supports it.
+
+**Configuration highlights:**
+
+- **Catalog / table identifier**: Namespace and table per your metastore.
+- **Snapshot ID or timestamp**: Optionally pin reads for reproducible batches.
+- **Column projection**: Select only needed columns to reduce scan cost.
+
+## Input Table
+
+**Input Table** accepts rows supplied at **run time**—for example, from an API-triggered job, parent pipeline parameter, or manual ad hoc run.
+
+**Configuration highlights:**
+
+- **Schema definition**: Declare column names and types so downstream nodes validate early.
+- **Input binding**: Map the incoming payload or file to rows.
+- **Size limits**: Respect platform caps for inline payloads; large files should use object storage plus a Read node instead.
+
+## Webhook Trigger
+
+**Webhook Trigger** starts or feeds a pipeline when an HTTP request hits a secured endpoint.
+
+**Configuration highlights:**
+
+- **Authentication**: API key, HMAC signature, or mTLS—follow your security team’s standard.
+- **Payload mapping**: Map JSON body fields to variables or an Input Table schema.
+- **Idempotency**: For retried deliveries, deduplicate with a **Unique** node or destination upsert keys.
+
+<Warning>
+  Webhooks are public-facing surfaces. Restrict IP ranges when possible, rotate secrets regularly, and log rejected attempts.
+</Warning>
+
+## Choosing the right source
+
+<AccordionGroup>
+  <Accordion title="Batch warehouse load">
+    Use **Read** with partition filters, or **Iceberg Source** for lakehouse tables.
+  </Accordion>
+  <Accordion title="Near-real-time dimensions and facts">
+    Use **CDC Source** feeding merges or slowly changing dimension patterns downstream.
+  </Accordion>
+  <Accordion title="Productized consumption">
+    Use **Data Product** (enterprise) to honor contracts and ownership boundaries.
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Row transforms" icon="filter" href="/nodes/row-transforms">
+    Clean and narrow data after ingestion.
+  </Card>
+  <Card title="Destinations" icon="share-from-square" href="/nodes/destinations">
+    Land curated output after transforms.
+  </Card>
+</CardGroup>

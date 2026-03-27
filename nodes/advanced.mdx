@@ -1,0 +1,161 @@
+---
+title: "Advanced nodes"
+description: "Use SQL, Python, notebooks, UDFs, and AI models within your pipelines."
+---
+
+**Advanced** nodes embed code, notebooks, warehouse-native SQL, streaming engines, and ML or geospatial libraries where visual primitives are not enough. They trade some metadata simplicity for full expressiveness—document inputs, outputs, and side effects clearly.
+
+## Custom SQL
+
+**Custom SQL** runs a SQL statement or script against the configured engine, using upstream datasets as inputs (per product semantics).
+
+**Configuration:**
+
+- **Dialect**: Match your warehouse or lake query engine.
+- **Inputs**: Named references to parent nodes or temporary views.
+- **Output schema**: Explicit column list when the planner cannot infer it.
+
+**Typical use:** Complex multi-step CTEs that would clutter the canvas with dozens of nodes.
+
+## Python / R / Scala scripts
+
+**Script** nodes execute **Python, R, or Scala** with controlled dependencies and resource limits.
+
+**Configuration:**
+
+- **Runtime image / packages**: Approved libraries only in regulated orgs.
+- **Inputs / outputs**: DataFrames or paths passed by the platform.
+- **Memory and timeouts**: Set conservative defaults; iterate in notebooks first.
+
+**Typical use:** Statistical routines, custom parsers, or quick glue when SQL is awkward.
+
+## Notebook
+
+**Notebook** integrates **Jupyter-style** notebooks for exploratory work and, where supported, scheduled execution of parameterized runs.
+
+**Configuration:**
+
+- **Notebook artifact**: Checked-in `.ipynb` or workspace-managed file.
+- **Parameters**: Map pipeline variables to notebook parameters.
+- **Output capture**: Logs, metrics, and written tables for audit.
+
+**Typical use:** Analyst workflows that graduate from ad hoc cells to scheduled production after review.
+
+## Custom UDF
+
+**Custom UDF** registers a **user-defined function** callable from SQL or transform expressions.
+
+**Configuration:**
+
+- **Language / serialization**: JVM, Python, or engine-specific UDF hooks.
+- **Determinism**: Mark non-deterministic UDFs honestly—optimizers behave differently.
+- **Security**: Sandboxed execution per admin policy.
+
+**Typical use:** Reuse one tricky parsing function across many SQL nodes without copy-paste.
+
+## LLM Transform (enterprise)
+
+**LLM Transform** calls a managed **large language model** through your organization’s approved provider connection.
+
+**Configuration:**
+
+- **Prompt template**: Bind columns into prompts; version prompts like code.
+- **Model and parameters**: Temperature, max tokens, safety filters.
+- **Cost controls**: Caps per run; sampling for development.
+
+**Typical use:** Generate product descriptions from attributes—*never* send unreviewed PII without policy approval.
+
+## Warehouse SQL (professional+)
+
+**Warehouse SQL** pushes work **natively** into the warehouse optimizer—minimal data movement through Planasonix compute.
+
+**Configuration:**
+
+- **Warehouse connection**: Role, warehouse size, and warehouse-specific settings.
+- **Query materialization**: Temp tables vs direct insert/select based on product behavior.
+
+**Typical use:** Heavy aggregations on terabyte fact tables where local processing is cost-prohibitive.
+
+## Spark (premium)
+
+**Spark** nodes execute **Apache Spark** jobs (SQL, DataFrames, or JARs) on your attached cluster.
+
+**Configuration:**
+
+- **Cluster / job mode**: Yarn, Kubernetes, or serverless—per deployment.
+- **Resource profile**: Executors, cores, shuffle tuning for skewed keys.
+
+**Typical use:** Large-scale cleansing, ML feature engineering, or graph algorithms not exposed as native nodes.
+
+## Streaming (premium)
+
+**Streaming** nodes define **continuous** processing (windows, watermarks, stateful operators) on stream-back sources.
+
+**Configuration:**
+
+- **Checkpointing** and **exactly-once / at-least-once** semantics as offered.
+- **Output sinks**: Streams, tables, or micro-batch handoff to batch pipelines.
+
+**Typical use:** Sessionization of clickstream data before landing hourly aggregates.
+
+## Schema Evolution (premium)
+
+**Schema Evolution** manages **compatible schema changes** in lake or warehouse tables—add columns, widen types, or evolve nested fields according to rules you set.
+
+**Configuration:**
+
+- **Compatibility mode**: Backward vs forward vs full.
+- **Default values** for new columns.
+
+**Typical use:** Vendor adds optional JSON fields; evolve tables without breaking nightly loads.
+
+## ML Integration (premium)
+
+**ML Integration** connects training or inference steps—feature stores, model registries, batch scoring—to the graph.
+
+**Configuration:**
+
+- **Model version**: Pin versions for reproducibility.
+- **Batch vs online**: Match latency expectations.
+
+**Typical use:** Nightly scoring of churn probability back into a warehouse feature table.
+
+## Geospatial Operations
+
+**Geospatial** nodes compute distances, buffers, intersections, and point-in-polygon joins using spatial indexes when available.
+
+**Configuration:**
+
+- **CRS**: Source and target coordinate reference systems.
+- **Index hints**: Use spatial partitions for large point datasets.
+
+**Typical use:** Assign retail transactions to store trade areas for foot-traffic analytics.
+
+<Note>
+  Premium and edition labels reflect typical packaging; your tenant may differ. Confirm entitlements with your administrator before relying on a node in production design.
+</Note>
+
+## Operational practices
+
+<AccordionGroup>
+  <Accordion title="Test in isolation">
+    Wrap new code nodes with **Sample** upstream and **Validation** downstream until outputs stabilize.
+  </Accordion>
+  <Accordion title="Document side effects">
+    If a script writes auxiliary files or calls external APIs, note it in the pipeline description and use [control flow](/nodes/control-flow) error handling.
+  </Accordion>
+  <Accordion title="Prefer warehouse pushdown">
+    When **Warehouse SQL** can express the logic, use it before pulling large datasets into a script node.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Notebooks" icon="book" href="/notebooks/overview">
+    Author and share analytical work.
+  </Card>
+  <Card title="Streaming and CDC" icon="radio" href="/streaming/overview">
+    End-to-end streaming patterns.
+  </Card>
+</CardGroup>

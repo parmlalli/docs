@@ -1,0 +1,86 @@
+---
+title: "UDF reviews"
+description: "Review and approve custom user-defined functions before deployment."
+---
+
+**User-defined functions (UDFs)** extend Planasonix with custom logic—SQL UDFs in the warehouse, script nodes, or engine plugins depending on your deployment. Because UDFs execute **arbitrary code** or **elevated SQL** in governed environments, **UDF reviews** gate what reaches production.
+
+## Enterprise feature
+
+The **UDF reviews** workflow is an **Enterprise** control. It adds **submission**, **diff review**, **approval**, and **audit trails** on top of standard pipeline permissions. Without it, UDF changes may follow your normal Git or canvas promotion process only. If you do not see the tab, your organization has not purchased the add-on or an admin disabled the module.
+
+## Review workflow
+
+<Steps>
+  <Step title="Author submits">
+    A developer or analytics engineer packages the UDF with **description**, **inputs/outputs**, **data classification**, and **test evidence** (sample invocations or unit results).
+  </Step>
+  <Step title="Automated checks">
+    Static scanners flag **network calls**, **filesystem access**, and **dynamic SQL** patterns where policies forbid them. Fix or justify before human review.
+  </Step>
+  <Step title="Peer or security review">
+    Reviewers compare **versions**, read **risk notes**, and confirm alignment with [data contracts](/governance/data-contracts) and **PII** handling.
+  </Step>
+  <Step title="Approval and promotion">
+    Approvers bind the UDF to **environments** (for example dev → staging → prod). Production deployment is blocked until required signatures are recorded.
+  </Step>
+</Steps>
+
+<Tabs>
+  <Tab title="New UDF">
+    Full review: purpose, dependency list, and performance expectations for large partitions.
+  </Tab>
+  <Tab title="Revision">
+    Delta-focused: what changed, backward compatibility, and whether existing pipelines need revalidation.
+  </Tab>
+  <Tab title="Emergency fix">
+    Expedited path with **post-incident** review; requires **break-glass** role and automatic ticket creation.
+  </Tab>
+</Tabs>
+
+## Approval process
+
+Typical roles:
+
+- **Author** – submits and responds to comments
+- **Technical reviewer** – validates correctness, tests, and resource usage
+- **Security or governance** – approves when custom code touches sensitive domains
+- **Release manager** – promotes after change windows and comms
+
+The UI shows **status** (`draft`, `in review`, `approved`, `rejected`, `revoked`) and **immutable history** for auditors.
+
+<Tip>
+  Tie approvals to **tickets** in your ITSM tool via webhook or manual ID fields so compliance can trace every production UDF to a change record.
+</Tip>
+
+## Security considerations for custom code
+
+<AccordionGroup>
+  <Accordion title="Data exfiltration">
+    UDFs that can open outbound sockets or write to arbitrary stages could leak rows. Block or sandbox capabilities your policy does not allow; prefer pure functions that operate on in-memory arguments.
+  </Accordion>
+  <Accordion title="Privilege escalation">
+    A UDF running as a **high-privilege warehouse role** can read tables the author should not see. Use **least-privilege** roles dedicated to pipeline execution and **row access policies** where available.
+  </Accordion>
+  <Accordion title="Supply chain">
+    Pin **dependencies** and scan **third-party libraries** the same way you scan application services. Re-review when dependencies update.
+  </Accordion>
+  <Accordion title="Denial of service">
+    Unbounded loops, cartesian explosions, or huge aggregates inside a UDF can starve warehouses. Require **LIMIT** in exploratory queries and **cost guards** in production.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  Revoking a UDF does not automatically rewrite historical runs. Plan how you **reprocess** or **quarantine** outputs that depended on a withdrawn function.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Advanced nodes" icon="puzzle" href="/nodes/advanced">
+    Where UDFs and extensions surface in the graph.
+  </Card>
+  <Card title="Data contracts" icon="file-check" href="/governance/data-contracts">
+    Encode expectations UDFs must honor.
+  </Card>
+</CardGroup>

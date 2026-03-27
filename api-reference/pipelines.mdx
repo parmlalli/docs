@@ -1,0 +1,535 @@
+---
+title: "Pipelines"
+description: "Create, manage, and execute data pipelines."
+---
+
+Pipelines are directed graphs of **nodes** (sources, transforms, destinations) and **edges** (data flow). Use the API to version graphs, run executions, inspect lineage, and manage trash.
+
+**Base URL:** `https://api.planasonix.com`  
+**Auth:** `Authorization: Bearer` plus your API key or JWT.
+
+---
+
+## CRUD and lifecycle
+
+### `GET /api/pipelines`
+
+List pipelines.
+
+<ParamField query="projectId" type="string">
+  Restrict to a project.
+</ParamField>
+
+<ParamField query="folderId" type="string">
+  Restrict to a folder.
+</ParamField>
+
+<ParamField query="search" type="string">
+  Match on pipeline name.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Filter by lifecycle status (`draft`, `active`, `archived`, and so on).
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "data": [
+    {
+      "id": "pl_01hqxyz",
+      "name": "daily_revenue_sync",
+      "projectId": "prj_01",
+      "folderId": "fld_02",
+      "status": "active",
+      "updatedAt": "2025-03-26T18:00:00Z"
+    }
+  ],
+  "meta": { "total": 1 }
+}
+```
+</Expandable>
+
+---
+
+### `POST /api/pipelines`
+
+Create a pipeline with an initial graph.
+
+<ParamField body="name" type="string" required>
+  Pipeline name.
+</ParamField>
+
+<ParamField body="projectId" type="string" required>
+  Owning project.
+</ParamField>
+
+<ParamField body="folderId" type="string">
+  Folder within the project.
+</ParamField>
+
+<ParamField body="nodes" type="array" required>
+  Node definitions (`id`, `type`, `config`, positions, and so on).
+</ParamField>
+
+<ParamField body="edges" type="array" required>
+  Edge list (`source`, `target`, optional port keys).
+</ParamField>
+
+<Expandable title="Example request and response">
+```json
+{
+  "name": "crm_to_warehouse",
+  "projectId": "prj_01",
+  "folderId": "fld_02",
+  "nodes": [
+    {
+      "id": "n_source",
+      "type": "source.postgres",
+      "config": { "connectionId": "conn_pg", "table": "public.contacts" }
+    },
+    {
+      "id": "n_sink",
+      "type": "destination.snowflake",
+      "config": { "connectionId": "conn_sf", "table": "STG.CRM_CONTACTS" }
+    }
+  ],
+  "edges": [{ "id": "e1", "source": "n_source", "target": "n_sink" }]
+}
+```
+
+```json
+{
+  "id": "pl_02hqabc",
+  "name": "crm_to_warehouse",
+  "projectId": "prj_01",
+  "folderId": "fld_02",
+  "status": "draft",
+  "nodes": [
+    {
+      "id": "n_source",
+      "type": "source.postgres",
+      "config": { "connectionId": "conn_pg", "table": "public.contacts" }
+    },
+    {
+      "id": "n_sink",
+      "type": "destination.snowflake",
+      "config": { "connectionId": "conn_sf", "table": "STG.CRM_CONTACTS" }
+    }
+  ],
+  "edges": [{ "id": "e1", "source": "n_source", "target": "n_sink" }],
+  "createdAt": "2025-03-27T09:00:00Z"
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/pipelines/{id}`
+
+Fetch the full graph and configuration.
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+---
+
+### `PUT /api/pipelines/{id}`
+
+Replace or update the pipeline graph (nodes and edges).
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<ParamField body="nodes" type="array">
+  Full node list when replacing the graph.
+</ParamField>
+
+<ParamField body="edges" type="array">
+  Full edge list when replacing the graph.
+</ParamField>
+
+---
+
+### `DELETE /api/pipelines/{id}`
+
+Soft-delete the pipeline (moves to trash).
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "id": "pl_02hqabc",
+  "deleted": true,
+  "deletedAt": "2025-03-27T10:00:00Z"
+}
+```
+</Expandable>
+
+---
+
+## Runs and execution
+
+### `POST /api/pipelines/{id}/run`
+
+Start a new run (full graph or parameterized subset, depending on body).
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<ParamField body="variables" type="object">
+  Runtime variable overrides.
+</ParamField>
+
+<ParamField body="environmentId" type="string">
+  Execution environment (warehouse size, queue, and so on).
+</ParamField>
+
+<Expandable title="Example request and response">
+<CodeGroup>
+```bash Start run
+curl -X POST https://api.planasonix.com/api/pipelines/pl_02hqabc/run \
+  -H "Authorization: Bearer plnx_live_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"variables":{"RUN_DATE":"2025-03-27"}}'
+```
+
+```json Response body
+{
+  "runId": "run_01j8k2m4",
+  "pipelineId": "pl_02hqabc",
+  "status": "queued",
+  "queuedAt": "2025-03-27T10:05:00Z"
+}
+```
+</CodeGroup>
+</Expandable>
+
+---
+
+### `GET /api/pipelines/{id}/runs`
+
+Paginated run history for this pipeline.
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<ParamField query="limit" type="integer">
+  Page size.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from `meta`.
+</ParamField>
+
+---
+
+### `GET /api/pipelines/{id}/execution-status`
+
+Current state of an in-flight or last completed execution.
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "pipelineId": "pl_02hqabc",
+  "runId": "run_01j8k2m4",
+  "status": "running",
+  "progress": { "completedNodes": 4, "totalNodes": 12 },
+  "startedAt": "2025-03-27T10:05:12Z"
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/pipelines/{id}/execution-plan`
+
+Logical execution plan (order, splits, pushes) for the current graph.
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+---
+
+### `GET /api/pipelines/{id}/lineage`
+
+Dataset-level lineage graph for the pipeline.
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "pipelineId": "pl_02hqabc",
+  "nodes": [
+    { "id": "ds_pg_public_contacts", "kind": "table", "label": "postgres.public.contacts" },
+    { "id": "ds_sf_stg_crm", "kind": "table", "label": "snowflake.stg.crm_contacts" }
+  ],
+  "edges": [
+    { "source": "ds_pg_public_contacts", "target": "ds_sf_stg_crm", "transform": "n_source → n_sink" }
+  ]
+}
+```
+</Expandable>
+
+---
+
+### `GET /api/pipelines/{id}/column-lineage`
+
+Column-level lineage derived from the graph.
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<ParamField query="nodeId" type="string">
+  Focus on outputs of a specific node.
+</ParamField>
+
+---
+
+### `GET /api/pipelines/{id}/query-plan`
+
+Engine query plan for SQL-heavy nodes (when supported by the backing system).
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<ParamField query="nodeId" type="string" required>
+  Node to explain.
+</ParamField>
+
+---
+
+### `POST /api/pipelines/preview`
+
+Dry-run style preview without persisting outputs (limits and sandbox rules apply).
+
+<ParamField body="nodes" type="array" required>
+  Graph fragment or full graph to preview.
+</ParamField>
+
+<ParamField body="edges" type="array" required>
+  Edges for the preview graph.
+</ParamField>
+
+<ParamField body="connectionOverrides" type="object">
+  Optional connection IDs for preview-only execution.
+</ParamField>
+
+---
+
+### `POST /api/pipelines/optimize`
+
+Return suggestions to improve cost, parallelism, or pushdown.
+
+<ParamField body="pipelineId" type="string">
+  Existing pipeline to analyze.
+</ParamField>
+
+<ParamField body="nodes" type="array">
+  Inline graph when not referencing a saved pipeline.
+</ParamField>
+
+<ParamField body="edges" type="array">
+  Inline edges when not referencing a saved pipeline.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "suggestions": [
+    {
+      "code": "push_filter_upstream",
+      "severity": "info",
+      "nodeId": "n_filter",
+      "message": "Move filter before expensive join to reduce shuffle."
+    }
+  ]
+}
+```
+</Expandable>
+
+---
+
+## Metadata operations
+
+### `POST /api/pipelines/{id}/clone`
+
+Duplicate the pipeline (optionally to another folder or project via body fields).
+
+<ParamField path="id" type="string" required>
+  Source pipeline ID.
+</ParamField>
+
+<ParamField body="name" type="string">
+  Name for the clone.
+</ParamField>
+
+<ParamField body="projectId" type="string">
+  Target project.
+</ParamField>
+
+<ParamField body="folderId" type="string">
+  Target folder.
+</ParamField>
+
+---
+
+### `PATCH /api/pipelines/{id}/rename`
+
+Rename only.
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  New name.
+</ParamField>
+
+---
+
+### `PATCH /api/pipelines/{id}/move`
+
+Change folder (and optionally project if permitted).
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<ParamField body="folderId" type="string" required>
+  Destination folder ID.
+</ParamField>
+
+<ParamField body="projectId" type="string">
+  Destination project when cross-project moves are allowed.
+</ParamField>
+
+---
+
+### `PATCH /api/pipelines/{id}/status`
+
+Update lifecycle status.
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<ParamField body="status" type="string" required>
+  Target status value.
+</ParamField>
+
+---
+
+## Trash
+
+### `GET /api/pipelines/deleted`
+
+List soft-deleted pipelines.
+
+<ParamField query="projectId" type="string">
+  Filter by project.
+</ParamField>
+
+---
+
+### `POST /api/pipelines/{id}/restore`
+
+Restore from trash.
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+---
+
+### `DELETE /api/pipelines/{id}/permanent`
+
+Permanently delete a pipeline already in trash.
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<Warning>
+  This cannot be undone. Dependent schedules and history policies may still retain run metadata according to your retention settings.
+</Warning>
+
+---
+
+## Node preview and cache
+
+### `POST /api/pipelines/{id}/nodes/{nodeId}/preview`
+
+Sample output for a single node using the saved graph context.
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<ParamField path="nodeId" type="string" required>
+  Node ID within the graph.
+</ParamField>
+
+<ParamField body="limit" type="integer">
+  Max sample rows.
+</ParamField>
+
+<Expandable title="Example response">
+```json
+{
+  "nodeId": "n_source",
+  "columns": ["id", "email", "updated_at"],
+  "rows": [
+    [1, "a@acme.com", "2025-03-20T12:00:00Z"],
+    [2, "b@acme.com", "2025-03-21T08:30:00Z"]
+  ],
+  "truncated": true
+}
+```
+</Expandable>
+
+---
+
+### `POST /api/pipelines/{id}/nodes/{nodeId}/cache`
+
+Warm or invalidate cached intermediate results for a node (behavior is connector-dependent).
+
+<ParamField path="id" type="string" required>
+  Pipeline ID.
+</ParamField>
+
+<ParamField path="nodeId" type="string" required>
+  Node ID.
+</ParamField>
+
+<ParamField body="action" type="string">
+  For example `warm` or `invalidate`.
+</ParamField>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Runs API" icon="play" href="/api-reference/runs">
+    Poll and inspect individual runs.
+  </Card>
+  <Card title="Canvas" icon="layout" href="/pipelines/canvas">
+    How graphs map to the visual editor.
+  </Card>
+</CardGroup>

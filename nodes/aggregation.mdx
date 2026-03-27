@@ -1,0 +1,83 @@
+---
+title: "Aggregation"
+description: "Aggregate, pivot, and unpivot data with summarization nodes."
+---
+
+**Aggregation** nodes change **grain**: you go from many detail rows to fewer summary rows (or from wide tables to long tidy tables and back). Use them after joins and cleansing when metrics should reflect business definitions (sums, counts, distincts, pivoted reports).
+
+## Summarize
+
+**Summarize** groups by dimensions and computes **aggregate functions** per group.
+
+**Common functions:**
+
+- **sum**, **avg**, **min**, **max**
+- **count**, **count distinct**
+- **stddev / variance** (when supported)
+- **arbitrary / first / last** value picks with ordering (product-dependent)
+
+**Configuration:**
+
+- **Group keys**: Columns that define the grain (`date`, `region`, `product_id`).
+- **Measures**: One entry per output metric (`revenue = sum(line_total)`).
+- **Filters**: Optional predicate applied before aggregation (HAVING-equivalent may appear separately).
+
+**Example:** Daily revenue by region:
+
+- Group by `order_date`, `region`
+- `sum(order_total)` as `revenue`
+- `count_distinct(order_id)` as `orders`
+
+<Tip>
+  Match grain to the consuming dashboard or fact table. If BI tools expect one row per order, do not group only by date unless everyone agrees on that metric definition.
+</Tip>
+
+## Pivot
+
+**Pivot** spreads values from a **name column** across new columns—turning long tidy data into wide report shapes.
+
+**Configuration:**
+
+- **Index / row keys**: Identifiers that stay as rows (`product_id`).
+- **Pivot column**: Field whose distinct values become headers (`quarter`).
+- **Values column**: Numeric or text field to place in cells (`revenue`).
+- **Aggregation**: How to combine multiple rows that map to the same cell (`sum`, `max`).
+
+**Example:** You have rows `(sku, month, units_sold)`; pivot `month` to columns `2024-01`, `2024-02`, … for a spreadsheet-style export.
+
+## Unpivot
+
+**Unpivot** (melt) does the inverse: take many measure columns and produce **name / value** pairs.
+
+**Configuration:**
+
+- **Id columns**: Keys to retain per row (`store_id`, `date`).
+- **Measure columns**: The wide metrics to stack (`sales_q1`, `sales_q2`, …).
+- **Output names**: Typically `metric_name` and `metric_value`.
+
+**Example:** A CSV has one column per week of the year; unpivot so downstream **Summarize** nodes can filter and aggregate consistently.
+
+## Choosing summarize vs pivot first
+
+<AccordionGroup>
+  <Accordion title="Long data for analytics">
+    Keep fact tables long (entity, metric name, value) when many metrics share dimensions; aggregate with **Summarize** after filters.
+  </Accordion>
+  <Accordion title="Wide data for exports">
+    **Pivot** late in the graph—right before a **Write** to spreadsheets or systems expecting fixed columns.
+  </Accordion>
+  <Accordion title="Repairing wide sources">
+    **Unpivot** early to normalize messy extracts, then join to dimension tables on `metric_name`.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Column transforms" icon="table-columns" href="/nodes/column-transforms">
+    Use window functions when you need row-level outputs with running metrics.
+  </Card>
+  <Card title="Destinations" icon="share-from-square" href="/nodes/destinations">
+    Load aggregates to warehouses or marts.
+  </Card>
+</CardGroup>

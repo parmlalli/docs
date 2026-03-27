@@ -1,0 +1,99 @@
+---
+title: "Data quality"
+description: "Validate, profile, and protect data quality within your pipelines."
+---
+
+**Data quality** nodes guard correctness before data reaches consumers or production systems. You express expectations as rules, measure distributions, detect sensitive fields, synthesize test data, and notify owners when checks fail.
+
+## Validation
+
+**Validation** applies **schema and rule checks** to incoming rows.
+
+**Configuration:**
+
+- **Schema constraints**: Required columns, non-null keys, type compatibility.
+- **Business rules**: Domain checks (`amount >= 0`, `status IN (...)`), regex patterns, referential checks against small lookup tables when supported.
+- **On failure**: Fail the run, route bad rows to a reject path, or count violations—per node settings.
+
+**Typical use:** Block loads when primary keys are duplicated or when mandatory GDPR consent flags are missing.
+
+<Tip>
+  Keep validation **close to landing** for external feeds, and **close to publication** for curated marts—two layers catch different classes of defects.
+</Tip>
+
+## Data Profiling
+
+**Data Profiling** computes **statistics** on columns: null rates, distinct counts, min/max, histograms, and inferred patterns.
+
+**Configuration:**
+
+- **Sample size**: Full scan vs sample for large tables.
+- **Columns**: All vs selected sensitive dimensions.
+- **Output destination**: Inline report vs persisted profile table for trend charts.
+
+**Typical use:** After a vendor schema change, compare null rate on `email` week over week to catch silent breakage.
+
+## PII Detection
+
+**PII Detection** scans text and structured fields for **likely personal data** using patterns and models (capabilities vary by plan).
+
+**Configuration:**
+
+- **Detector packs**: Email, phone, government IDs, payment artifacts.
+- **Masking vs tagging**: Flag columns for governance, or mask values before logging.
+- **Locale**: Tune detectors for country-specific ID formats.
+
+**Typical use:** Before writing to a sandbox bucket, confirm no unexpected credit-card-like tokens appear in free-text `notes` columns.
+
+<Warning>
+  Automated detection is probabilistic. Combine with policy tags and access controls—not solely automated redaction—for regulated data.
+</Warning>
+
+## Row Generator
+
+**Row Generator** produces **synthetic or templated rows** for tests and demos.
+
+**Configuration:**
+
+- **Row count** and **seed** for reproducibility.
+- **Column generators**: Ranges, enumerations, UUIDs, Faker-style patterns when available.
+- **Schema target**: Match production schema to test downstream nodes without copying real customer data.
+
+**Typical use:** CI pipelines that run integration tests against ephemeral warehouses.
+
+## Notification
+
+**Notification** sends **alerts** when upstream conditions trigger—often paired with validation or error paths.
+
+**Configuration:**
+
+- **Channels**: Email, Slack, Microsoft Teams, PagerDuty—per integration.
+- **Message template**: Include pipeline name, run URL, row counts, and top error messages.
+- **Severity**: Route SLA breaches to paging; send warnings to a team channel only.
+
+**Typical use:** When **Validation** rejects more than 1% of rows, notify the data owner with a sample of offending keys.
+
+## Recommended layout
+
+<Steps>
+  <Step title="Profile after structural parsers">
+    Run **Data Profiling** once files parse successfully; skip expensive profiling on known-bad batches.
+  </Step>
+  <Step title="Validate before expensive joins">
+    Fail fast on key violations before paying for large shuffle operations.
+  </Step>
+  <Step title="Notify with context">
+    Include variable values (environment, batch id) so on-call engineers reproduce the issue quickly.
+  </Step>
+</Steps>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Governance" icon="shield" href="/governance/overview">
+    Contracts, catalog, and policy alignment.
+  </Card>
+  <Card title="Observability" icon="gauge" href="/observability/overview">
+    Dashboards, diagnostics, and DLQ patterns.
+  </Card>
+</CardGroup>

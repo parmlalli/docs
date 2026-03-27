@@ -1,0 +1,102 @@
+---
+title: "File watcher triggers"
+description: "Trigger pipeline runs when files change in monitored locations."
+---
+
+File watcher triggers start pipelines when files appear or change in **monitored paths**. Unlike cloud object notifications, watchers use **polling** or **agent-based** observation so you can cover **network shares**, **FTP drop zones**, **mounted volumes**, and other locations that do not emit cloud events.
+
+<Info>
+  Pair this page with [Triggers](/orchestration/triggers) for guidance on duplicate detection and batching when many files land at once.
+</Info>
+
+## When to use file watchers
+
+Use file watchers when:
+
+- Producers write to **SMB/NFS** shares or **on-premises** folders without an S3-compatible API.
+- Your cloud storage does not yet have **event notifications** configured, and you accept polling latency.
+- You need a **controlled scan** of a directory tree on a schedule independent of external event buses.
+
+## Polling-based file watcher
+
+<Steps>
+  <Step title="Define the monitored root">
+    In Planasonix, specify the **root path** or **connection** that resolves to a directory the runtime can read. Use a service account or technical user with read (and optionally list-only where supported) on that path.
+  </Step>
+  <Step title="Set path patterns">
+    Configure **include** patterns (for example, `**/*.csv`, `incoming/**/*.parquet`) and **exclude** patterns (for example, `**/*.tmp`, `**/.staging/**`) so transient files do not start runs.
+  </Step>
+  <Step title="Choose polling interval">
+    Set the **poll interval** to balance latency and load. High-frequency polls increase I/O and API calls; low-frequency polls delay processing. Start with 30–120 seconds for batch file drops and tighten only if SLAs require it.
+  </Step>
+  <Step title="Select stable detection semantics">
+    Decide whether a “new file” means **first seen**, **size stable for N seconds**, or **mtime unchanged across two polls**. Stable detection avoids starting pipelines while writers still flush data.
+  </Step>
+</Steps>
+
+### Path patterns
+
+Glob-style patterns help you scope watchers:
+
+| Pattern | Matches |
+| ------- | ------- |
+| `*.csv` | CSV files in the immediate directory |
+| `**/*.csv` | CSV files in nested folders |
+| `orders/2025/*/*.parquet` | Partitioned layouts with year shard |
+
+<Tip>
+  Prefer **narrow roots** plus explicit includes over scanning entire multi-tenant shares. Broad scans are brittle and risky from a data governance perspective.
+</Tip>
+
+## Polling interval tradeoffs
+
+<AccordionGroup>
+  <Accordion title="Latency vs load">
+    Shorter intervals reduce time-to-run but amplify **list** operations on large directories. If the watcher must walk deep trees, consider restructuring drops into dated subfolders and pointing the watcher at the current date prefix only.
+  </Accordion>
+  <Accordion title="Clock and timezone">
+    When filenames embed timestamps, confirm the watcher’s timezone matches producer conventions so “today’s folder” resolves correctly around midnight and DST changes.
+  </Accordion>
+</AccordionGroup>
+
+## Agent-based watching for on-premises file systems
+
+When Planasonix runs a **lightweight agent** in your network, the agent streams **change notifications** or **file lists** to the control plane securely.
+
+<Steps>
+  <Step title="Install the agent">
+    Deploy the agent package on a host that has **low-latency access** to the share. Prefer a server in the same site as the storage rather than a laptop that sleeps.
+  </Step>
+  <Step title="Register and authenticate">
+    Enroll the agent with a **workspace key**, **OAuth device flow**, or **mutual TLS** as your enterprise standard requires. Rotate enrollment secrets on the same schedule as other service credentials.
+  </Step>
+  <Step title="Configure watched paths">
+    Map local or UNC paths (`\\fileserver\landing\`) to logical **watch roots**. Apply the same include/exclude patterns as polling mode.
+  </Step>
+  <Step title="Network and HA">
+    For availability, run **two agents** on different hosts with non-overlapping failure domains only if the product supports leader election or partitioned paths—avoid duplicate pipeline starts from two independent watchers on the same folder without coordination.
+  </Step>
+</Steps>
+
+<Warning>
+  Grant the agent OS user **read-only** access unless the pipeline explicitly moves or archives files after success. Write permission increases blast radius if the agent or Planasonix credentials are misused.
+</Warning>
+
+## After files are detected
+
+Configure the trigger to pass **file paths** or **connection-relative URIs** into pipeline parameters. Add a post-success **archive or delete** step only when your operations team owns retention; otherwise leave source files in place and rely on idempotent loads for replays.
+
+<Note>
+  If the same file remains in the watched folder across polls, decide whether reprocessing is allowed. Some teams move processed files to `archive/` so only new drops trigger runs.
+</Note>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Triggers overview" icon="bolt" href="/orchestration/triggers">
+    Event triggers and webhooks compared to file watching.
+  </Card>
+  <Card title="Orchestration overview" icon="diagram-project" href="/orchestration/overview">
+    How schedules, triggers, and chaining fit together.
+  </Card>
+</CardGroup>

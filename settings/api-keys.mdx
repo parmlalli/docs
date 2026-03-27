@@ -1,0 +1,54 @@
+---
+title: "API keys"
+description: "Create and manage API keys for programmatic access to Planasonix."
+---
+
+**API keys** authenticate scripts, CI jobs, and partner systems to the Planasonix REST API. Treat each key like a password: short-lived where possible, scoped, and stored in a secret manager.
+
+## Create a key
+
+<Steps>
+  <Step title="Open API keys">
+    Go to **Organization** → **API keys** (exact label may vary by role).
+  </Step>
+  <Step title="Name and scope">
+    Choose a descriptive name (`prod-dbt-deploy`) and the **scopes** the integration needs—read-only vs run triggers vs admin operations.
+  </Step>
+  <Step title="Copy once">
+    Copy the secret when shown; many deployments never display it again. If you lose it, rotate and create a new key.
+  </Step>
+</Steps>
+
+## Using keys in requests
+
+Send the key in the header your workspace documents—commonly:
+
+```http
+Authorization: Bearer YOUR_API_KEY
+```
+
+or a dedicated header such as `X-Planasonix-Key`. See [Authentication](/api-reference/authentication) for the exact format and scope behavior.
+
+<Info>
+  Keys are tied to a **workspace** and optionally a **service user**. User keys inherit that user’s permissions; service keys use the scopes you assign at creation.
+</Info>
+
+## Rotation and revocation
+
+- **Rotate** before employees leave or after a suspected leak. Create the new key, update callers, then revoke the old key.
+- **Revoke** immediately if a pipeline logs expose the secret or a vendor breach occurs.
+
+## IP allowlists
+
+When [Session policy](/settings/session-policy) enforces IP restrictions, API traffic from automation must originate from approved CIDR blocks or use a permitted egress proxy.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="API reference" icon="book" href="/api-reference/introduction">
+    Base URL, rate limits, and response shapes.
+  </Card>
+  <Card title="Webhooks" icon="link" href="/orchestration/webhooks">
+    Inbound HTTP triggers that complement outbound API use.
+  </Card>
+</CardGroup>

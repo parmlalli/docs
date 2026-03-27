@@ -1,48 +1,232 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Planasonix",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#F97316",
+    "light": "#FFE100",
+    "dark": "#EA580C"
   },
   "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
             "group": "Getting started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "getting-started/introduction",
+              "getting-started/quickstart",
+              "getting-started/concepts"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Platform",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "platform/shared-items",
+              "platform/trash",
+              "platform/pipeline-agents",
+              "platform/user-management",
+              "platform/run-history",
+              "platform/error-history"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Connections",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "connections/overview",
+              "connections/databases",
+              "connections/data-warehouses",
+              "connections/cloud-storage",
+              "connections/streaming-platforms",
+              "connections/apis-and-webhooks",
+              "connections/saas-applications",
+              "connections/ai-providers",
+              "connections/credentials"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Pipelines",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "pipelines/overview",
+              "pipelines/canvas",
+              "pipelines/variables",
+              "pipelines/templates",
+              "pipelines/import-and-convert",
+              "pipelines/convert-fivetran",
+              "pipelines/convert-dbt",
+              "pipelines/convert-matillion",
+              "pipelines/convert-informatica",
+              "pipelines/convert-alteryx",
+              "pipelines/convert-ssis",
+              "pipelines/git-integration",
+              "pipelines/environments"
+            ]
+          },
+          {
+            "group": "Nodes",
+            "pages": [
+              "nodes/overview",
+              "nodes/sources",
+              "nodes/row-transforms",
+              "nodes/column-transforms",
+              "nodes/joins-and-unions",
+              "nodes/aggregation",
+              "nodes/parsers-and-builders",
+              "nodes/control-flow",
+              "nodes/data-quality",
+              "nodes/advanced",
+              "nodes/destinations"
+            ]
+          },
+          {
+            "group": "Reverse ETL",
+            "pages": [
+              "reverse-etl/overview",
+              "reverse-etl/syncs",
+              "reverse-etl/destinations",
+              "reverse-etl/field-mapping",
+              "reverse-etl/monitoring"
+            ]
+          },
+          {
+            "group": "AI Copilot",
+            "pages": [
+              "ai-copilot/overview",
+              "ai-copilot/chat",
+              "ai-copilot/pipeline-generation",
+              "ai-copilot/sql-assistance",
+              "ai-copilot/knowledge-base"
+            ]
+          },
+          {
+            "group": "Streaming & CDC",
+            "pages": [
+              "streaming/overview",
+              "streaming/cdc-sources",
+              "streaming/stream-processing",
+              "streaming/webhook-streams"
+            ]
+          },
+          {
+            "group": "Orchestration",
+            "pages": [
+              "orchestration/overview",
+              "orchestration/schedules",
+              "orchestration/triggers",
+              "orchestration/trigger-s3",
+              "orchestration/trigger-azure-blob",
+              "orchestration/trigger-gcs",
+              "orchestration/trigger-file-watcher",
+              "orchestration/webhooks",
+              "orchestration/pipeline-chaining",
+              "orchestration/airflow-integration",
+              "orchestration/backfill"
+            ]
+          },
+          {
+            "group": "Data governance",
+            "pages": [
+              "governance/overview",
+              "governance/data-catalog",
+              "governance/data-contracts",
+              "governance/lineage",
+              "governance/impact-analysis",
+              "governance/semantic-layer",
+              "governance/data-marketplace",
+              "governance/data-stewardship",
+              "governance/documentation-index"
+            ]
+          },
+          {
+            "group": "Observability",
+            "pages": [
+              "observability/overview",
+              "observability/dashboard",
+              "observability/diagnostics",
+              "observability/dead-letter-queue",
+              "observability/cost-insights",
+              "observability/alerts"
+            ]
+          },
+          {
+            "group": "Notebooks",
+            "pages": [
+              "notebooks/overview",
+              "notebooks/getting-started",
+              "notebooks/spark-integration"
+            ]
+          },
+          {
+            "group": "Troubleshooting",
+            "pages": [
+              "troubleshooting/connections",
+              "troubleshooting/pipelines",
+              "troubleshooting/authentication",
+              "troubleshooting/sap",
+              "troubleshooting/agents"
+            ]
+          },
+          {
+            "group": "Connectors",
+            "pages": [
+              "connectors/gallery",
+              "connectors/custom-connectors",
+              "connectors/jdbc-gateway"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Settings",
+        "groups": [
+          {
+            "group": "Account",
+            "pages": [
+              "settings/profile",
+              "settings/appearance",
+              "settings/notifications"
+            ]
+          },
+          {
+            "group": "Organization",
+            "pages": [
+              "settings/teams-and-permissions",
+              "settings/api-keys",
+              "settings/integrations",
+              "settings/compute",
+              "settings/logging",
+              "settings/webhook-settings",
+              "settings/orchestration-api",
+              "settings/udf-reviews"
+            ]
+          },
+          {
+            "group": "Security",
+            "pages": [
+              "settings/sso",
+              "settings/sso-okta",
+              "settings/sso-azure-ad",
+              "settings/sso-google",
+              "settings/sso-auth0",
+              "settings/sso-onelogin",
+              "settings/sso-oidc",
+              "settings/mfa",
+              "settings/session-policy",
+              "settings/ssh-tunnels",
+              "settings/ip-whitelisting"
+            ]
+          },
+          {
+            "group": "Billing",
+            "pages": [
+              "settings/plans-and-pricing",
+              "settings/usage"
             ]
           }
         ]
@@ -51,18 +235,56 @@
         "tab": "API reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Overview",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+              "api-reference/authentication",
+              "api-reference/auth"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Data platform",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/connections",
+              "api-reference/credentials",
+              "api-reference/pipelines",
+              "api-reference/runs",
+              "api-reference/projects",
+              "api-reference/templates"
+            ]
+          },
+          {
+            "group": "Orchestration",
+            "pages": [
+              "api-reference/schedules",
+              "api-reference/triggers",
+              "api-reference/orchestration-api"
+            ]
+          },
+          {
+            "group": "Integration",
+            "pages": [
+              "api-reference/reverse-etl",
+              "api-reference/streams",
+              "api-reference/agents",
+              "api-reference/git",
+              "api-reference/convert"
+            ]
+          },
+          {
+            "group": "Governance",
+            "pages": [
+              "api-reference/contracts",
+              "api-reference/catalog",
+              "api-reference/lineage"
+            ]
+          },
+          {
+            "group": "Platform",
+            "pages": [
+              "api-reference/ai",
+              "api-reference/dlq",
+              "api-reference/user-settings"
             ]
           }
         ]
@@ -71,52 +293,51 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "Platform",
+          "href": "https://app.planasonix.com",
+          "icon": "browser"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "Status",
+          "href": "https://status.planasonix.com",
+          "icon": "signal-bars"
         }
       ]
     }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
   },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:support@planasonix.com"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Get Started",
+      "href": "https://app.planasonix.com"
     }
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "cursor"
+    ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/parmlalli",
+      "linkedin": "https://linkedin.com/company/planasonix"
     }
-  }
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "background": {
+    "decoration": "gradient"
+  },
+  "rounded": "default"
 }

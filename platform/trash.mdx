@@ -1,0 +1,84 @@
+---
+title: "Trash"
+description: "Recover deleted pipelines, connections, and other resources."
+---
+
+**Trash** holds **soft-deleted** resources so you can recover from mistakes, bad merges, or accidental clicks. Nothing in trash is available for scheduled runs until you restore it.
+
+## Soft-delete behavior
+
+When you delete a supported resource, Planasonix **marks it deleted** instead of purging immediately.
+
+- **References** from active pipelines may break if they pointed at the deleted object; the UI surfaces conflicts when you restore.
+- **Runs and history** for deleted pipelines typically remain queryable for compliance, but new runs cannot start until restoration.
+- **Secrets** in trashed connections stay encrypted at rest; use permission controls to limit who can browse trash.
+
+<Note>
+  Exact retention and whether dependent schedules auto-disable vary by deployment. Your admin documents the authoritative policy for your organization.
+</Note>
+
+## Retention period
+
+Trash items remain for a **retention window** defined by your organization (often 30–90 days). After that, the platform **permanently deletes** the resource and associated recoverable metadata according to your plan.
+
+<Warning>
+  Permanent deletion is irreversible for standard self-service recovery. Legal hold or compliance exports, if enabled, are separate from the trash UI.
+</Warning>
+
+## Restoring items
+
+<Steps>
+  <Step title="Open Trash">
+    Navigate to **Platform** → **Trash** (or your workspace equivalent).
+  </Step>
+  <Step title="Locate the resource">
+    Filter by type, owner, or approximate delete date.
+  </Step>
+  <Step title="Restore">
+    Choose **Restore** and confirm. Resolve any naming conflicts if another resource took the same identifier while this one was deleted.
+  </Step>
+  <Step title="Reconnect dependencies">
+    Re-attach schedules, webhooks, or downstream chains that were paused or removed when the parent was deleted.
+  </Step>
+</Steps>
+
+<Tip>
+  After restoring a pipeline, run a **dry run** or **small slice** in a non-production environment before re-enabling production schedules.
+</Tip>
+
+## Permanent deletion
+
+Organization admins (or roles your policy assigns) can **empty trash** or **purge** individual items before natural expiry. Use this when a credential must be retired immediately or when policy forbids retaining certain definitions.
+
+- Purging a **connection** invalidates tokens where the integration supports revocation; verify in the upstream system if required.
+- Purging a **pipeline** does not automatically delete warehouse tables the pipeline created; manage data lifecycle in the destination.
+
+## What you can trash
+
+### Pipelines
+
+You can move **draft and published pipeline definitions** to trash when you have delete permission on the project. Trashing stops new orchestration from targeting that definition.
+
+### Credentials
+
+**Credentials** (connection records holding secrets or OAuth tokens) can be trashed when you rotate providers or decommission sources. Trashed credentials cannot authorize new runs.
+
+<AccordionGroup>
+  <Accordion title="What is not in trash">
+    Completed run logs, billing records, and audit events are not user-recoverable from trash; they follow platform retention policies.
+  </Accordion>
+  <Accordion title="Shared resources">
+    Deleting a shared pipeline may affect collaborators after restore delays; coordinate with consumers before trashing production-critical flows.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Shared items" icon="share-nodes" href="/platform/shared-items">
+    Collaboration and connection visibility.
+  </Card>
+  <Card title="Environments" icon="layer-group" href="/pipelines/environments">
+    Promote and protect production definitions.
+  </Card>
+</CardGroup>

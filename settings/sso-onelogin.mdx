@@ -1,0 +1,94 @@
+---
+title: "OneLogin SSO setup"
+description: "Configure OneLogin as your SAML identity provider."
+---
+
+OneLogin provides a guided **SAML Test Connector** or custom SAML application template you can tailor for Planasonix. You need OneLogin **admin** rights and **organization admin** access in Planasonix.
+
+## Planasonix values
+
+From **Settings → Security → SSO**, copy:
+
+- **ACS URL** (Recipient / Consumer URL in OneLogin terminology)
+- **Entity ID** (Issuer / Audience for the service provider)
+
+Keep these available while you edit the OneLogin connector.
+
+## Create the SAML connector
+
+<Steps>
+  <Step title="Add a new application">
+    In the OneLogin admin portal, go to **Applications → Applications → Add App**. Search for **SAML Test Connector (Advanced)** or a **Generic SAML** template your organization standardizes on, then add it.
+  </Step>
+  <Step title="Rename and assign">
+    Set the display name to `Planasonix` (or your standard). Optionally upload a logo. Save the application shell before detailed SAML configuration.
+  </Step>
+  <Step title="Configure SAML parameters">
+    Open the app → **Configuration** (or **SSO** depending on template). Set:
+
+    - **ACS (Consumer) URL**: Planasonix ACS URL
+    - **Audience (EntityID)**: Planasonix Entity ID
+    - **Recipient** and **Consumer URL** fields, if separate: match ACS URL unless OneLogin documentation for your template says otherwise
+
+    Set **SAML name ID format** to **Email** when Planasonix expects email-based Name IDs.
+  </Step>
+  <Step title="Signer and algorithm settings">
+    Under **SSO** or **Credentials**, choose **SAML Signature Element** (assertion, response, or both) per your security policy. Use **SHA-256** for signatures unless an older integration explicitly requires SHA-1.
+  </Step>
+</Steps>
+
+## Parameter configuration
+
+OneLogin exposes **Parameters** that map user fields to SAML assertion attributes.
+
+<Tabs>
+  <Tab title="Standard user fields">
+    | OneLogin value | SAML attribute name (example) |
+    | -------------- | ------------------------------ |
+    | Email | `Email` / `User.email` → export as `email` if required by Planasonix |
+    | First Name | `FirstName` |
+    | Last Name | `LastName` |
+
+    Enable **Include in SAML assertion** for each parameter Planasonix lists as required.
+  </Tab>
+  <Tab title="Groups and roles">
+    Map **MemberOf**, **Role**, or custom fields if Planasonix consumes group membership. Use **macros** or **rules** in OneLogin to restrict values to the groups that matter for access control, keeping assertions readable and under size limits.
+  </Tab>
+</Tabs>
+
+<Info>
+  Template field names differ between **SAML Test Connector** versions. If a field is missing, check the **SSO** tab and **Parameters** tab together; some ACS settings live only under **Configuration**.
+</Info>
+
+## SSO and issuer URLs for Planasonix
+
+Under **More Actions → SAML Metadata**, download metadata XML for Planasonix. Alternatively, copy:
+
+- **SAML 2.0 Endpoint (HTTP)** — SSO URL for manual entry
+- **Issuer URL** — entity ID for the IdP
+- **X.509 Certificate** — signing cert
+
+Paste or upload these in Planasonix **Settings → Security → SSO**.
+
+<Tip>
+  Use OneLogin **Mappings** or **Roles** to control which users see the Planasonix app tile. That reduces help-desk noise from users who should not access the workspace yet.
+</Tip>
+
+## Certificate rotation
+
+When you renew the OneLogin signing certificate, download fresh metadata and update Planasonix before the previous certificate expires. Run a pilot login after upload.
+
+<Warning>
+  If you change the **ACS URL** or **Entity ID** in OneLogin without updating Planasonix (or the reverse), users see IdP-initiated flows fail with opaque SAML errors. Treat SP values as read-only from the Planasonix console.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="SSO overview" icon="shield-halved" href="/settings/sso">
+    Enforcing SSO and handling JIT provisioning.
+  </Card>
+  <Card title="Session policy" icon="clock" href="/settings/session-policy">
+    Session length and IP constraints after OneLogin login.
+  </Card>
+</CardGroup>

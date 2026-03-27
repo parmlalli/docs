@@ -1,0 +1,60 @@
+---
+title: "Triggers"
+description: "Trigger pipeline runs based on events from S3, GCS, Azure, and more."
+---
+
+Event-based triggers start a pipeline when new or updated objects appear in cloud storage, when messages arrive on a queue, or when compatible event buses signal completion. You use triggers instead of polling when upstream systems publish files or events asynchronously.
+
+## Event-based triggers
+
+A trigger listens on a **source** you authorize (bucket notification, queue subscription, or event rule) and maps each event to a pipeline run. Configuration typically includes:
+
+- Resource ARN, bucket name, or project path
+- Prefix and suffix filters (for example, `landing/orders/` and `.parquet`)
+- Batch windowing (wait N seconds or M files before starting) to avoid one run per tiny object
+- Optional payload passthrough so the pipeline reads the triggering key list
+
+<Info>
+  Exact event shapes differ by cloud. Use the connection test to validate that Planasonix receives notifications end to end.
+</Info>
+
+## Cloud event ingestion
+
+<Tabs>
+  <Tab title="Amazon S3">
+    Configure SNS or SQS notifications on `s3:ObjectCreated:*` (and related events your policy allows). Grant the Planasonix integration principal permission to read affected objects and decrypt with KMS keys when used.
+  </Tab>
+  <Tab title="Google Cloud Storage">
+    Use Pub/Sub notifications for `OBJECT_FINALIZE` on target buckets. Ensure uniform bucket-level access and IAM bindings align with least privilege.
+  </Tab>
+  <Tab title="Azure Blob Storage">
+    Use Event Grid subscriptions to capture blob created events. Confirm network rules allow the event endpoint Planasonix provides or polls.
+  </Tab>
+</Tabs>
+
+For hybrid setups, normalize events through a queue so retries and dead-letter handling live in your cloud account.
+
+## Operational guidance
+
+<AccordionGroup>
+  <Accordion title="Idempotent loads">
+    The same file may notify more than once. Use file ETags, manifest tables, or merge keys so duplicates do not double-count facts.
+  </Accordion>
+  <Accordion title="Ordering">
+    Object creation order is not guaranteed across partitions. If ordering matters, encode sequence metadata in paths or use a single partition strategy.
+  </Accordion>
+  <Accordion title="Security">
+    Scope triggers to prefixes used only by trusted producers. Public buckets should not feed production pipelines.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Webhooks" icon="link" href="/orchestration/webhooks">
+    HTTP-triggered runs from apps that do not emit cloud events.
+  </Card>
+  <Card title="Orchestration overview" icon="diagram-project" href="/orchestration/overview">
+    How scheduling and triggers fit together.
+  </Card>
+</CardGroup>

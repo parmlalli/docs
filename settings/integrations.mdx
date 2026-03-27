@@ -1,0 +1,65 @@
+---
+title: "Integrations"
+description: "Connect Planasonix with Git, webhooks, and orchestration tools."
+---
+
+Integrations link Planasonix to the systems you already use for source control, chatops, and external schedulers so metadata and events flow without custom glue code for every team.
+
+## Git integration
+
+Connect a **Git provider** (GitHub, GitLab, Bitbucket, or compatible) to:
+
+- Store pipeline definitions as code in a repository you choose
+- Open pull requests when you export or promote changes from the canvas
+- Run validation checks on branches before merge
+
+<Steps>
+  <Step title="Install the app or OAuth">
+    Authorize Planasonix with least scope: repo contents and webhooks for the target org only.
+  </Step>
+  <Step title="Map projects">
+    Link each Planasonix project to a repo path and default branch (`main` or `develop`).
+  </Step>
+  <Step title="Protect production">
+    Require reviews on the branch that deploys to production environments; align with [Pipelines](/pipelines/overview) environment locks.
+  </Step>
+</Steps>
+
+Read [Git integration](/pipelines/git-integration) for day-to-day sync and conflict behavior.
+
+## Webhook settings
+
+**Outbound webhooks** notify external systems when runs complete, when governance checks fail, or when custom automation should start.
+
+- Register HTTPS endpoints that validate **signatures** (HMAC or JWT) from Planasonix
+- Retry with backoff on `5xx`; your endpoint should be idempotent on duplicate delivery
+
+**Inbound webhooks** (see [Webhooks](/orchestration/webhooks)) trigger pipeline runs from tools that cannot use the REST API directly.
+
+<Tabs>
+  <Tab title="Slack / Teams">
+    Connect a workspace to post to channels using approved bot tokens; channel selection is often per alert rule.
+  </Tab>
+  <Tab title="PagerDuty / Opsgenie">
+    Map severities to services and escalation policies used by your incident process.
+  </Tab>
+</Tabs>
+
+## Orchestration API
+
+External orchestrators (Airflow, Dagster, Prefect, Control-M) call the Planasonix API to **start runs**, **poll status**, and **fetch logs**. Prefer API keys with **run-only** scope over full admin keys.
+
+<Info>
+  If you trigger from CI, store the key in your CI secret store and rotate on the same schedule as deploy keys.
+</Info>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="API keys" icon="key" href="/settings/api-keys">
+    Create credentials for integrations.
+  </Card>
+  <Card title="Pipeline chaining" icon="diagram-project" href="/orchestration/pipeline-chaining">
+    Model dependencies inside the product when external orchestration is optional.
+  </Card>
+</CardGroup>

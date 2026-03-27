@@ -1,0 +1,55 @@
+---
+title: "Data governance overview"
+description: "Ensure data quality, compliance, and discoverability across your organization."
+---
+
+Data governance in Planasonix connects discovery, contracts, lineage, impact analysis, and semantic definitions so producers and consumers share expectations. You reduce silent schema drift, speed up incident response, and give auditors a trail from source columns to dashboard metrics.
+
+## Pillars
+
+<CardGroup cols={2}>
+  <Card title="Data catalog" icon="books" href="/governance/data-catalog">
+    Discover and document datasets your teams own.
+  </Card>
+  <Card title="Data contracts" icon="file-contract" href="/governance/data-contracts">
+    Encode schemas and rules between producers and consumers.
+  </Card>
+  <Card title="Lineage" icon="route" href="/governance/lineage">
+    Trace transformations from source to destination.
+  </Card>
+  <Card title="Impact analysis" icon="chart-network" href="/governance/impact-analysis">
+    See downstream effects before you change schemas.
+  </Card>
+  <Card title="Semantic layer" icon="layer-group" href="/governance/semantic-layer">
+    Publish consistent metrics and dimensions for analytics tools.
+  </Card>
+</CardGroup>
+
+## How governance shows up in daily work
+
+- Analysts search the **catalog** instead of asking in chat which table is canonical.
+- Engineers attach **contracts** to pipelines so breaking changes fail CI or prod checks.
+- On-call uses **lineage** to find which dashboards broke when an upstream column disappeared.
+- Product managers review **impact analysis** before deprecating an event property.
+
+<Info>
+  Governance features vary by plan. Enterprise tiers include catalog and contracts; lineage and impact analysis may require Premium or Premium+ add-ons.
+</Info>
+
+## Roles and ownership
+
+Assign **data owners** and **stewards** in your catalog entries. Pipeline repos should name on-call rotation contacts. Planasonix surfaces ownership in UI and APIs so permissions changes align with human accountability.
+
+## Next steps
+
+<Steps>
+  <Step title="Inventory critical datasets">
+    Register high-value tables and streams in the catalog with descriptions and PII tags.
+  </Step>
+  <Step title="Attach contracts">
+    Start with revenue, identity, and compliance-bound entities.
+  </Step>
+  <Step title="Enable lineage">
+    Turn on lineage capture for pipelines that feed executive reporting.
+  </Step>
+</Steps>

@@ -1,0 +1,69 @@
+---
+title: "Data contracts"
+description: "Define and enforce data quality contracts between producers and consumers."
+---
+
+A **data contract** is a formal agreement between a data producer and downstream consumers: expected schema, nullability, value ranges, freshness SLAs, and ownership. In Planasonix, contracts attach to datasets or pipeline outputs and drive validation during CI, execution, or both.
+
+## Contract creation
+
+<Steps>
+  <Step title="Choose the subject">
+    Select a table, topic, or pipeline output stage the contract governs.
+  </Step>
+  <Step title="Define schema rules">
+    Specify columns, types, keys, allowed enums, and null constraints. Import from Avro/JSON Schema/SQL DDL when supported to avoid transcription errors.
+  </Step>
+  <Step title="Add quality checks">
+    Layer row-level rules (for example, `amount >= 0`, `country in ISO set`) beyond raw types.
+  </Step>
+  <Step title="Set severity">
+    Decide whether violations fail the pipeline, quarantine rows, or only emit warnings to [diagnostics](/observability/diagnostics).
+  </Step>
+  <Step title="Publish">
+    Version the contract; consumers pin to a version until they opt into upgrades.
+  </Step>
+</Steps>
+
+## Schema validation
+
+During runs, Planasonix compares incoming batches to the contract:
+
+- **Additive** changes (new nullable columns) often pass automatically when policy allows.
+- **Breaking** changes (type narrowing, dropped columns) fail fast or require a new contract version.
+
+<Tabs>
+  <Tab title="Producer-driven">
+    Owning teams update contracts when they ship schema changes; CI blocks merges that skip contract bumps.
+  </Tab>
+  <Tab title="Consumer-driven">
+    Critical dashboards declare required columns; producers receive failures when those columns disappear.
+  </Tab>
+</Tabs>
+
+## Violation tracking
+
+The **violations** view lists timestamps, rule names, sample offending rows (redacted per policy), and pipeline runs. Export violations for incident tickets or compliance evidence.
+
+## Enforcement
+
+Enforcement hooks include:
+
+- Failing the pipeline before writes commit
+- Writing bad rows to a quarantine table or [dead letter queue](/observability/dead-letter-queue)
+- Emitting alerts to [Notifications](/settings/notifications) channels
+
+<Warning>
+  Quarantine tables may contain sensitive values. Apply retention, encryption, and access controls identical to production data classes.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Data catalog" icon="books" href="/governance/data-catalog">
+    Document datasets contracts protect.
+  </Card>
+  <Card title="Impact analysis" icon="chart-network" href="/governance/impact-analysis">
+    See who breaks when contracts change.
+  </Card>
+</CardGroup>

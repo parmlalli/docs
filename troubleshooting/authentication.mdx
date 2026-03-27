@@ -1,0 +1,89 @@
+---
+title: "Authentication troubleshooting"
+description: "Resolve login, SSO, and API authentication issues."
+---
+
+Authentication problems split into **human login** (browser + SSO + MFA) and **machine auth** (API keys, OAuth tokens, service principals). Keep a written **recovery** path for lockouts before you change [IP whitelisting](/settings/ip-whitelisting) or SSO certificates.
+
+## Login failures
+
+<AccordionGroup>
+  <Accordion title="Invalid email or password">
+    Confirm **keyboard layout**, **caps lock**, and that the account uses **SSO** (password login may be disabled). Trigger **password reset** only if local accounts are allowed.
+  </Accordion>
+  <Accordion title="Account disabled or invited-not-accepted">
+    An admin may have **deprovisioned** the user or the invite expired. Ask an org admin to **restore** access or resend invite.
+  </Accordion>
+  <Accordion title="Browser or cookie issues">
+    Clear site data for `app.planasonix.com`, disable conflicting **privacy extensions**, and try a **private window**. Corporate proxies that strip **cookies** break session affinity—exclude the app domain from aggressive TLS inspection if policy allows.
+  </Accordion>
+</AccordionGroup>
+
+## SSO configuration issues
+
+**Symptoms:** Redirect loops, `Invalid SAML response`, **IdP error**, or **instant logout** after login.
+
+<Tabs>
+  <Tab title="Metadata and endpoints">
+    Re-import **IdP metadata** after certificate rotation. **ACS URL** and **Entity ID** in the IdP must match Planasonix **exactly** (including trailing slashes and HTTPS).
+  </Tab>
+  <Tab title="Attribute mapping">
+    Ensure **NameID** or **email** attribute is released and matches the **domain** your workspace expects. Missing **groups** claims break **role mapping** and can deny access with a generic error.
+  </Tab>
+  <Tab title="Clock skew">
+    SAML is time-sensitive. Sync **NTP** on IdP and any **proxy** that re-signs assertions.
+  </Tab>
+</Tabs>
+
+<Warning>
+  Test SSO changes in a **staging IdP** or **canary app assignment** first. A broken production SAML cert locks out all SSO users at once.
+</Warning>
+
+## API key problems
+
+- **401 / invalid key:** Key rotated or **typo** in the header—confirm `Authorization` scheme and **trailing whitespace**.
+- **403 / insufficient scope:** The key lacks **orchestration**, **read pipelines**, or **write** scopes for the operation.
+- **Key stored in env var not loaded:** CI secrets sometimes **mask** newlines; paste keys into a variable without wrapping quotes issues.
+
+<Tip>
+  Create **one key per integration** with minimal scopes so you can revoke a single compromised automation path.
+</Tip>
+
+## OAuth token expiry
+
+Warehouse and SaaS connectors using **OAuth** fail when **refresh tokens** expire or are **revoked**.
+
+- Re-run the **connection test** and **re-consent** in the UI.
+- For **rotating client secrets**, update the **client secret** in vault-backed credentials before the old secret is disabled.
+- Watch **admin consent** expiry in Microsoft tenants.
+
+## MFA recovery
+
+If you lose your **TOTP** device:
+
+- Use **backup codes** you stored offline during enrollment.
+- Ask an admin to **reset MFA** after **identity verification** per your policy.
+- For **hardware keys**, register a **second** key before travel.
+
+## IP lockout recovery
+
+After tightening [IP whitelisting](/settings/ip-whitelisting), logins fail from new locations.
+
+- Connect from an **allowlisted** network (corporate VPN).
+- Use **break-glass** procedures documented in security runbooks.
+- Contact **support** for a **temporary policy bypass** if your contract includes it.
+
+<Note>
+  API calls from automation fail the same checks as the UI when IP enforcement applies to the **API gateway**. Update allowlists before you rotate CI runners to new NAT pools.
+</Note>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="SSO" icon="shield" href="/settings/sso">
+    SAML and OIDC setup reference.
+  </Card>
+  <Card title="API authentication" icon="key" href="/api-reference/authentication">
+    Headers, tokens, and scopes for programmatic access.
+  </Card>
+</CardGroup>

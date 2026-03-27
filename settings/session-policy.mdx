@@ -1,0 +1,59 @@
+---
+title: "Session policy"
+description: "Configure session timeout and security policies."
+---
+
+**Session policy** controls how long signed-in sessions stay valid, which networks may access the product, and password rules when SSO is not enforced. Changes apply workspace-wide and affect compliance audits.
+
+## Session timeout
+
+Admins set **idle timeout** and **absolute maximum session length**:
+
+- **Idle timeout** logs users out after no activity; balances security with long-running canvas work—some teams set 30–60 minutes for analysts, shorter for admins.
+- **Absolute timeout** forces re-authentication even if the user is active, limiting stolen session token utility.
+
+<Info>
+  SSO sessions may still be controlled by your IdP; Planasonix respects shorter of the two timeouts where both apply.
+</Info>
+
+## IP allowlist
+
+Restrict browser and API access to **corporate egress CIDRs** or VPN ranges. Remote contractors need explicit entries or a dedicated ZTNA path.
+
+<Tip>
+  Test allowlists from a non-production workspace first; a misconfigured list can lock out all admins except support break-glass accounts.
+</Tip>
+
+## Password policy
+
+When local passwords are allowed, configure:
+
+- Minimum length and complexity
+- **Password history** to prevent reuse
+- **Rotation** interval (where not superseded by SSO)
+
+Password policy does not apply to SSO-only users.
+
+## API and automation
+
+Session cookies and **API keys** behave differently: keys often ignore browser session timeout but may still be constrained by **IP allowlists**. Document which automation subnets to add before enabling strict network rules.
+
+<AccordionGroup>
+  <Accordion title="Break-glass access">
+    Maintain an audited break-glass admin path documented with security; do not rely on IP allowlists without a recovery story.
+  </Accordion>
+  <Accordion title="Geographic restrictions">
+    Some deployments block sign-ins from unexpected countries; pair with IdP conditional access for defense in depth.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="SSO" icon="shield-halved" href="/settings/sso">
+    Federated login and group claims.
+  </Card>
+  <Card title="MFA" icon="mobile-screen" href="/settings/mfa">
+    Second factor requirements.
+  </Card>
+</CardGroup>

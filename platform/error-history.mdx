@@ -1,0 +1,91 @@
+---
+title: "Error history"
+description: "Review and diagnose errors across all pipeline executions."
+---
+
+**Error history** aggregates failures across pipelines so you spot recurring patterns—bad credentials, schema drift, warehouse timeouts—without opening every run individually. Pair it with **run history** when you need full context for a single execution.
+
+## Error aggregation
+
+The error view groups incidents by dimensions you select:
+
+- **Error type** or **canonical code** (for example connector timeout, permission denied)
+- **Pipeline** and **environment**
+- **Node** or **connector** family
+- **Time window**
+
+Counts show whether an issue is **spiking** or **steady noise** from retries.
+
+<Tip>
+  Sort by **affected runs** in the last 24 hours during incidents; switch to **30 days** for backlog hygiene.
+</Tip>
+
+## Error types
+
+Planasonix classifies errors at multiple layers:
+
+| Layer | Examples |
+| ----- | -------- |
+| Orchestration | Schedule skipped, concurrency cap, invalid parameter |
+| Connectivity | DNS failure, TLS handshake, proxy reset |
+| Authentication | Expired OAuth, warehouse user locked, IAM deny |
+| Data | Type coercion, constraint violation, missing partition |
+| Resource | OOM, disk spill, slot unavailable |
+
+<Info>
+  Some connectors wrap vendor codes; the UI maps them to stable categories for filtering even when the raw message changes between driver versions.
+</Info>
+
+## Stack traces
+
+When the engine captures them, failed nodes include **stack traces** or **exception chains** in the error panel. Use traces to distinguish:
+
+- **Your** transform code bugs
+- **Platform** defects (open a support case with run id)
+- **Upstream** instability masked as generic socket errors
+
+<Warning>
+  Traces may contain **file paths** or **query fragments**. Share externally only through approved support channels and scrub PII.
+</Warning>
+
+## From error to fix
+
+<Steps>
+  <Step title="Open the sample run">
+    Use the **latest occurrence** link to jump into run history with the failing node pre-selected.
+  </Step>
+  <Step title="Compare with last success">
+    Diff parameters, row counts, and warehouse warehouse from the previous green run.
+  </Step>
+  <Step title="Check dependencies">
+    Verify **connections**, **secrets rotation**, and **schema** migrations in the source system.
+  </Step>
+  <Step title="Document the resolution">
+    Add a runbook link in the pipeline description so the next on-call engineer follows the same steps.
+  </Step>
+</Steps>
+
+## Troubleshooting guides
+
+Use these docs when errors span multiple systems or you need platform-specific depth:
+
+<CardGroup cols={2}>
+  <Card title="Diagnostics" icon="stethoscope" href="/observability/diagnostics">
+    System health, tracing, and support data collection.
+  </Card>
+  <Card title="Dead letter queue" icon="inbox" href="/observability/dead-letter-queue">
+    Recover and replay failed events in streaming paths.
+  </Card>
+  <Card title="Alerts" icon="bell" href="/observability/alerts">
+    Route failures to on-call before users notice dashboards.
+  </Card>
+  <Card title="AI Copilot chat" icon="comments" href="/ai-copilot/chat">
+    Ask questions grounded in your workspace context where enabled.
+  </Card>
+</CardGroup>
+
+## Related topics
+
+<Card title="Run history" icon="clock-rotate-left" href="/platform/run-history">
+  Full execution list, durations, and node-level logs.
+</Card>

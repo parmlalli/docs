@@ -1,0 +1,86 @@
+---
+title: "Documentation index"
+description: "Centralized documentation portal for your organization's data assets and pipelines."
+---
+
+The **documentation index** is a **portal** that aggregates descriptions, diagrams, and links for pipelines, datasets, and glossary terms. You use it when onboarding analysts, briefing auditors, or giving partners a read-only view of how data moves through your organization.
+
+## Premium feature
+
+The branded portal, **public** sharing modes, and advanced customization require a **Premium** (or equivalent) entitlement. Enterprise catalogs without the portal may still offer in-app documentation only. Confirm with your admin which surfaces are enabled.
+
+## Auto-generated documentation
+
+Planasonix can **generate** portal pages from live metadata:
+
+- **Pipeline graphs** with node summaries and data flow direction
+- **Source and destination** connectors with freshness hints where available
+- **Schedule and trigger** summaries for operational context
+
+Generation runs on a cadence you configure so the portal does not drift silently from production definitions.
+
+<Info>
+  Auto-generated content is a **starting point**; stewards should still add narrative for business meaning and compliance context.
+</Info>
+
+## Custom descriptions
+
+Editors and stewards attach **markdown** sections to assets:
+
+- **Executive summary** for non-technical readers
+- **Data contract** excerpts or links to Confluence / Notion runbooks
+- **FAQ** for common “why is this null?” questions
+
+<Tip>
+  Keep custom sections **short** and link out to canonical runbooks so you do not duplicate policy text in two systems.
+</Tip>
+
+## Public portal option
+
+When policy allows, admins can expose a **public** or **partner** subdomain that requires **no login** for a subset of pages.
+
+- Scope content to **non-sensitive** pipelines and glossary entries.
+- Use **IP allow lists** or **magic links** if your security team requires additional gates.
+- Review **SEO** and **caching** settings so internal-only details never leak through misconfigured routes.
+
+<Warning>
+  Public portals bypass workspace RBAC for published pages. Treat publishing like a code deploy: require review and maintain an audit trail.
+</Warning>
+
+## Column-level documentation
+
+Beyond table blurbs, you can document **individual columns**:
+
+- Business definition and **allowed values**
+- **PII** or **regulated** flags that mirror catalog tags
+- **Transform logic** references (“derived from `orders.gross_amount` minus `refunds`”)
+
+Column docs surface in search results and API exports when your integration enables them.
+
+## Custom branding
+
+Premium portals support:
+
+- **Logo**, **color palette**, and **typography** aligned to corporate brand
+- **Custom domain** with TLS managed by Planasonix or your reverse proxy
+- **Footer** links to privacy policy and support contacts
+
+<AccordionGroup>
+  <Accordion title="Dark mode">
+    Match user system preference or force light mode for printed audit packets—configure per brand guidelines.
+  </Accordion>
+  <Accordion title="Localization">
+    Multi-language descriptions may require duplicate markdown fields per locale when your org enables translations.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Semantic layer" icon="layer-group" href="/governance/semantic-layer">
+    Metric definitions consumers read in the portal.
+  </Card>
+  <Card title="Lineage" icon="route" href="/governance/lineage">
+    Visual lineage complements narrative documentation.
+  </Card>
+</CardGroup>

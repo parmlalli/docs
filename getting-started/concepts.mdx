@@ -1,0 +1,83 @@
+---
+title: "Core concepts"
+description: "Understand the key building blocks of the Planasonix platform."
+---
+
+These terms appear throughout the product and API. When you know how they relate, you can reason about permissions, scheduling, and troubleshooting without guessing.
+
+---
+
+### Organization
+
+An **organization** is the top-level tenant for billing, SSO, and global policies. All users, projects, and audit settings roll up to an organization. Large companies often run one organization per subsidiary or one shared organization with strict project boundaries—your admin chooses based on compliance and cost allocation.
+
+**You use it to:** enforce login methods, store default data residency settings, and delegate org-wide admin roles.
+
+---
+
+### Project
+
+A **project** groups **connections**, **pipelines**, **schedules**, and **reverse ETL syncs** that belong to one team or use case. Projects are where you grant collaborator access: a marketing analyst might have edit rights in `Growth analytics` but read-only access in `Finance`.
+
+**You use it to:** isolate secrets, separate sandbox from production, and organize navigation for dozens of pipelines.
+
+---
+
+### Connection
+
+A **connection** stores how Planasonix reaches a system: hostnames, OAuth tokens, service accounts, SSH tunnels, or file paths. Connections are reusable; many pipelines can read from the same `Snowflake prod` connection without duplicating credentials.
+
+**You use it to:** centralize rotation (when a password changes, you update one object), test connectivity independently of a pipeline, and apply row-level policies about who may use which environment.
+
+---
+
+### Pipeline
+
+A **pipeline** is a versioned graph of **nodes** that moves data from one or more sources to one or more destinations. Pipelines have their own run history, schedules, and alert rules. Saving a pipeline creates an immutable revision you can compare in the UI or API.
+
+**You use it to:** define the end-to-end data path—extract, transform, validate, load—and to promote the same logical flow from dev to staging to prod with controlled merges.
+
+---
+
+### Node
+
+A **node** is a single step on the canvas: extract from a connection, SQL transform, schema enforcement, branch on success or failure, call a webhook, and so on. Nodes declare inputs and outputs so Planasonix can order execution and show lineage.
+
+**You use it to:** break work into testable units, reuse patterns (the same dbt invocation node type across pipelines), and pinpoint failures when only one step breaks.
+
+---
+
+### Schedule
+
+A **schedule** triggers pipeline runs on a cadence (cron-style or simple every-N-minutes) or in response to an external event if your workspace enables event-driven triggers. Schedules respect concurrency limits and maintenance windows configured by admins.
+
+**You use it to:** run nightly warehouse loads, kick off hourly micro-batches, or pause runs during known downtime without deleting the pipeline.
+
+---
+
+### Reverse ETL sync
+
+A **reverse ETL sync** is a configuration that reads from a modeled table or query in your warehouse (or lakehouse) and writes rows into an operational system such as HubSpot, Iterable, or a custom REST API. Syncs define primary keys, column mappings, delete behavior, and rate limits.
+
+**You use it to:** push curated segments and metrics to teams who live in SaaS tools, while keeping the warehouse the source of truth for analytics logic.
+
+---
+
+## How the pieces fit together
+
+<Tabs>
+  <Tab title="Batch analytics">
+    You create **connections** to source DBs and the warehouse, build a **pipeline** with extract and load **nodes**, then attach a **schedule** for nightly runs inside a **project** scoped to your team.
+  </Tab>
+  <Tab title="Streaming">
+    You still store **connections**, but the pipeline uses streaming or CDC **nodes**. Schedules may be replaced or supplemented by always-on consumers; observability focuses on lag and consumer health rather than a single nightly window.
+  </Tab>
+  <Tab title="Reverse ETL">
+    You define a **reverse ETL sync** (or a dedicated pipeline type, depending on your workspace configuration) that reads warehouse data through a governed **connection** and maps fields to the operational app. Access control is critical because you are writing into customer-facing systems.
+  </Tab>
+</Tabs>
+
+## Next steps
+
+- [Quickstart](/getting-started/quickstart) — Hands-on first pipeline.
+- [Introduction](/getting-started/introduction) — Capabilities and architecture diagram.

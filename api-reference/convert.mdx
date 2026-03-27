@@ -1,0 +1,470 @@
+---
+title: "Import and convert"
+description: "Import pipelines from other ETL platforms."
+---
+
+Parse and migrate assets from **Fivetran**, **dbt**, **Matillion**, **Informatica**, **Alteryx**, **SSIS**, and run **bulk** connection or pipeline creation. Use **dry-run** to preview changes, then inspect **history** and **type mapping** references.
+
+<Info>
+  Send `Authorization: Bearer <api_key>`. Large uploads may require `multipart/form-data`; examples below use JSON metadata where the API accepts structured bodies. See [Authentication](/api-reference/authentication).
+</Info>
+
+## Base URL
+
+```text
+https://api.planasonix.com
+```
+
+---
+
+## Discover Fivetran connectors
+
+```http
+POST /api/convert/fivetran/discover
+```
+
+**Request body**
+
+```json
+{
+  "api_key": "ft_xxxxxxxxxxxxxxxx",
+  "group_id": "iodine_magnesium",
+  "include_paused": false
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "group_id": "iodine_magnesium",
+    "connectors": [
+      {
+        "id": "connector_saas_salesforce",
+        "service": "salesforce",
+        "schema": "salesforce_raw",
+        "status": "connected",
+        "sync_frequency_minutes": 360
+      },
+      {
+        "id": "connector_warehouse_snowflake_dest",
+        "service": "snowflake_db",
+        "schema": "fivetran_snowflake",
+        "status": "connected",
+        "sync_frequency_minutes": 60
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Parse dbt project
+
+```http
+POST /api/convert/dbt/parse
+```
+
+Typically invoked with an archive upload; this example shows a remote Git reference.
+
+**Request body**
+
+```json
+{
+  "source": {
+    "type": "git",
+    "url": "https://github.com/acme-analytics/dbt-analytics",
+    "ref": "v1.4.2",
+    "path": "."
+  },
+  "target_profile": "snowflake_prod"
+}
+```
+
+**Response `202 Accepted`**
+
+```json
+{
+  "data": {
+    "parse_job_id": "cvjob_01jq8dbt01",
+    "status": "queued",
+    "estimated_models": 42
+  }
+}
+```
+
+---
+
+## Parse Matillion export
+
+```http
+POST /api/convert/matillion/parse
+```
+
+**Request body**
+
+```json
+{
+  "artifact": {
+    "type": "upload",
+    "filename": "matillion_export.zip",
+    "content_type": "application/zip"
+  },
+  "options": {
+    "default_warehouse": "COMPUTE_WH",
+    "map_orchestration_to": "pipeline_control_flow"
+  }
+}
+```
+
+**Response `202 Accepted`**
+
+```json
+{
+  "data": {
+    "parse_job_id": "cvjob_01jq8mat01",
+    "status": "queued"
+  }
+}
+```
+
+---
+
+## Parse Informatica mapping
+
+```http
+POST /api/convert/informatica/parse
+```
+
+**Request body**
+
+```json
+{
+  "artifact": {
+    "type": "upload",
+    "filename": "m_customer_dim.xml",
+    "content_type": "application/xml"
+  },
+  "repository_version": "10.5"
+}
+```
+
+**Response `200 OK`** (synchronous small file)
+
+```json
+{
+  "data": {
+    "parse_job_id": "cvjob_01jq8inf01",
+    "status": "succeeded",
+    "mappings_detected": 1,
+    "pipelines_preview": [
+      {
+        "suggested_name": "customer_dim_scd2",
+        "source_systems": ["oracle_hr"],
+        "target_tables": ["dw.dim_customer"]
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Parse Alteryx workflow
+
+```http
+POST /api/convert/alteryx/parse
+```
+
+**Request body**
+
+```json
+{
+  "artifact": {
+    "type": "upload",
+    "filename": "weekly_kpi_prep.yxmd",
+    "content_type": "application/xml"
+  }
+}
+```
+
+**Response `202 Accepted`**
+
+```json
+{
+  "data": {
+    "parse_job_id": "cvjob_01jq8alt01",
+    "status": "queued"
+  }
+}
+```
+
+---
+
+## Parse SSIS package
+
+```http
+POST /api/convert/ssis/parse
+```
+
+**Request body**
+
+```json
+{
+  "artifact": {
+    "type": "upload",
+    "filename": "load_warehouse.dtsx",
+    "content_type": "application/xml"
+  },
+  "sql_server_version": "2019"
+}
+```
+
+**Response `202 Accepted`**
+
+```json
+{
+  "data": {
+    "parse_job_id": "cvjob_01jq8ssis01",
+    "status": "queued"
+  }
+}
+```
+
+---
+
+## Bulk create connections
+
+```http
+POST /api/convert/connections/bulk
+```
+
+**Request body**
+
+```json
+{
+  "dry_run": false,
+  "connections": [
+    {
+      "name": "snowflake_prod",
+      "type": "snowflake",
+      "parameters": {
+        "account": "xy12345.us-east-1",
+        "database": "ANALYTICS",
+        "warehouse": "ETL_WH",
+        "role": "LOADER"
+      },
+      "credential_ref": "vault://kv/snowflake_prod_user"
+    },
+    {
+      "name": "salesforce_prod",
+      "type": "salesforce",
+      "parameters": {
+        "auth": "oauth_refresh_token"
+      },
+      "credential_ref": "vault://kv/sf_prod_oauth"
+    }
+  ]
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "created": [
+      { "name": "snowflake_prod", "id": "conn_01jq8sf01" },
+      { "name": "salesforce_prod", "id": "conn_01jq8sf02" }
+    ],
+    "failed": [],
+    "dry_run": false
+  }
+}
+```
+
+---
+
+## Bulk create pipelines
+
+```http
+POST /api/convert/pipelines/bulk
+```
+
+**Request body**
+
+```json
+{
+  "dry_run": false,
+  "pipelines": [
+    {
+      "name": "staging_shopify_orders",
+      "definition": {
+        "format": "planasonix_v1",
+        "document": {
+          "nodes": [],
+          "edges": []
+        }
+      },
+      "environment": "production"
+    }
+  ]
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "created": [
+      { "name": "staging_shopify_orders", "id": "pl_01jq8new01" }
+    ],
+    "failed": [],
+    "dry_run": false
+  }
+}
+```
+
+---
+
+## Preview conversion (dry run)
+
+```http
+POST /api/convert/dry-run
+```
+
+**Request body**
+
+```json
+{
+  "source": {
+    "type": "matillion",
+    "parse_job_id": "cvjob_01jq8mat01"
+  },
+  "options": {
+    "include_connections": true,
+    "naming_prefix": "migrated_"
+  }
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "dry_run": true,
+    "would_create": {
+      "connections": 2,
+      "pipelines": 5,
+      "schedules": 5
+    },
+    "warnings": [
+      {
+        "code": "unsupported_transform",
+        "message": "Matillion \"Rank\" component mapped to approximate sort window"
+      }
+    ],
+    "blocking_errors": []
+  }
+}
+```
+
+---
+
+## Get conversion history
+
+```http
+GET /api/convert/history
+```
+
+**Query parameters**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `limit`, `cursor` | Pagination |
+| `source_type` | Filter by `fivetran`, `dbt`, etc. |
+
+**Response `200 OK`**
+
+```json
+{
+  "data": [
+    {
+      "id": "cv_01jq8hist01",
+      "source_type": "dbt",
+      "status": "succeeded",
+      "initiated_by": "usr_01jq8me",
+      "started_at": "2025-03-20T10:00:00Z",
+      "finished_at": "2025-03-20T10:06:22Z",
+      "summary": {
+        "pipelines_created": 38,
+        "connections_created": 1
+      }
+    }
+  ],
+  "meta": {
+    "page": { "limit": 20, "cursor": null }
+  }
+}
+```
+
+---
+
+## Type mapping reference
+
+```http
+GET /api/convert/type-map
+```
+
+**Query parameters**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `source` | Source platform (for example `informatica`) |
+| `target` | Warehouse or runtime (for example `snowflake`) |
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "source": "informatica",
+    "target": "snowflake",
+    "mappings": [
+      {
+        "source_type": "decimal(p,s)",
+        "target_type": "NUMBER(p,s)",
+        "notes": "Precision and scale preserved when p <= 38"
+      },
+      {
+        "source_type": "nstring",
+        "target_type": "VARCHAR",
+        "notes": "Length inferred from column metadata when available"
+      },
+      {
+        "source_type": "datetime",
+        "target_type": "TIMESTAMP_NTZ",
+        "notes": "Timezone normalization applied per connection setting"
+      }
+    ],
+    "version": "2025-03-01"
+  }
+}
+```
+
+---
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Import and convert" icon="folder-input" href="/pipelines/import-and-convert">
+    End-to-end migration overview.
+  </Card>
+  <Card title="Convert: dbt" icon="boxes" href="/pipelines/convert-dbt">
+    dbt-specific guidance.
+  </Card>
+</CardGroup>

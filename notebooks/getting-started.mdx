@@ -1,0 +1,56 @@
+---
+title: "Getting started with notebooks"
+description: "Create and run your first notebook in Planasonix."
+---
+
+This guide walks you through creating a notebook, selecting a kernel, running cells against an approved connection, and optionally attaching the notebook to a pipeline for repeatable execution.
+
+## Prerequisites
+
+- **Enterprise** notebook entitlement enabled for your workspace
+- A **connection** (warehouse or Spark) your role may use
+- Browser permissions allowing WebSocket connections to the notebook service (corporate proxies sometimes block these)
+
+## Setup steps
+
+<Steps>
+  <Step title="Create a notebook">
+    Open **Notebooks** → **New notebook**. Name it after the investigation (`q3_churn_slice_explore`) so teammates recognize the intent.
+  </Step>
+  <Step title="Pick a kernel">
+    Choose SQL, Python, or Scala depending on connector support. Match the dialect to your warehouse when using SQL kernels.
+  </Step>
+  <Step title="Attach a connection">
+    Select the connection from the notebook sidebar. Test connectivity with a trivial query (`SELECT 1` or `SELECT current_timestamp()`).
+  </Step>
+  <Step title="Run cells top to bottom">
+    Execute imports and parameters first, then analysis cells. Restart kernel if package installs or credential changes occur mid-session.
+  </Step>
+  <Step title="Save and share">
+    Save revisions; share read-only links with collaborators who have workspace access.
+  </Step>
+</Steps>
+
+## Notebook node on the pipeline canvas
+
+Some workspaces expose a **Notebook** node type that executes a saved notebook as part of a pipeline run:
+
+1. Author and test the notebook interactively until outputs are stable.
+2. Parameterize file paths, dates, and environment names—avoid hard-coded prod literals.
+3. Drag the **Notebook** node onto the [canvas](/pipelines/canvas), select the saved artifact, and map parameters from upstream nodes or [pipeline variables](/pipelines/variables).
+4. Run the pipeline in **dev** with representative partitions before promoting.
+
+<Warning>
+  Long-running notebook cells can block orchestration SLAs. Keep production notebook nodes focused; move heavy exploration back to interactive mode.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Spark integration" icon="bolt" href="/notebooks/spark-integration">
+    Scale notebooks on Spark clusters.
+  </Card>
+  <Card title="Compute" icon="microchip" href="/settings/compute">
+    Configure execution environments for notebooks.
+  </Card>
+</CardGroup>

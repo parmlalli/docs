@@ -1,0 +1,104 @@
+---
+title: "Orchestration API"
+description: "Configure the orchestration API for programmatic pipeline management."
+---
+
+The **orchestration API** exposes stable HTTP endpoints for starting runs, inspecting jobs, and driving **backfills** without clicking through the canvas. Operations teams, internal platforms, and CI systems use it to integrate Planasonix into wider data workflows.
+
+## Enterprise feature
+
+Full **orchestration API** access—including sync endpoints, job management, and webhook callbacks for orchestration events—is an **Enterprise** capability. Other tiers may offer read-only metadata APIs or a narrower automation surface. If settings show the API as disabled, your license or feature flag needs an update from Planasonix support or your account admin.
+
+## API overview
+
+The orchestration layer sits beside the product UI:
+
+- **Authentication** uses organization **API keys** or **OAuth client credentials** scoped to orchestration (see [API authentication](/api-reference/authentication)).
+- **Resources** map to **pipelines**, **environments**, **sync definitions**, and **job attempts** you see in the app.
+- **Idempotency** headers let you safely retry `POST` operations from flaky callers.
+
+<Note>
+  Rate limits apply per API key and per workspace. Batch work into fewer calls when you enqueue hundreds of jobs; use webhooks for completion instead of tight polling loops.
+</Note>
+
+## Enabling the orchestration API
+
+<Steps>
+  <Step title="Open Orchestration API settings">
+    Go to **Settings → Orchestration API** as an organization admin.
+  </Step>
+  <Step title="Enable the API">
+    Toggle **Orchestration API enabled** and accept the audit notice. Some tenants require a second admin approval.
+  </Step>
+  <Step title="Issue credentials">
+    Create a dedicated **API key** or service principal with **orchestration** scopes only. Avoid reusing keys that also grant warehouse admin or user impersonation.
+  </Step>
+  <Step title="Allowlist networks if required">
+    Pair with [IP whitelisting](/settings/ip-whitelisting) or mutual TLS policies your security team mandates for automation traffic.
+  </Step>
+</Steps>
+
+## Sync endpoints
+
+**Sync** endpoints start or update **continuous sync** and **scheduled batch** jobs that the orchestration service tracks separately from ad-hoc canvas runs.
+
+Typical operations:
+
+- **Create or update sync** – bind a pipeline to a schedule, resource pool, and priority class
+- **Pause and resume** – freeze consumption without losing checkpoint state where the source supports it
+- **Status** – read lag, last successful offset, and error classification
+
+Use sync APIs when an external **control plane** (for example, a data platform portal) owns when ingestion is allowed.
+
+## Job management
+
+**Job** APIs cover discrete executions:
+
+- **Enqueue** a run with parameters and environment overrides
+- **Cancel** in-flight work (cooperative shutdown; some sources finish the current batch)
+- **List attempts** and fetch **structured failure** payloads for automation
+
+<Tabs>
+  <Tab title="Enqueue">
+    Supply **pipeline id**, **environment**, and **variables**. Optional **priority** and **deadline** help the scheduler favor critical workloads.
+  </Tab>
+  <Tab title="Cancel">
+    Use **job id** from the enqueue response. Idempotent: repeated cancels return the terminal state.
+  </Tab>
+  <Tab title="Inspect">
+    Query **attempt history**, **node-level status**, and **retry eligibility** for support tooling.
+  </Tab>
+</Tabs>
+
+## Backfill API
+
+The **backfill API** replays or loads historical ranges—for example after fixing an upstream bug or onboarding a new destination.
+
+You specify:
+
+- **Time window** or **partition range** (depending on source)
+- **Overlap policy** (skip, merge, or overwrite) aligned with your idempotency keys
+- **Concurrency** caps so you do not overwhelm the source database
+
+<Tip>
+  Run large backfills in **stages** (by day or partition) so you can stop on first sustained error without reprocessing months of data.
+</Tip>
+
+## Webhook notifications for orchestration events
+
+Subscribe your automation endpoint to **orchestration webhooks** (configured alongside [Webhook settings](/settings/webhook-settings) or the dedicated orchestration webhook section, depending on your tenant). Payloads include **job id**, **terminal state**, and **duration** so downstream systems close tickets or trigger QA checks.
+
+<Warning>
+  Webhook endpoints that trigger further Planasonix API calls can create feedback loops. Use deduplication and guardrails on recursion depth.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="API introduction" icon="book-open" href="/api-reference/introduction">
+    Base URLs, versioning, and error models.
+  </Card>
+  <Card title="Schedules" icon="calendar" href="/orchestration/schedules">
+    How UI schedules relate to orchestration-managed syncs.
+  </Card>
+</CardGroup>

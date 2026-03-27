@@ -1,0 +1,72 @@
+---
+title: "Field mapping"
+description: "Map warehouse columns to destination fields."
+---
+
+Field mapping defines how each column from your warehouse SQL maps to a destination field. Clear mappings reduce runtime errors, make audits easier, and keep sync behavior stable when analysts rename warehouse columns (use views or aliases to shield the sync from renames).
+
+## Mapping strategies
+
+<Tabs>
+  <Tab title="One-to-one">
+    Map each warehouse column directly to a single destination field. Use this when names and semantics already align (`email` → `Email`, `mrr_usd` → `MonthlyRevenue`).
+  </Tab>
+  <Tab title="Expressions and literals">
+    Use static values or simple expressions when the destination expects constants (for example, a fixed `SourceSystem` field) or when you derive a value in SQL and map the result column as usual.
+  </Tab>
+  <Tab title="JSON or structured fields">
+    When the destination accepts nested payloads, map to the documented path or use a warehouse column that already contains valid JSON for that API.
+  </Tab>
+</Tabs>
+
+You can reorder mappings for readability; execution order follows destination API requirements, not the order shown in the UI.
+
+## Type conversion
+
+Planasonix coerces common warehouse types into types the destination expects:
+
+| Warehouse type | Typical destination handling |
+| -------------- | ----------------------------- |
+| String / VARCHAR | Trimmed text; respect max length on the API |
+| Integer / BIGINT | Whole numbers; watch for overflow on 32-bit fields |
+| Numeric / DECIMAL | Rounded or scaled per field metadata |
+| Boolean | `true`/`false` or vendor-specific enums |
+| Timestamp / TZ | Normalized to UTC or destination-local rules per connector |
+
+When coercion fails for a row, that row is reported as an error or routed to the [dead letter queue](/observability/dead-letter-queue) depending on sync settings.
+
+<Tip>
+  Cast explicitly in SQL when you need stable formatting: dates as ISO-8601 strings, booleans as `0`/`1` only if the API documents that convention.
+</Tip>
+
+## Required fields
+
+Destinations mark some fields as **required** for create or upsert operations. The mapper highlights them. Before the first run:
+
+1. Ensure your SQL returns a non-null value for each required mapped field.
+2. Confirm identifiers exist for **update** and **upsert** modes.
+3. Preview a sample batch to catch nulls and type mismatches early.
+
+<AccordionGroup>
+  <Accordion title="Nullable warehouse columns">
+    Use `COALESCE` or `CASE` in SQL to substitute defaults only when the business approves; do not mask missing data silently if compliance requires explicit nulls.
+  </Accordion>
+  <Accordion title="Multi-select and array fields">
+    Check whether the connector expects delimited strings, native arrays, or JSON arrays, and shape the warehouse column accordingly.
+  </Accordion>
+</AccordionGroup>
+
+## Validation and testing
+
+After you save mappings, run a **limited preview** against a handful of keys, then a **full sync** in a sandbox destination when possible. Compare counts between warehouse and destination using the same key definition you used in the sync.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Syncs" icon="arrows-rotate" href="/reverse-etl/syncs">
+    SQL source configuration and sync modes.
+  </Card>
+  <Card title="Monitoring" icon="chart-line" href="/reverse-etl/monitoring">
+    Find and fix mapping-related errors in run logs.
+  </Card>
+</CardGroup>

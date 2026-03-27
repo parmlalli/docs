@@ -1,0 +1,61 @@
+---
+title: "Streaming overview"
+description: "Process real-time data streams and change data capture events."
+---
+
+Streaming in Planasonix lets you capture events as they happen, transform them in flight, and land them in warehouses, lakes, or operational stores with low latency. You use the same governance and observability patterns as batch pipelines, but execution is continuous or micro-batched instead of cron-sized chunks.
+
+## Premium feature
+
+End-to-end streaming pipelines (managed CDC connectors, stream processors, and long-lived jobs) are available on **Premium** and higher tiers. Starter and Professional workspaces may offer batch-only ingestion. If streaming nodes are disabled, contact your admin about upgrading or enabling the streaming add-on.
+
+## Core concepts
+
+<Tabs>
+  <Tab title="Stream">
+    A **stream** is an ordered sequence of events or change records you read from a source system or message bus.
+  </Tab>
+  <Tab title="Offset and checkpoint">
+    **Checkpoints** record how far you have processed so restarts resume without duplicating work beyond your idempotency design.
+  </Tab>
+  <Tab title="Processing graph">
+    **Stream nodes** connect into a graph that parses, filters, enriches, and routes records to destinations.
+  </Tab>
+</Tabs>
+
+Latency targets depend on source capabilities, network, and destination write APIs—not every path guarantees sub-second delivery end to end.
+
+## Use cases
+
+<CardGroup cols={2}>
+  <Card title="Operational analytics" icon="chart-line">
+    Feed product, billing, and support events into near-real-time dashboards without hourly batch refreshes.
+  </Card>
+  <Card title="Replication and sync" icon="arrows-rotate">
+    Mirror database rows to analytics stores using CDC while minimizing impact on OLTP systems.
+  </Card>
+  <Card title="Event-driven automation" icon="bolt">
+    Drive webhooks and downstream jobs when high-value events pass quality checks in-stream.
+  </Card>
+  <Card title="Data lake hydration" icon="database">
+    Continuously land raw and conformed topics into object storage or lakehouse tables for downstream batch consolidation.
+  </Card>
+</CardGroup>
+
+## How streaming fits batch work
+
+Many teams run **streaming for freshness** and **batch for reconciliation**: nightly jobs compare stream-loaded tables to source-of-truth snapshots and repair drift. Planasonix lets you reference the same connections and schemas in both worlds.
+
+## Next steps
+
+<Steps>
+  <Step title="Pick a source">
+    Review [CDC sources](/streaming/cdc-sources) for databases and buses your estate uses.
+  </Step>
+  <Step title="Design processing">
+    Read [Stream processing](/streaming/stream-processing) for windows, transforms, and node patterns.
+  </Step>
+  <Step title="Observe and alert">
+    Attach [alerts](/observability/alerts) to lag, error rate, and consumer health metrics.
+  </Step>
+</Steps>

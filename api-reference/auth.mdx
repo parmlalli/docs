@@ -1,0 +1,329 @@
+---
+title: "Authentication"
+sidebarTitle: "Sessions & login"
+description: "Authenticate users and manage sessions."
+---
+
+User-facing authentication uses email and password, JWT access and refresh tokens, and optional device (OAuth-style) flows. These endpoints are used by the web app, CLIs, and native clients.
+
+<Info>
+  For **REST automation** with an API key, see [API keys](/api-reference/authentication). Send `Authorization: Bearer` plus your API key on resource requests.
+</Info>
+
+**Base URL:** `https://api.planasonix.com`
+
+## Session and password flows
+
+### `POST /api/login`
+
+Sign in with email and password. Returns short-lived access and long-lived refresh tokens.
+
+<ParamField body="email" type="string" required>
+  Account email address.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Account password.
+</ParamField>
+
+<Expandable title="Example request and response">
+```bash
+curl -X POST https://api.planasonix.com/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alex@acme.com","password":"••••••••"}'
+```
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "plnx_rt_01j8k2m4n6p8q0r2s4t6u8v0",
+  "expiresIn": 3600,
+  "tokenType": "Bearer",
+  "user": {
+    "id": "usr_01hqxyz",
+    "email": "alex@acme.com",
+    "name": "Alex Rivera",
+    "emailVerified": true
+  }
+}
+```
+</Expandable>
+
+<ResponseField name="accessToken" type="string">
+  JWT sent as `Authorization: Bearer` followed by this value for API calls until it expires.
+</ResponseField>
+
+<ResponseField name="refreshToken" type="string">
+  Opaque token used with `POST /api/auth/refresh` to obtain a new access token.
+</ResponseField>
+
+---
+
+### `POST /api/auth/refresh`
+
+Exchange a valid refresh token for a new access token (and optionally a rotated refresh token).
+
+<ParamField body="refreshToken" type="string" required>
+  Refresh token returned from login or a prior refresh.
+</ParamField>
+
+<Expandable title="Example request and response">
+```bash
+curl -X POST https://api.planasonix.com/api/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"plnx_rt_01j8k2m4n6p8q0r2s4t6u8v0"}'
+```
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "plnx_rt_01j9l3n5o7q9r1s3t5u7v9w1",
+  "expiresIn": 3600,
+  "tokenType": "Bearer"
+}
+```
+</Expandable>
+
+---
+
+### `POST /api/register`
+
+Create a new user account (when self-registration is enabled for your workspace).
+
+<ParamField body="email" type="string" required>
+  Email for the new account.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Password meeting your organization’s policy.
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  Display name.
+</ParamField>
+
+<Expandable title="Example request and response">
+```bash
+curl -X POST https://api.planasonix.com/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"jamie@acme.com","password":"••••••••","name":"Jamie Chen"}'
+```
+
+```json
+{
+  "id": "usr_02hqabc",
+  "email": "jamie@acme.com",
+  "name": "Jamie Chen",
+  "emailVerified": false,
+  "message": "Check your inbox to verify your email."
+}
+```
+</Expandable>
+
+---
+
+### `POST /api/forgot-password`
+
+Trigger a password reset email containing a time-limited token.
+
+<ParamField body="email" type="string" required>
+  Email associated with the account.
+</ParamField>
+
+<Expandable title="Example request and response">
+```bash
+curl -X POST https://api.planasonix.com/api/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alex@acme.com"}'
+```
+
+```json
+{
+  "ok": true,
+  "message": "If an account exists for this email, reset instructions have been sent."
+}
+```
+</Expandable>
+
+---
+
+### `POST /api/reset-password`
+
+Complete a password reset using the token from the email.
+
+<ParamField body="token" type="string" required>
+  Reset token from the email link.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  New password.
+</ParamField>
+
+<Expandable title="Example request and response">
+```bash
+curl -X POST https://api.planasonix.com/api/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{"token":"rst_01j8k2m4n6p8q0r2s4t6u8v0","password":"••••••••"}'
+```
+
+```json
+{
+  "ok": true,
+  "message": "Password updated. You can sign in with your new password."
+}
+```
+</Expandable>
+
+---
+
+### `POST /api/verify-email`
+
+Mark the user’s email as verified using the token from the verification email.
+
+<ParamField body="token" type="string" required>
+  Verification token from the email link.
+</ParamField>
+
+<Expandable title="Example request and response">
+```bash
+curl -X POST https://api.planasonix.com/api/verify-email \
+  -H "Content-Type: application/json" \
+  -d '{"token":"emv_01j8k2m4n6p8q0r2s4t6u8v0"}'
+```
+
+```json
+{
+  "ok": true,
+  "user": {
+    "id": "usr_02hqabc",
+    "email": "jamie@acme.com",
+    "emailVerified": true
+  }
+}
+```
+</Expandable>
+
+## Device authorization (v2)
+
+Headless apps (CLI, desktop, TV) use the **device code** pattern: the user opens a browser, enters a code, and the client polls until authorized.
+
+### `POST /api/v2/auth/device`
+
+Start the flow. Returns a device code, user code, and verification URI for the user.
+
+<Expandable title="Example request and response">
+```bash
+curl -X POST https://api.planasonix.com/api/v2/auth/device \
+  -H "Content-Type: application/json" \
+  -d '{"clientId":"plnx_cli_01hqxyz","scope":"openid profile pipelines:read"}'
+```
+
+```json
+{
+  "deviceCode": "dev_01j8k2m4n6p8q0r2s4t6u8v0w2x4y6z8",
+  "userCode": "WDJB-JQKL",
+  "verificationUri": "https://app.planasonix.com/device",
+  "verificationUriComplete": "https://app.planasonix.com/device?user_code=WDJB-JQKL",
+  "expiresIn": 900,
+  "interval": 5
+}
+```
+</Expandable>
+
+<ResponseField name="interval" type="integer">
+  Minimum seconds to wait between polling `POST /api/v2/auth/device/token`.
+</ResponseField>
+
+---
+
+### `POST /api/v2/auth/device/token`
+
+Poll with the `deviceCode` until the user completes authorization or the code expires.
+
+<ParamField body="deviceCode" type="string" required>
+  `deviceCode` from the device start response.
+</ParamField>
+
+<ParamField body="clientId" type="string" required>
+  Same client identifier used when starting the device flow.
+</ParamField>
+
+<Expandable title="Example responses">
+**Pending (continue polling)**
+
+```json
+{
+  "error": "authorization_pending",
+  "error_description": "The user has not yet completed authorization."
+}
+```
+
+**Success**
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "plnx_rt_01j8k2m4n6p8q0r2s4t6u8v0",
+  "expiresIn": 3600,
+  "tokenType": "Bearer"
+}
+```
+</Expandable>
+
+---
+
+### `POST /api/v2/auth/device/authorize`
+
+Browser or authenticated session confirms the `userCode` and grants the requested scopes to the device client.
+
+<ParamField body="userCode" type="string" required>
+  Code shown to the user (for example `WDJB-JQKL`).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Typically the logged-in user’s session or Bearer access token for the approving browser session.
+</ParamField>
+
+<Expandable title="Example request and response">
+```bash
+curl -X POST https://api.planasonix.com/api/v2/auth/device/authorize \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{"userCode":"WDJB-JQKL"}'
+```
+
+```json
+{
+  "ok": true,
+  "clientName": "Planasonix CLI",
+  "scopes": ["openid", "profile", "pipelines:read"]
+}
+```
+</Expandable>
+
+## Using tokens on the REST API
+
+<CodeGroup>
+```http Access token
+GET /api/pipelines HTTP/1.1
+Host: api.planasonix.com
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+Content-Type: application/json
+```
+
+```http API key (automation)
+GET /api/pipelines HTTP/1.1
+Host: api.planasonix.com
+Authorization: Bearer plnx_live_xxxxxxxxxxxxxxxx
+Content-Type: application/json
+```
+</CodeGroup>
+
+| Credential | Typical use |
+| ---------- | ----------- |
+| **JWT access token** | Interactive apps after login or device flow |
+| **API key** | Servers, CI, and long-lived integrations |
+
+<Tip>
+  Treat refresh tokens like passwords: store them in the OS keychain or a secret manager, not in source control.
+</Tip>

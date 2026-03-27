@@ -1,0 +1,81 @@
+---
+title: "Webhooks"
+description: "Trigger pipelines via HTTP webhooks and integrate with external systems."
+---
+
+Webhooks let external systems start Planasonix pipelines with an HTTP request. Typical callers include CI/CD jobs, billing systems, internal admin tools, and SaaS workflow builders that support outbound HTTP actions.
+
+## Webhook endpoints
+
+Each webhook receives a **unique HTTPS URL** and optional **authentication** requirements. When a caller posts to the URL, Planasonix validates the request, enqueues a run, and returns a correlation ID you can trace in run history.
+
+<Steps>
+  <Step title="Create a webhook trigger">
+    In pipeline orchestration settings, choose **Webhook**, name the trigger, and select the target pipeline and branch or version if your workspace uses environments.
+  </Step>
+  <Step title="Copy the endpoint URL">
+    Store the URL in your secret manager; treat it like a capability URL—anyone who can invoke it may incur compute cost.
+  </Step>
+  <Step title="Configure security">
+    Enable signing (see below) and IP allowlists if your deployment supports them.
+  </Step>
+  <Step title="Test">
+    Send a sample payload from curl or Postman and confirm a run appears with expected parameters.
+  </Step>
+</Steps>
+
+## Security (signing)
+
+**Signed webhooks** include a shared secret or asymmetric key verification:
+
+- Planasonix adds a signature header (for example, `X-Planasonix-Signature` or HMAC-SHA256 per product docs) over the raw body.
+- Your caller includes the same secret to generate the signature, or you verify using a published public key.
+- Reject requests when timestamps skew beyond a short tolerance to block replayed payloads.
+
+<Tabs>
+  <Tab title="HMAC shared secret">
+    Rotate secrets on a calendar; update both Planasonix and the caller atomically during maintenance windows.
+  </Tab>
+  <Tab title="mTLS or static tokens">
+    Some enterprises prefer mutual TLS or bearer tokens in addition to body signatures; combine mechanisms only when operations can manage the complexity.
+  </Tab>
+</Tabs>
+
+<Warning>
+  Never log full webhook bodies in plaintext if they contain PII or credentials. Redact before sending logs to third parties.
+</Warning>
+
+## Payload parsing
+
+Webhooks often carry JSON metadata your pipeline reads at runtime:
+
+```json
+{
+  "event": "export.completed",
+  "export_id": "exp_8f3c21",
+  "location": "s3://exports-bucket/exp_8f3c21/",
+  "record_count": 482910
+}
+```
+
+Map JSON fields to **pipeline parameters** so SQL and source nodes reference `export_id` or `location` without hard-coding. Validate required keys early; return `400`-class responses only when your webhook configuration documents strict schemas—otherwise failed runs may be clearer than rejected HTTP calls.
+
+<AccordionGroup>
+  <Accordion title="Large payloads">
+    Prefer passing pointers (URIs) rather than embedding megabyte blobs in webhook bodies.
+  </Accordion>
+  <Accordion title="Retries">
+    Callers may retry on timeouts. Make downstream processing idempotent so duplicate deliveries do not corrupt results.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Triggers" icon="cloud-bolt" href="/orchestration/triggers">
+    Cloud-native event alternatives.
+  </Card>
+  <Card title="API keys" icon="key" href="/settings/api-keys">
+    Programmatic authentication beyond webhooks.
+  </Card>
+</CardGroup>

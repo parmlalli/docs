@@ -1,0 +1,90 @@
+---
+title: "Auth0 SSO setup"
+description: "Configure Auth0 as your SAML identity provider."
+---
+
+Auth0 can broker SAML sign-in to Planasonix. You configure a **SAML** addon (or SAML2 Web App integration) on an Auth0 **Application** and then paste Auth0’s metadata or endpoints into Planasonix. You need Auth0 **Dashboard** access (Administrator or a role that can manage applications and rules) and **organization admin** in Planasonix.
+
+## Collect Planasonix SAML endpoints
+
+From **Settings → Security → SSO** in Planasonix, copy:
+
+- **ACS URL** (Assertion Consumer Service / callback URL for SAML responses)
+- **Entity ID** (audience / SP entity identifier)
+
+You enter these in Auth0 as the application callback and audience.
+
+## Configure the Auth0 application
+
+<Steps>
+  <Step title="Create or select an application">
+    In **Auth0 Dashboard**, go to **Applications → Applications**. Create a **Regular Web Application** (or use an existing app dedicated to Planasonix). Disable unused tabs (for example, OIDC-only settings) if you use SAML exclusively for this integration.
+  </Step>
+  <Step title="Enable the SAML2 addon">
+    Open the application → **Addons** → enable **SAML2 Web App**. In the SAML configuration JSON or form, set:
+
+    - **Callback URL**: the Planasonix **ACS URL** exactly as displayed.
+    - **Audience**: the Planasonix **Entity ID** exactly as displayed.
+
+    Auth0 may label these fields slightly differently in newer UIs; match semantics to ACS URL and Entity ID.
+  </Step>
+  <Step title="Configure SAML bindings and signatures">
+    Use **HTTP-POST** for the SAML response to the ACS URL unless Planasonix documentation specifies otherwise. Enable signing of assertions as required by your security policy. Download **Identity Provider Metadata** from Auth0 when Planasonix requests a metadata XML file.
+  </Step>
+  <Step title="Map user attributes">
+    Ensure the SAML assertion includes stable identifiers and profile fields Planasonix expects (see below). Save the addon configuration.
+  </Step>
+</Steps>
+
+## Callback URL
+
+The **Callback URL** in the SAML addon must match the Planasonix **ACS URL** with no extra path segments or query strings unless Planasonix provides them. Auth0 rejects SAML responses to unregistered callback URLs in many tenants.
+
+<Info>
+  If you use **custom domains** in Auth0, confirm the SSO URL and issuer in the metadata reflect the domain users hit during login. Planasonix must receive metadata that matches the live issuer string.
+</Info>
+
+## Rules for attribute mapping
+
+Use **Auth0 Actions** (recommended) or **Rules** (legacy) to shape `user` attributes before SAML assertion generation.
+
+<Tabs>
+  <Tab title="Email and name">
+    Map:
+
+    - `email` from the primary identity (`event.user.email` in Actions)
+    - `given_name` / `family_name` or custom claims for first and last name
+
+    Align outgoing claim names with the **Attribute mapping** table in Planasonix (for example, `email`, `firstName`, `lastName`).
+  </Tab>
+  <Tab title="Groups and roles">
+    If Planasonix consumes **groups**, add an array claim from the user’s `app_metadata`, `user_metadata`, or an authorization extension. Keep group lists small enough to stay under SAML assertion size limits. Prefer group IDs or short names your Planasonix role mapping already understands.
+  </Tab>
+</Tabs>
+
+<Tip>
+  Log a sanitized SAML assertion in a lower environment (or use Auth0’s **Try** and trace tools) to verify claim names and NameID before you onboard all users.
+</Tip>
+
+## Connection and social logins
+
+If users reach Planasonix through an Auth0 **Database**, **Enterprise**, or **Social** connection, the SAML assertion still originates from Auth0. Ensure **email verified** requirements and **linking** behavior match your org’s account strategy so the same person does not get duplicate Planasonix users.
+
+<Warning>
+  Changing the Auth0 application’s **client ID**, SAML addon audience, or issuer after go-live breaks SSO until you update Planasonix with matching metadata. Treat those values as production configuration.
+</Warning>
+
+## Finish in Planasonix
+
+Upload Auth0’s **IdP metadata** or paste **SSO URL**, **issuer**, and **signing certificate** into Planasonix. Test login, then coordinate **Require SSO** with your change management process.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="SSO overview" icon="shield-halved" href="/settings/sso">
+    Certificate rotation and org-wide SSO enforcement.
+  </Card>
+  <Card title="Generic OIDC setup" icon="key" href="/settings/sso-oidc">
+    If your tenant uses OpenID Connect instead of SAML.
+  </Card>
+</CardGroup>

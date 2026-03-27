@@ -1,0 +1,83 @@
+---
+title: "Connection troubleshooting"
+description: "Diagnose and resolve common connection issues."
+---
+
+Connection failures usually cluster into a few causes: **network path**, **credentials**, **TLS trust**, or **authorization** on the source system. Work from the error string outward—confirm reachability, then identity, then permissions.
+
+## Common errors
+
+<Tabs>
+  <Tab title="Timeout">
+    **Symptoms:** JDBC or HTTP client hangs, then fails with read or connect timeout. **Checks:** Verify **security groups**, **firewalls**, **private DNS** from the runner (SaaS region IP or **agent** egress). Test with `telnet`/`nc` from the same network class. Increase driver **timeouts** only after the path is proven; long timeouts mask routing mistakes.
+  </Tab>
+  <Tab title="Authentication failure">
+    **Symptoms:** `login failed`, `password authentication failed`, `Access denied`. **Checks:** Rotate secrets in [Credentials](/connections/credentials); confirm the **username** maps to the intended **database** or **warehouse** (not only the OS account). For IAM or OAuth links, confirm **token expiry** and **role chaining**.
+  </Tab>
+  <Tab title="SSL / TLS errors">
+    **Symptoms:** `certificate verify failed`, `hostname mismatch`, `SSL handshake failure`. **Checks:** Compare server **SAN** to hostname you entered; import **intermediate CAs** if you use private PKI; enable **TLS 1.2+** on legacy SQL Server. Avoid permanent `trustServerCertificate` in production—fix trust stores instead.
+  </Tab>
+  <Tab title="Firewall blocked">
+    **Symptoms:** Immediate reset, ICMP admin prohibited, or timeout only from Planasonix. **Checks:** Allowlist **Planasonix egress IPs** and **agent** IPs; confirm **bidirectional** rules if the source initiates callbacks (rare for JDBC). For cloud **private endpoints**, ensure **DNS** resolves to the private address from the peered network.
+  </Tab>
+</Tabs>
+
+<Note>
+  Copy the **full** error text and **connection id** from the UI when you open a support ticket; partial screenshots slow diagnosis.
+</Note>
+
+## Database-specific tips
+
+<AccordionGroup>
+  <Accordion title="PostgreSQL">
+    Check **pg_hba.conf** for client IP and **sslmode**. Verify **search_path** if objects appear missing. For **RDS/Aurora**, confirm **parameter groups** allow your max connections and **idle timeouts** suit long jobs.
+  </Accordion>
+  <Accordion title="MySQL / MariaDB">
+    Confirm **user@'%'** vs host-restricted grants. **Caching SHA2** may require newer drivers or server RSA keys. Watch **max_connections** and **wait_timeout** for overnight ETL.
+  </Accordion>
+  <Accordion title="SQL Server">
+    Validate **SQL authentication** vs **Windows/AD** integration when using gateways. **Encrypt** and **trust** flags must match what the instance enforces. Named instances need correct **port** or **Browser** access (often blocked—prefer static ports).
+  </Accordion>
+  <Accordion title="Oracle">
+    **SERVICE_NAME** vs **SID** mix-ups are common. **Wallet** paths and **TNS** aliases must exist on **agents** if you run JDBC locally. Check **listener** logs for **TNS** errors the thin client surfaces generically.
+  </Accordion>
+  <Accordion title="MongoDB">
+    **Replica set** SRV URIs require **DNS SRV** resolution from the runner. **SCRAM** user must exist in the **admin** database for cluster admin tasks. **TLS** is mandatory on Atlas—match CA bundles.
+  </Accordion>
+</AccordionGroup>
+
+## Cloud storage permission issues
+
+Object store errors often read `403`, `AccessDenied`, or `SignatureDoesNotMatch`.
+
+- **IAM role vs keys:** Prefer **short-lived** role assumption; static keys leak in logs.
+- **Bucket policy vs ACL:** Modern buckets are **policy-only**; ACL mistakes show up as silent listing failures.
+- **Prefix scope:** Confirm the **path** your connection uses matches **policy Resource** ARNs.
+- **KMS:** Decrypt permission on the **CMK** is separate from S3 **GetObject**.
+
+<Tip>
+  Use the cloud vendor’s **policy simulator** with the exact **principal** and **resource** ARN before you change production pipeline schedules.
+</Tip>
+
+## SSH tunnel and agent connectivity
+
+If you use [SSH tunnels](/settings/ssh-tunnels):
+
+- Failures on **port 22** indicate bastion reachability or **key** issues before the database is involved.
+- When a **pipeline agent** opens the tunnel, allowlist the **agent egress IP** on the bastion.
+- **Keepalive** settings prevent **NAT idle** drops on long extracts.
+
+<Warning>
+  Mixing **VPN** split tunneling with allowlists causes intermittent success—some sessions egress from corporate NAT, others from residential IPs.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Databases" icon="database" href="/connections/databases">
+    Supported engines and connection fields.
+  </Card>
+  <Card title="Cloud storage" icon="cloud" href="/connections/cloud-storage">
+    S3, Azure Blob, and GCS patterns.
+  </Card>
+</CardGroup>

@@ -1,0 +1,106 @@
+---
+title: "Agent troubleshooting"
+description: "Diagnose and resolve pipeline agent connectivity and health issues."
+---
+
+**Pipeline agents** execute work close to private data sources or regulated networks. When an agent goes **offline** or reports **degraded** health, pipelines that target that **agent pool** stall. This page walks through heartbeat failures, network rules, logs, and safe restarts.
+
+## Agent offline
+
+**Symptoms:** Runs queue indefinitely, UI shows **agent offline**, or **no eligible workers**.
+
+<Steps>
+  <Step title="Confirm scope">
+    Identify which **pools**, **tags**, and **environments** the failing pipeline requires. A mismatch sends work to an empty pool while another pool stays healthy.
+  </Step>
+  <Step title="Check last heartbeat">
+    In **Settings → Agents** (or your org’s **Compute** view), open the agent record. **Last seen** timestamps older than the lease interval mean the control plane considers the host dead.
+  </Step>
+  <Step title="Verify process and service">
+    On the host, confirm the **agent service** is running and not **crash-looping**. Inspect **systemd**, **Windows Service**, or **container** restart counts.
+  </Step>
+  <Step title="Validate clock and TLS">
+    Large **clock skew** breaks token validation. Ensure **NTP** is healthy and **TLS inspection** proxies present a **trusted** CA to the agent.
+  </Step>
+</Steps>
+
+## Heartbeat failures
+
+Heartbeats are lightweight **HTTPS** calls to the Planasonix control plane.
+
+- **Intermittent failures** often trace to **corporate proxies** or **satellite** links—tune **keepalive** and **idle timeouts** on middleboxes.
+- **403** on heartbeat usually means **registration token** rotation or **revoked** enrollment—re-enroll with a fresh token from the UI.
+- **Certificate pinning** or **custom trust stores** on the agent host must include **current** Planasonix **intermediate** CAs after platform cert updates.
+
+<Tip>
+  Graph **heartbeat latency** alongside **packet loss** on the host; rising loss predicts offline state before user-visible job failures spike.
+</Tip>
+
+## Network configuration and firewall rules
+
+Allow **egress HTTPS** from the agent to Planasonix **API** endpoints documented for your region. For **private connectivity** options, follow the **VPC** or **PrivateLink** guide your account team provides.
+
+<Tabs>
+  <Tab title="Egress to Planasonix">
+    **TCP 443** to control plane hosts; no inbound connections required from the internet to the agent for standard enrollment.
+  </Tab>
+  <Tab title="Ingress to data sources">
+    The agent initiates **JDBC/HTTP** to databases and buckets from **its** IP—allowlist those addresses on **firewalls**, **HANA** `hdbuserstore`, and **SSH bastions**.
+  </Tab>
+  <Tab title="Deny-by-default proxies">
+    If you force **HTTP CONNECT**, whitelist **SNI** destinations for both Planasonix and your **warehouse** APIs so jobs do not fail mid-run.
+  </Tab>
+</Tabs>
+
+<Warning>
+  **Symmetric routing** issues (different egress paths for forward and return traffic) cause **random** TCP failures. Verify **SNAT** and **firewall** rules as a pair with your network team.
+</Warning>
+
+## Log collection
+
+Enable **debug** logging only while investigating—redact **tokens** before you attach files to tickets.
+
+- **Linux:** `journalctl -u planasonix-agent` (service name may differ).
+- **Windows:** Event Log or the install directory **logs** folder.
+- **Container:** Mount a **volume** for logs or ship to your **stdout** aggregator.
+
+<AccordionGroup>
+  <Accordion title="Disk full">
+    Rotated logs or **temp spill** can fill disks; agents then fail heartbeats. Monitor **free space** and **inode** usage on small VMs.
+  </Accordion>
+  <Accordion title="Permission denied on workspace">
+    The agent user needs **read/write** to its **workspace** and **cache** directories after upgrades or **SELinux** policy changes.
+  </Accordion>
+</AccordionGroup>
+
+## Agent restart procedures
+
+<Steps>
+  <Step title="Drain work">
+    Mark the agent **draining** in the UI if supported so new leases stop landing on the host.
+  </Step>
+  <Step title="Restart the service">
+    Use your standard **runbook** (`systemctl restart`, service snap-in, or `kubectl rollout restart`).
+  </Step>
+  <Step title="Verify enrollment">
+    Confirm **heartbeat** resumes and **version** matches the **recommended** release for your tenant.
+  </Step>
+  <Step title="Resume traffic">
+    Clear **draining** state and watch the next **scheduled** or **manual** run complete end to end.
+  </Step>
+</Steps>
+
+<Note>
+  For **clustered** agents, restart **one node at a time** so you retain capacity during the health check period.
+</Note>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Compute" icon="microchip" href="/settings/compute">
+    Pools, sizing, and agent registration overview.
+  </Card>
+  <Card title="Connection troubleshooting" icon="plug" href="/troubleshooting/connections">
+    Diagnose database paths from agent egress IPs.
+  </Card>
+</CardGroup>

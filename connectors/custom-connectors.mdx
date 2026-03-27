@@ -1,0 +1,79 @@
+---
+title: "Custom connectors"
+description: "Build custom connectors with the Planasonix Connector Development Kit."
+---
+
+When the gallery lacks a vendor or you need proprietary internal APIs, you build a **custom connector** with the **Connector Development Kit (CDK)**. You ship Python modules that declare metadata, authentication, discovery, and read/write operations Planasonix orchestrates like first-party connectors.
+
+## CDK overview
+
+The CDK provides:
+
+- **Spec contracts** – define capabilities (batch extract, load, streaming) and configuration schema
+- **Runtime hooks** – implement list, read, write, and test methods
+- **Packaging** – bundle dependencies within supported constraints
+- **Local testing** – run against sample payloads before publishing to your workspace
+
+<Info>
+  Custom connectors inherit your organization’s security review: secrets never belong in source code; use connection parameters and vault references.
+</Info>
+
+## Python CDK
+
+Author connectors in **Python** when you need rapid iteration and rich HTTP/SDK libraries:
+
+<Steps>
+  <Step title="Scaffold the project">
+    Use the CDK template to generate package layout, `connector.yaml`, and sample tests.
+  </Step>
+  <Step title="Implement auth">
+    Support API keys, OAuth refresh, or mTLS as required by your target system.
+  </Step>
+  <Step title="Discovery">
+    Return object and field metadata dynamically or from static definitions when APIs are thin.
+  </Step>
+  <Step title="Read/write paths">
+    Implement pagination, backoff, and checkpointing for incremental extracts; respect destination batch limits on load.
+  </Step>
+  <Step title="Validate locally">
+    Run unit tests with recorded HTTP fixtures; exercise error paths (401, 429, 500).
+  </Step>
+</Steps>
+
+## Validation
+
+Before publishing, run **validation** suites that check:
+
+- Schema of configuration JSON matches the declared form
+- Required methods exist for advertised capabilities
+- Dependency versions stay within allowlisted ranges
+
+Fix validation errors locally—CI should block merges that fail validation.
+
+## Publishing
+
+Publish connectors to your **private registry** or workspace library depending on deployment. Tag versions semantically (`1.4.2`); pipelines pin connector versions so upgrades are explicit.
+
+<Tabs>
+  <Tab title="Staging rollout">
+    Install the connector in a staging workspace first; run synthetic and mirrored production workloads.
+  </Tab>
+  <Tab title="Production promotion">
+    Update pins in pipeline repos via [Git integration](/pipelines/git-integration) with review from data engineering and security.
+  </Tab>
+</Tabs>
+
+<Warning>
+  Connectors execute with network access to your sources—apply egress controls and code review for outbound URLs.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Connector gallery" icon="grid-2" href="/connectors/gallery">
+    Compare first-party coverage before building custom.
+  </Card>
+  <Card title="API keys" icon="key" href="/settings/api-keys">
+    Secure programmatic testing of connectors.
+  </Card>
+</CardGroup>

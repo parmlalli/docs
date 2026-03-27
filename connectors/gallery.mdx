@@ -1,0 +1,53 @@
+---
+title: "Connector gallery"
+description: "Browse the complete catalog of 300+ pre-built connectors."
+---
+
+The **connector gallery** lists every pre-built source, destination, and utility connector available to your workspace. You search by vendor, category, or authentication type, then open a detail page with prerequisites, supported operations, and rate-limit notes.
+
+## Professional+ feature
+
+Browsing may be visible on lower tiers, but **activating** many connectors—especially enterprise databases, regulated SaaS, and premium API bundles—requires **Professional** or higher. Starter workspaces include a curated subset oriented toward common warehouses and files. Confirm your tier on [Plans and pricing](/settings/plans-and-pricing).
+
+## Browsing and searching
+
+Use filters for:
+
+- **Category** – databases, warehouses, files, apps, marketing, finance
+- **Auth** – OAuth, API key, IAM role, SSH tunnel
+- **Capability** – batch vs streaming, CDC support, reverse ETL eligibility
+
+Save frequent searches as bookmarks for onboarding checklists.
+
+<Tip>
+  Open the connector detail page before starting security review; it lists required domains, ports, and IAM actions for firewall tickets.
+</Tip>
+
+## Connector details
+
+Each detail page typically covers:
+
+- **Setup** – credentials, OAuth consent, IP allowlists
+- **Objects** – which resources you can ingest or reverse-ETL
+- **Quotas** – batch sizes, concurrency guidance
+- **Limitations** – unsupported data types, historical lookback caps
+
+<AccordionGroup>
+  <Accordion title="Sandbox vs production">
+    Create two connections with different OAuth apps or keys so tests never mutate production tenants.
+  </Accordion>
+  <Accordion title="Versioning">
+    Note connector version in change logs when vendor APIs upgrade; regressions are easier to trace.
+  </Accordion>
+</AccordionGroup>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Custom connectors" icon="puzzle-piece" href="/connectors/custom-connectors">
+    Extend the gallery with your own CDK packages.
+  </Card>
+  <Card title="JDBC gateway" icon="plug" href="/connectors/jdbc-gateway">
+    Reach databases not listed as first-class connectors.
+  </Card>
+</CardGroup>

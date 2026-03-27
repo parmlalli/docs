@@ -1,0 +1,68 @@
+---
+title: "Pipeline chaining"
+description: "Chain pipelines together to create complex multi-step workflows."
+---
+
+Pipeline chaining expresses dependencies: when pipeline A succeeds, pipeline B starts; when B fails, on-call routes to the team that owns stage B. You model this with orchestration primitives instead of copying nodes into one oversized graph.
+
+## Trigger Pipeline node
+
+The **Trigger Pipeline** node (or equivalent orchestration action) starts another pipeline with parameters derived from upstream results—file paths, partition dates, batch IDs, or quality-check outcomes.
+
+<Steps>
+  <Step title="Author the parent pipeline">
+    Build stages that must complete first (ingest, validate, promote staging tables).
+  </Step>
+  <Step title="Add Trigger Pipeline">
+    Point to the child pipeline and map outputs to child parameters.
+  </Step>
+  <Step title="Define failure behavior">
+    Choose whether to fail the parent, continue with notifications, or branch to a remediation pipeline.
+  </Step>
+  <Step title="Test in dev">
+    Run end-to-end with small data; confirm child runs inherit the correct environment and credentials.
+  </Step>
+</Steps>
+
+## Dependency management
+
+<Tabs>
+  <Tab title="Strict sequencing">
+    Use when later stages require committed outputs from earlier warehouses loads (for example, dimensions before facts).
+  </Tab>
+  <Tab title="Fan-out / fan-in">
+    Trigger multiple children in parallel, then a final aggregator pipeline when all succeed—useful for domain-separated processing with a shared publish step.
+  </Tab>
+  <Tab title="Conditional branches">
+    Run different children based on row counts or data quality thresholds from upstream checks.
+  </Tab>
+</Tabs>
+
+Document dependencies in the pipeline description so new hires understand why ordering exists.
+
+## Macro pipelines
+
+A **macro pipeline** is an orchestration-only workflow composed mostly of trigger nodes and lightweight control steps, while heavy lifting stays in child pipelines owned by different teams. This pattern:
+
+- Keeps blast radius small per repository or team
+- Lets you version child pipelines independently
+- Surfaces clear ownership in run history
+
+<Tip>
+  Pass explicit **run labels** or **correlation IDs** from parent to child so you can trace all stages for a single business batch in [Observability](/observability/overview).
+</Tip>
+
+## Governance
+
+Restrict who can trigger production pipelines from dev parents. Use [teams and permissions](/settings/teams-and-permissions) so only service accounts or release roles can start sensitive children.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Schedules" icon="calendar" href="/orchestration/schedules">
+    Start parent pipelines on a cadence.
+  </Card>
+  <Card title="Git integration" icon="code-branch" href="/pipelines/git-integration">
+    Version pipeline definitions that participate in chains.
+  </Card>
+</CardGroup>

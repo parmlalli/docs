@@ -1,0 +1,628 @@
+---
+title: "Reverse ETL"
+description: "Manage reverse ETL syncs and destinations."
+---
+
+These endpoints control **reverse ETL**: querying your warehouse or lakehouse and writing rows into SaaS tools, ads platforms, and custom HTTP destinations. Authenticate with a [Bearer API key](/api-reference/authentication).
+
+**Base URL:** `https://api.planasonix.com`
+
+```http
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+```
+
+<Info>
+  If your workspace uses a versioned base path (for example `/v1`), prepend it before `/api`. See [API reference](/api-reference/introduction).
+</Info>
+
+---
+
+## List syncs
+
+Returns all reverse ETL sync definitions.
+
+**`GET /api/reverse-etl/syncs`**
+
+### Request parameters
+
+<ParamField query="destination_id" type="string">
+  Filter syncs targeting a given destination connection.
+</ParamField>
+
+<ParamField query="enabled" type="boolean">
+  Filter by active/paused syncs.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="50">
+  Page size.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "retl_sync_01j9k6m7n8o9p0q1",
+      "type": "reverse_etl_sync",
+      "attributes": {
+        "name": "crm_accounts_warehouse_to_salesforce",
+        "destination_id": "conn_sf_prod",
+        "object_name": "Account",
+        "sync_mode": "upsert",
+        "enabled": true,
+        "schedule": {
+          "type": "cron",
+          "expression": "15 */4 * * *",
+          "timezone": "UTC"
+        },
+        "updated_at": "2025-03-26T09:00:00Z"
+      }
+    }
+  ],
+  "meta": {
+    "page": { "limit": 50, "cursor": null }
+  }
+}
+```
+
+---
+
+## Create sync
+
+Creates a new sync from a SQL or semantic query to a destination object.
+
+**`POST /api/reverse-etl/syncs`**
+
+### Request body
+
+<ParamField body="name" type="string" required>
+  Display name for the sync.
+</ParamField>
+
+<ParamField body="sourceQuery" type="string" required>
+  Warehouse query (SQL) or documented semantic reference that resolves to a row set.
+</ParamField>
+
+<ParamField body="destinationId" type="string" required>
+  Connection ID for the destination (Salesforce, HubSpot, Iterable, and so on).
+</ParamField>
+
+<ParamField body="objectName" type="string" required>
+  Destination object or resource name (API name for CRM entities, stream name for events APIs).
+</ParamField>
+
+<ParamField body="fieldMappings" type="array" required>
+  Array of mapping objects: source column or expression → destination field (see example).
+</ParamField>
+
+<ParamField body="syncMode" type="string" required>
+  One of `upsert`, `insert`, `update`, `delete`, or connector-specific modes.
+</ParamField>
+
+<ParamField body="schedule" type="object">
+  Optional schedule: for example `{ "type": "cron", "expression": "0 * * * *", "timezone": "UTC" }` or `{ "type": "manual" }`.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "retl_sync_01j9k6m7n8o9p0q1",
+    "type": "reverse_etl_sync",
+    "attributes": {
+      "name": "crm_accounts_warehouse_to_salesforce",
+      "source_query": "SELECT account_id, name, annual_revenue, last_activity_at FROM analytics.dim_crm_account WHERE is_active = true",
+      "destination_id": "conn_sf_prod",
+      "object_name": "Account",
+      "field_mappings": [
+        { "source": "account_id", "destination": "External_Id__c", "key": true },
+        { "source": "name", "destination": "Name" },
+        { "source": "annual_revenue", "destination": "AnnualRevenue" },
+        { "source": "last_activity_at", "destination": "Last_Activity__c" }
+      ],
+      "sync_mode": "upsert",
+      "enabled": true,
+      "schedule": {
+        "type": "cron",
+        "expression": "15 */4 * * *",
+        "timezone": "UTC"
+      },
+      "created_at": "2025-03-27T17:00:00Z",
+      "updated_at": "2025-03-27T17:00:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Get sync
+
+**`GET /api/reverse-etl/syncs/{id}`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Sync ID.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "retl_sync_01j9k6m7n8o9p0q1",
+    "type": "reverse_etl_sync",
+    "attributes": {
+      "name": "crm_accounts_warehouse_to_salesforce",
+      "source_query": "SELECT account_id, name, annual_revenue, last_activity_at FROM analytics.dim_crm_account WHERE is_active = true",
+      "destination_id": "conn_sf_prod",
+      "object_name": "Account",
+      "field_mappings": [
+        { "source": "account_id", "destination": "External_Id__c", "key": true },
+        { "source": "name", "destination": "Name" }
+      ],
+      "sync_mode": "upsert",
+      "enabled": true,
+      "schedule": {
+        "type": "cron",
+        "expression": "15 */4 * * *",
+        "timezone": "UTC"
+      },
+      "created_at": "2025-03-27T17:00:00Z",
+      "updated_at": "2025-03-27T17:00:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Update sync
+
+**`PUT /api/reverse-etl/syncs/{id}`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Sync ID.
+</ParamField>
+
+### Request body
+
+Same fields as create, all optional except where the server requires a full replacement for certain connectors.
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "retl_sync_01j9k6m7n8o9p0q1",
+    "type": "reverse_etl_sync",
+    "attributes": {
+      "name": "crm_accounts_warehouse_to_salesforce",
+      "sync_mode": "upsert",
+      "enabled": true,
+      "schedule": {
+        "type": "cron",
+        "expression": "0 */2 * * *",
+        "timezone": "UTC"
+      },
+      "updated_at": "2025-03-27T17:15:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Delete sync
+
+**`DELETE /api/reverse-etl/syncs/{id}`**
+
+### Request parameters
+
+<ParamField path="id" type="string" required>
+  Sync ID.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "retl_sync_01j9k6m7n8o9p0q1",
+    "type": "reverse_etl_sync",
+    "attributes": {
+      "deleted": true,
+      "deleted_at": "2025-03-27T17:20:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Trigger sync run
+
+Starts a run for one or more syncs (batch semantics depend on your deployment).
+
+**`POST /api/reverse-etl/sync/run`**
+
+### Request body
+
+<ParamField body="syncId" type="string">
+  Run a single sync by ID.
+</ParamField>
+
+<ParamField body="syncIds" type="array">
+  Run multiple syncs in one request.
+</ParamField>
+
+<ParamField body="fullRefresh" type="boolean" default="false">
+  When supported, ignores incremental watermark and reprocesses the full query result set.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "retl_run_01j9k7p2q3r4s5t6",
+    "type": "reverse_etl_run",
+    "attributes": {
+      "sync_id": "retl_sync_01j9k6m7n8o9p0q1",
+      "status": "queued",
+      "full_refresh": false,
+      "created_at": "2025-03-27T17:22:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Toggle sync
+
+Enables or disables a sync without deleting its definition.
+
+**`POST /api/reverse-etl/sync/toggle`**
+
+### Request body
+
+<ParamField body="syncId" type="string" required>
+  Sync ID.
+</ParamField>
+
+<ParamField body="enabled" type="boolean" required>
+  Target state.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "retl_sync_01j9k6m7n8o9p0q1",
+    "type": "reverse_etl_sync",
+    "attributes": {
+      "enabled": false,
+      "updated_at": "2025-03-27T17:23:30Z"
+    }
+  }
+}
+```
+
+---
+
+## List destinations
+
+Lists destination connections available for reverse ETL in the workspace.
+
+**`GET /api/reverse-etl/destinations`**
+
+### Request parameters
+
+<ParamField query="connector" type="string">
+  Filter by connector type (for example `salesforce`, `hubspot`).
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "conn_sf_prod",
+      "type": "reverse_etl_destination",
+      "attributes": {
+        "name": "Salesforce Production",
+        "connector": "salesforce",
+        "status": "connected",
+        "objects_discoverable": true
+      }
+    }
+  ]
+}
+```
+
+---
+
+## List destination objects
+
+Returns objects (entities, streams) you can target for a given destination.
+
+**`GET /api/reverse-etl/objects`**
+
+### Request parameters
+
+<ParamField query="destination_id" type="string" required>
+  Destination connection ID.
+</ParamField>
+
+<ParamField query="search" type="string">
+  Case-insensitive filter on object label or API name.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "Account",
+      "type": "destination_object",
+      "attributes": {
+        "label": "Account",
+        "api_name": "Account",
+        "supports_upsert": true,
+        "writable": true
+      }
+    },
+    {
+      "id": "Contact",
+      "type": "destination_object",
+      "attributes": {
+        "label": "Contact",
+        "api_name": "Contact",
+        "supports_upsert": true,
+        "writable": true
+      }
+    }
+  ]
+}
+```
+
+---
+
+## List object fields
+
+Returns fields for a destination object, including types and write constraints.
+
+**`GET /api/reverse-etl/fields`**
+
+### Request parameters
+
+<ParamField query="destination_id" type="string" required>
+  Destination connection ID.
+</ParamField>
+
+<ParamField query="object_name" type="string" required>
+  Object API name.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "Name",
+      "type": "destination_field",
+      "attributes": {
+        "label": "Account Name",
+        "data_type": "string",
+        "required": true,
+        "updateable": true,
+        "external_id": false
+      }
+    },
+    {
+      "id": "External_Id__c",
+      "type": "destination_field",
+      "attributes": {
+        "label": "Warehouse Account Id",
+        "data_type": "string",
+        "required": false,
+        "updateable": true,
+        "external_id": true
+      }
+    }
+  ]
+}
+```
+
+---
+
+## List sync runs
+
+Returns historical reverse ETL run records across syncs.
+
+**`GET /api/reverse-etl/runs`**
+
+### Request parameters
+
+<ParamField query="sync_id" type="string">
+  Restrict to one sync.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Filter by run status.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="50">
+  Page size.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "retl_run_01j9k7p2q3r4s5t6",
+      "type": "reverse_etl_run",
+      "attributes": {
+        "sync_id": "retl_sync_01j9k6m7n8o9p0q1",
+        "status": "succeeded",
+        "rows_read": 12840,
+        "rows_written": 12795,
+        "rows_failed": 45,
+        "started_at": "2025-03-27T12:15:01Z",
+        "finished_at": "2025-03-27T12:18:44Z"
+      }
+    }
+  ],
+  "meta": {
+    "page": { "limit": 50, "cursor": null }
+  }
+}
+```
+
+---
+
+## List dead letter queue entries
+
+Returns rows or batches that failed after retries and require manual review.
+
+**`GET /api/reverse-etl/dlq`**
+
+### Request parameters
+
+<ParamField query="sync_id" type="string">
+  Filter by sync.
+</ParamField>
+
+<ParamField query="resolved" type="boolean">
+  `false` (default) for open failures; `true` for history.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="50">
+  Page size.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "retl_dlq_01j9k8u9v0w1x2y3",
+      "type": "reverse_etl_dlq_entry",
+      "attributes": {
+        "sync_id": "retl_sync_01j9k6m7n8o9p0q1",
+        "run_id": "retl_run_01j9k7p2q3r4s5t6",
+        "error_code": "DESTINATION_VALIDATION",
+        "message": "INVALID_EMAIL: bad format for field Email",
+        "record_keys": { "External_Id__c": "acc_88291" },
+        "attempts": 5,
+        "first_seen_at": "2025-03-27T12:16:10Z",
+        "resolved": false
+      }
+    }
+  ],
+  "meta": {
+    "page": { "limit": 50, "cursor": null }
+  }
+}
+```
+
+---
+
+## DLQ statistics
+
+Aggregate counts for monitoring and alerting.
+
+**`GET /api/reverse-etl/dlq/stats`**
+
+### Request parameters
+
+<ParamField query="sync_id" type="string">
+  Scope stats to one sync; omit for workspace totals.
+</ParamField>
+
+<ParamField query="since" type="string">
+  ISO 8601 timestamp; only count entries at or after this time.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "type": "reverse_etl_dlq_stats",
+    "attributes": {
+      "open_count": 12,
+      "resolved_count": 340,
+      "by_error_code": {
+        "DESTINATION_VALIDATION": 7,
+        "RATE_LIMIT": 3,
+        "UNKNOWN": 2
+      },
+      "computed_at": "2025-03-27T17:30:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Resolve DLQ entries
+
+Marks entries resolved after you fix data or choose to skip them; optional replay may enqueue new writes.
+
+**`POST /api/reverse-etl/dlq/resolve`**
+
+### Request body
+
+<ParamField body="entryIds" type="array" required>
+  DLQ entry IDs to resolve.
+</ParamField>
+
+<ParamField body="resolution" type="string" required>
+  Short reason code: `fixed_upstream`, `skipped`, `manual_push`, and so on.
+</ParamField>
+
+<ParamField body="replay" type="boolean" default="false">
+  When true and supported, re-attempts the affected records in a new run.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "data": {
+    "type": "reverse_etl_dlq_resolve",
+    "attributes": {
+      "resolved_ids": ["retl_dlq_01j9k8u9v0w1x2y3"],
+      "replay_run_id": null,
+      "resolved_at": "2025-03-27T17:35:00Z"
+    }
+  }
+}
+```

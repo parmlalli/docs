@@ -1,0 +1,285 @@
+---
+title: "Git integration"
+description: "Version control pipelines with Git."
+---
+
+Synchronize pipeline definitions with a **Git** repository: configure remotes, push and pull changes, inspect sync status, validate credentials, and read commit history.
+
+<Info>
+  Use `Authorization: Bearer <api_key>`. See [Authentication](/api-reference/authentication).
+</Info>
+
+## Base URL
+
+```text
+https://api.planasonix.com
+```
+
+---
+
+## Get Git integration config
+
+```http
+GET /api/git-integration
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "enabled": true,
+    "provider": "github",
+    "repository_url": "https://github.com/acme-analytics/planasonix-pipelines",
+    "default_branch": "main",
+    "path_prefix": "pipelines/",
+    "ssh_key_id": "gitkey_01jq801",
+    "author_name": "Planasonix Bot",
+    "author_email": "bot@example.com",
+    "last_sync_at": "2025-03-27T12:30:00Z"
+  }
+}
+```
+
+**Response `200 OK` (not configured)**
+
+```json
+{
+  "data": {
+    "enabled": false,
+    "repository_url": null,
+    "default_branch": null
+  }
+}
+```
+
+---
+
+## Save or update Git integration
+
+```http
+POST /api/git-integration
+```
+
+**Request body**
+
+```json
+{
+  "enabled": true,
+  "provider": "github",
+  "repository_url": "https://github.com/acme-analytics/planasonix-pipelines",
+  "default_branch": "main",
+  "path_prefix": "pipelines/",
+  "credentials": {
+    "type": "github_app",
+    "installation_id": "12345678"
+  },
+  "author_name": "Planasonix Bot",
+  "author_email": "bot@example.com"
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "enabled": true,
+    "provider": "github",
+    "repository_url": "https://github.com/acme-analytics/planasonix-pipelines",
+    "default_branch": "main",
+    "path_prefix": "pipelines/",
+    "updated_at": "2025-03-27T15:00:00Z"
+  }
+}
+```
+
+---
+
+## Remove Git integration
+
+```http
+DELETE /api/git-integration
+```
+
+Disconnects the repository and clears stored credentials. Local pipeline drafts in Planasonix are unchanged.
+
+**Response `204 No Content`**
+
+---
+
+## Push pipeline to Git
+
+```http
+POST /api/git-integration/push
+```
+
+**Request body**
+
+```json
+{
+  "branch": "feature/add-crm-sync",
+  "message": "Add CRM incremental pipeline",
+  "pipeline_ids": ["pl_01hqnew"],
+  "create_pull_request": true,
+  "pr_title": "Add CRM incremental pipeline",
+  "pr_body": "Automated export from Planasonix."
+}
+```
+
+**Response `202 Accepted`**
+
+```json
+{
+  "data": {
+    "operation_id": "gitop_01jq8push01",
+    "status": "running",
+    "branch": "feature/add-crm-sync"
+  }
+}
+```
+
+---
+
+## Pull pipeline from Git
+
+```http
+POST /api/git-integration/pull
+```
+
+**Request body**
+
+```json
+{
+  "branch": "main",
+  "strategy": "merge",
+  "dry_run": false
+}
+```
+
+**Response `202 Accepted`**
+
+```json
+{
+  "data": {
+    "operation_id": "gitop_01jq8pull01",
+    "status": "running",
+    "branch": "main"
+  }
+}
+```
+
+---
+
+## Get sync status
+
+```http
+GET /api/git-integration/status
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "in_sync": false,
+    "local_ahead_count": 2,
+    "remote_ahead_count": 1,
+    "last_successful_sync_at": "2025-03-26T18:00:00Z",
+    "active_operation": {
+      "id": "gitop_01jq8push01",
+      "kind": "push",
+      "status": "running",
+      "started_at": "2025-03-27T15:02:00Z"
+    },
+    "conflicts": []
+  }
+}
+```
+
+---
+
+## Test Git connection
+
+```http
+POST /api/git-integration/test
+```
+
+**Request body (optional)**
+
+```json
+{
+  "repository_url": "https://github.com/acme-analytics/planasonix-pipelines",
+  "credentials": {
+    "type": "token",
+    "token": "ghp_xxxxxxxxxxxxxxxxxxxx"
+  }
+}
+```
+
+Omit `repository_url` and `credentials` to validate the saved integration.
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "reachable": true,
+    "permissions": ["read", "write"],
+    "default_branch": "main",
+    "latency_ms": 142
+  }
+}
+```
+
+---
+
+## Get commit history
+
+```http
+GET /api/git-integration/history
+```
+
+**Query parameters**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `branch` | Branch to read (defaults to configured default) |
+| `path` | Limit to commits touching `path_prefix` subtree |
+| `limit` | Max commits (default 30) |
+
+**Response `200 OK`**
+
+```json
+{
+  "data": [
+    {
+      "sha": "a1b2c3d4e5f6789012345678901234567890abcd",
+      "message": "Fix orders dedupe keys",
+      "author": "Alex Morgan <alex@example.com>",
+      "committed_at": "2025-03-26T17:55:00Z",
+      "pipeline_ids_touched": ["pl_01hqxyz"]
+    },
+    {
+      "sha": "9f8e7d6c5b4a321098765432109876543210fedcb",
+      "message": "Add staging models for Shopify",
+      "author": "Planasonix Bot <bot@example.com>",
+      "committed_at": "2025-03-25T09:12:00Z",
+      "pipeline_ids_touched": ["pl_01hqabc", "pl_01hqdef"]
+    }
+  ]
+}
+```
+
+---
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Git integration" icon="git-merge" href="/pipelines/git-integration">
+    Branching model and UI workflows.
+  </Card>
+  <Card title="Import and convert" icon="arrow-down-up" href="/pipelines/import-and-convert">
+    Bringing definitions from other tools.
+  </Card>
+</CardGroup>

@@ -1,0 +1,79 @@
+---
+title: "SQL assistance"
+description: "Get AI-powered help writing and optimizing SQL queries."
+---
+
+SQL assistance helps you author queries inside Planasonix nodes—warehouse transforms, inline filters, and reverse ETL source SQL—without switching to a separate IDE. You stay inside the product while Copilot suggests syntax, patterns, and fixes.
+
+## SQL generation
+
+Select a SQL editor surface (for example, a transform or warehouse query node) and open **Ask Copilot**. Describe the result shape you need:
+
+- Target columns and types
+- Join keys across tables or stages
+- Filters (`last 7 days`, `active customers only`)
+- Dialect-specific functions (Snowflake, BigQuery, Redshift, etc.)
+
+Copilot returns a draft query using the dialect detected from the connection. Replace table names with your actual schema objects and run **Preview** to validate row counts.
+
+<Tip>
+  Name the warehouse dialect in your prompt when you use uncommon functions so the assistant picks the right built-ins.
+</Tip>
+
+## Optimization suggestions
+
+Ask Copilot to **optimize** a query you already wrote. Typical suggestions include:
+
+- Pushing filters closer to scans
+- Replacing correlated subqueries with joins or window functions where appropriate
+- Pruning unused columns before expensive joins
+- Adding clustering or partition predicates your tables support
+
+Treat suggestions as hypotheses: measure with the warehouse query profile before accepting changes on heavy jobs.
+
+<Tabs>
+  <Tab title="Cost-focused">
+    Request “lower bytes scanned” or “reduce spill to disk” when your profile shows large scans.
+  </Tab>
+  <Tab title="Latency-focused">
+    Ask to “reduce latency for an interactive preview” when the query backs a dashboard or notebook.
+  </Tab>
+  <Tab title="Correctness-first">
+    Say “do not change results” when you only want structural cleanup, not semantic changes.
+  </Tab>
+</Tabs>
+
+## Error explanation
+
+Paste compiler or runtime errors into chat (redact internal hostnames if policy requires). Copilot maps common messages to fixes:
+
+- Type mismatches in `JOIN` or `UNION`
+- Missing aliases in nested selects
+- Invalid identifier quoting per dialect
+- Permission errors surfaced as SQL exceptions
+
+Cross-check explanations against your warehouse’s error reference; vendor messages evolve across versions.
+
+<AccordionGroup>
+  <Accordion title="Sample data">
+    If you paste sample rows, mask direct identifiers. Prefer synthetic values that preserve shape but not real customer data.
+  </Accordion>
+  <Accordion title="Large scripts">
+    For long scripts, point Copilot to the failing stanza only; smaller snippets get more accurate line-level guidance.
+  </Accordion>
+</AccordionGroup>
+
+## Guardrails
+
+You remain accountable for access controls and row-level security. Copilot does not bypass database grants. Generated SQL that references restricted objects still fails at execution until credentials allow access.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="AI Copilot overview" icon="sparkles" href="/ai-copilot/overview">
+    Feature gating and API key models.
+  </Card>
+  <Card title="Pipelines" icon="diagram-project" href="/pipelines/overview">
+    Where SQL nodes fit in the broader canvas.
+  </Card>
+</CardGroup>

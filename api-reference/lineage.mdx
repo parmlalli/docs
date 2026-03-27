@@ -1,0 +1,348 @@
+---
+title: "Lineage and impact analysis"
+description: "Trace data lineage and analyze change impact."
+---
+
+These endpoints expose **column-level lineage**, **upstream and downstream traversal**, **impact analysis** for proposed changes, **schema-change simulation**, and **impact graph** payloads for visualization tools.
+
+<Info>
+  Authenticate with `Authorization: Bearer <api_key>`. See [Authentication](/api-reference/authentication).
+</Info>
+
+## Base URL
+
+```text
+https://api.planasonix.com
+```
+
+---
+
+## Column-level lineage
+
+```http
+GET /api/lineage/columns
+```
+
+Returns lineage edges for columns matching filters. Use this as the default entry point when you know table and column identifiers from the catalog.
+
+**Query parameters (typical)**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `table_fqn` | Fully qualified table name (for example `warehouse.analytics.fct_orders`) |
+| `column_name` | Column name within the table |
+| `depth` | Maximum hop depth (default 5, max 20) |
+| `include_inactive` | Include deprecated or archived edges |
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "root": {
+      "table_fqn": "warehouse.analytics.fct_orders",
+      "column_name": "order_total_usd"
+    },
+    "edges": [
+      {
+        "from": {
+          "table_fqn": "warehouse.staging.stg_shopify_orders",
+          "column_name": "total_price"
+        },
+        "to": {
+          "table_fqn": "warehouse.analytics.fct_orders",
+          "column_name": "order_total_usd"
+        },
+        "transform": "sql_expression",
+        "pipeline_id": "pl_01hqxyz",
+        "confidence": "high"
+      }
+    ],
+    "generated_at": "2025-03-27T15:00:00Z"
+  }
+}
+```
+
+---
+
+## Trace upstream dependencies
+
+```http
+GET /api/lineage/columns/upstream
+```
+
+Walks sources and intermediate models that feed the specified column.
+
+**Query parameters**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `table_fqn`, `column_name` | Starting column |
+| `depth` | Hop limit |
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "start": {
+      "table_fqn": "warehouse.analytics.fct_orders",
+      "column_name": "order_total_usd"
+    },
+    "nodes": [
+      {
+        "table_fqn": "warehouse.analytics.fct_orders",
+        "column_name": "order_total_usd",
+        "depth": 0
+      },
+      {
+        "table_fqn": "warehouse.staging.stg_shopify_orders",
+        "column_name": "total_price",
+        "depth": 1
+      },
+      {
+        "table_fqn": "raw.shopify.orders",
+        "column_name": "total_price",
+        "depth": 2
+      }
+    ],
+    "edges": [
+      {
+        "from": "raw.shopify.orders.total_price",
+        "to": "warehouse.staging.stg_shopify_orders.total_price"
+      },
+      {
+        "from": "warehouse.staging.stg_shopify_orders.total_price",
+        "to": "warehouse.analytics.fct_orders.order_total_usd"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Trace downstream consumers
+
+```http
+GET /api/lineage/columns/downstream
+```
+
+Lists dashboards, derived tables, and pipelines that depend on the column.
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "start": {
+      "table_fqn": "warehouse.analytics.fct_orders",
+      "column_name": "order_total_usd"
+    },
+    "nodes": [
+      {
+        "table_fqn": "warehouse.analytics.fct_orders",
+        "column_name": "order_total_usd",
+        "depth": 0,
+        "kind": "table"
+      },
+      {
+        "id": "dash_01jq8rev",
+        "name": "Executive revenue",
+        "kind": "looker_dashboard",
+        "depth": 1
+      },
+      {
+        "table_fqn": "warehouse.marts.rev_by_region",
+        "column_name": "gross_revenue_usd",
+        "depth": 1,
+        "kind": "table"
+      }
+    ],
+    "edges": [
+      {
+        "from": "warehouse.analytics.fct_orders.order_total_usd",
+        "to": "warehouse.marts.rev_by_region.gross_revenue_usd"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Run impact analysis
+
+```http
+GET /api/lineage/impact-analysis
+```
+
+Evaluates blast radius for a proposed table or column change (rename, type change, drop).
+
+**Query parameters**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `table_fqn` | Affected table |
+| `column_name` | Optional; omit for table-wide analysis |
+| `change_type` | `rename`, `type_change`, `drop`, `add` |
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "change": {
+      "table_fqn": "warehouse.staging.stg_shopify_orders",
+      "column_name": "total_price",
+      "change_type": "type_change",
+      "from_type": "NUMERIC(12,2)",
+      "to_type": "NUMERIC(18,6)"
+    },
+    "summary": {
+      "affected_downstream_nodes": 14,
+      "affected_pipelines": 3,
+      "risk_level": "medium"
+    },
+    "affected_assets": [
+      {
+        "kind": "pipeline",
+        "id": "pl_01hqxyz",
+        "name": "staging_to_analytics_orders"
+      },
+      {
+        "kind": "table",
+        "table_fqn": "warehouse.analytics.fct_orders",
+        "impact": "column_expression_may_coerce"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Simulate a schema change
+
+```http
+POST /api/lineage/simulate-change
+```
+
+Runs a dry-run prediction without mutating metadata. Useful in CI before merging DDL.
+
+**Request body**
+
+```json
+{
+  "table_fqn": "warehouse.analytics.dim_customer",
+  "change_type": "drop",
+  "column_name": "legacy_segment",
+  "options": {
+    "assume_cascade": false,
+    "include_bi_tools": true
+  }
+}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "simulation_id": "linsim_01jq801",
+    "change": {
+      "table_fqn": "warehouse.analytics.dim_customer",
+      "column_name": "legacy_segment",
+      "change_type": "drop"
+    },
+    "predicted_breakages": [
+      {
+        "severity": "high",
+        "asset": {
+          "kind": "pipeline",
+          "id": "pl_01hqabc",
+          "name": "customer_360_enrichment"
+        },
+        "reason": "SQL references dim_customer.legacy_segment"
+      }
+    ],
+    "safe_to_apply": false,
+    "computed_at": "2025-03-27T15:05:00Z"
+  }
+}
+```
+
+---
+
+## Impact graph visualization data
+
+```http
+GET /api/lineage/impact-graph
+```
+
+Returns a graph suited for force-directed or hierarchical renders (nodes and links with stable IDs).
+
+**Query parameters**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `root_table_fqn` | Center the graph on this table |
+| `root_column_name` | Optional column focus |
+| `direction` | `both`, `upstream`, `downstream` |
+| `max_nodes` | Cap for browser performance (default 500) |
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "nodes": [
+      {
+        "id": "tbl:warehouse.analytics.fct_orders",
+        "label": "fct_orders",
+        "type": "table",
+        "tier": "gold"
+      },
+      {
+        "id": "col:warehouse.analytics.fct_orders#order_total_usd",
+        "label": "order_total_usd",
+        "type": "column",
+        "parent_table_id": "tbl:warehouse.analytics.fct_orders"
+      },
+      {
+        "id": "dash:dash_01jq8rev",
+        "label": "Executive revenue",
+        "type": "dashboard"
+      }
+    ],
+    "links": [
+      {
+        "source": "col:warehouse.staging.stg_shopify_orders#total_price",
+        "target": "col:warehouse.analytics.fct_orders#order_total_usd",
+        "kind": "lineage"
+      },
+      {
+        "source": "col:warehouse.analytics.fct_orders#order_total_usd",
+        "target": "dash:dash_01jq8rev",
+        "kind": "consumption"
+      }
+    ],
+    "layout_hints": {
+      "suggested_root": "tbl:warehouse.analytics.fct_orders"
+    }
+  }
+}
+```
+
+---
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Lineage" icon="git-branch" href="/governance/lineage">
+    How lineage is collected in Planasonix.
+  </Card>
+  <Card title="Impact analysis" icon="activity" href="/governance/impact-analysis">
+    Change management workflows in the UI.
+  </Card>
+</CardGroup>

@@ -1,0 +1,74 @@
+---
+title: "AI providers"
+description: "Connect to AI and LLM providers like OpenAI, Anthropic, and Google AI for AI-powered transforms."
+---
+
+AI provider connections supply authenticated access to hosted large language models and related APIs. You use them in pipeline steps that classify, summarize, extract entities from text, or generate structured JSON from unstructured input, and in product features such as **AI Copilot** that assist with mapping, SQL, or documentation inside the Planasonix UI.
+
+## Supported providers
+
+| Provider | Models (examples) | Typical credential |
+| --- | --- | --- |
+| **OpenAI** | GPT-4.1 family, GPT-4o, o-series reasoning models, embeddings | Organization-scoped API key |
+| **Anthropic (Claude)** | Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku | API key with usage limits |
+| **Google AI (Gemini)** | Gemini 1.5 Pro/Flash and successor tiers | API key or Google Cloud–backed auth as supported |
+
+Exact model names and availability change as vendors release updates; the connection panel lists the current catalog your workspace is entitled to use.
+
+## API key configuration
+
+<Steps>
+  <Step title="Create a restricted key in the provider console">
+    In OpenAI, Anthropic, or Google AI Studio / GCP, create an API key used only for Planasonix. Disable capabilities you do not need (for example image generation or fine-tuning) if the console allows per-key restrictions.
+  </Step>
+  <Step title="Add an API key credential in Planasonix">
+    Open **Credentials**, choose **API key**, paste the secret once, and label it with environment and cost center (for example `prod-openai-etl`). Never commit keys to Git or pipeline YAML.
+  </Step>
+  <Step title="Attach the credential to an AI connection">
+    Create a new **AI provider** connection, select the vendor, and link the credential. Set defaults such as **default model**, **region** (if applicable), and **max tokens** caps that match your budget guardrails.
+  </Step>
+  <Step title="Validate with a dry-run transform">
+    Run a sample pipeline or Copilot action in a non-production workspace to confirm billing, quota, and content policy filters behave as expected before promoting jobs.
+  </Step>
+</Steps>
+
+<Tabs>
+  <Tab title="OpenAI">
+    If your enterprise uses **Azure OpenAI** instead of the public API, create a connection that targets the Azure resource endpoint and uses **Azure AD** or key-based auth as your Planasonix deployment supports—do not mix public and Azure keys on the same connection.
+  </Tab>
+  <Tab title="Anthropic">
+    Keys are tied to **workspaces** and usage tiers. Set explicit **token and request rate limits** in the Anthropic console to avoid runaway spend from a misconfigured loop in a pipeline.
+  </Tab>
+  <Tab title="Google AI">
+    For **Gemini via Google AI Studio**, API keys are simple but broad—restrict by HTTP referrer or IP in the Google Cloud console when those controls exist. For **Vertex AI**, prefer **service accounts** and IAM on the project.
+  </Tab>
+</Tabs>
+
+## Use cases in pipelines
+
+**LLM transforms** — Send row or batch context to the model with a system prompt that constrains output format (for example “return JSON with keys `sentiment` and `confidence`”). Validate JSON in a downstream step and quarantine malformed responses.
+
+**Enrichment** — Combine retrieved fields (customer notes, ticket bodies) with retrieval-augmented prompts referencing allowed knowledge sources only.
+
+**AI Copilot** — Uses the same connections under the hood for assisted authoring. Point Copilot traffic at **separate keys or budgets** from bulk batch jobs when finance needs cost attribution.
+
+<Warning>
+  Do not send regulated personal data to external models until your legal and security teams approve data processing agreements, residency, and retention. Use field masking or hashing steps before the LLM call when policies require minimization.
+</Warning>
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="APIs and webhooks" icon="webhook" href="/connections/apis-and-webhooks">
+    Generic HTTP AI endpoints and custom model gateways.
+  </Card>
+  <Card title="AI Copilot overview" icon="sparkles" href="/ai-copilot/overview">
+    In-product assistance that consumes AI provider connections.
+  </Card>
+  <Card title="Credentials management" icon="key-round" href="/connections/credentials">
+    Rotation and access control on API keys.
+  </Card>
+  <Card title="Connections overview" icon="plug" href="/connections/overview">
+    How AI connections relate to other connection types.
+  </Card>
+</CardGroup>

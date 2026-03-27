@@ -1,0 +1,352 @@
+---
+title: "Dead letter queue"
+description: "Manage failed records in the dead letter queue."
+---
+
+The **dead letter queue (DLQ)** holds rows or batches that failed after retries. Use these endpoints to inspect failures, reprocess individual records, run bulk actions, and export for offline analysis.
+
+<Info>
+  Authenticate with `Authorization: Bearer <api_key>`. See [Authentication](/api-reference/authentication).
+</Info>
+
+## Base URL
+
+```text
+https://api.planasonix.com
+```
+
+---
+
+## List DLQ entries
+
+```http
+GET /api/dlq
+```
+
+**Query parameters (typical)**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `pipeline_id` | Filter by pipeline |
+| `connection_id` | Filter by connection |
+| `error_code` | Filter by error taxonomy code |
+| `since`, `until` | ISO 8601 bounds on `failed_at` |
+| `limit`, `cursor` | Pagination |
+
+**Response `200 OK`**
+
+```json
+{
+  "data": [
+    {
+      "id": "dlq_01jq8row001",
+      "pipeline_id": "pl_01hqxyz",
+      "connection_id": "conn_01jq8k2m3n4p5q6r7s8t9u0v1",
+      "error_code": "destination_constraint_violation",
+      "error_message": "duplicate key value violates unique constraint \"orders_pkey\"",
+      "failed_at": "2025-03-27T13:45:22Z",
+      "retry_count": 5,
+      "row_preview": {
+        "order_id": "ORD-88421",
+        "customer_id": "cust_9912"
+      }
+    }
+  ],
+  "meta": {
+    "page": { "limit": 50, "cursor": "eyJkbHEiOiJkbHFfMDFqcThyb3cwMDEifQ" }
+  }
+}
+```
+
+---
+
+## Get DLQ statistics
+
+```http
+GET /api/dlq/stats
+```
+
+**Query parameters (typical)**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `since`, `until` | Time window for aggregation |
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "total_entries": 1284,
+    "by_error_code": [
+      { "error_code": "destination_constraint_violation", "count": 620 },
+      { "error_code": "source_timeout", "count": 210 },
+      { "error_code": "schema_drift", "count": 454 }
+    ],
+    "by_pipeline": [
+      { "pipeline_id": "pl_01hqxyz", "name": "nightly_sales_sync", "count": 890 },
+      { "pipeline_id": "pl_01hqabc", "name": "crm_incremental", "count": 394 }
+    ],
+    "window": {
+      "since": "2025-03-01T00:00:00Z",
+      "until": "2025-03-27T15:00:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Get DLQ entry details
+
+```http
+GET /api/dlq/{id}
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "id": "dlq_01jq8row001",
+    "pipeline_id": "pl_01hqxyz",
+    "pipeline_run_id": "run_01jq8abc",
+    "connection_id": "conn_01jq8k2m3n4p5q6r7s8t9u0v1",
+    "error_code": "destination_constraint_violation",
+    "error_message": "duplicate key value violates unique constraint \"orders_pkey\"",
+    "stack_trace": "org.postgresql.util.PSQLException: ERROR: duplicate key...",
+    "failed_at": "2025-03-27T13:45:22Z",
+    "retry_count": 5,
+    "payload": {
+      "order_id": "ORD-88421",
+      "customer_id": "cust_9912",
+      "total_cents": 129900,
+      "created_at": "2025-03-26T18:12:00Z"
+    },
+    "metadata": {
+      "batch_id": "batch_01jq8xyz",
+      "partition": "2025-03-27"
+    }
+  }
+}
+```
+
+---
+
+## Reprocess a failed record
+
+```http
+POST /api/dlq/{id}/reprocess
+```
+
+Re-queues the record through the pipeline’s configured retry path.
+
+**Request body (optional)**
+
+```json
+{
+  "priority": "high",
+  "note": "fixed_unique_index_in_destination"
+}
+```
+
+**Response `202 Accepted`**
+
+```json
+{
+  "data": {
+    "dlq_id": "dlq_01jq8row001",
+    "job_id": "job_01jq8reproc01",
+    "status": "queued"
+  }
+}
+```
+
+---
+
+## Bulk action on selected entries
+
+```http
+POST /api/dlq/bulk
+```
+
+**Request body**
+
+```json
+{
+  "action": "reprocess",
+  "ids": ["dlq_01jq8row001", "dlq_01jq8row002", "dlq_01jq8row003"],
+  "priority": "normal"
+}
+```
+
+Supported `action` values include `reprocess` and `delete` (per workspace policy).
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "action": "reprocess",
+    "requested": 3,
+    "accepted": 3,
+    "rejected": 0,
+    "job_id": "job_01jq8bulk01",
+    "errors": []
+  }
+}
+```
+
+---
+
+## Bulk action on all matching entries
+
+```http
+POST /api/dlq/bulk-all
+```
+
+Applies the action to every entry matching the same filters as `GET /api/dlq`. Use with care in production.
+
+**Request body**
+
+```json
+{
+  "action": "delete",
+  "filters": {
+    "pipeline_id": "pl_01hqxyz",
+    "error_code": "source_timeout",
+    "until": "2025-03-20T00:00:00Z"
+  },
+  "confirm_token": "dlq_bulk_confirm_01jq8securetoken"
+}
+```
+
+**Response `202 Accepted`**
+
+```json
+{
+  "data": {
+    "action": "delete",
+    "matched_count": 184,
+    "bulk_operation_id": "dlqbo_01jq8op01",
+    "status": "running"
+  }
+}
+```
+
+---
+
+## Export DLQ entries
+
+```http
+GET /api/dlq/export
+```
+
+**Query parameters**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `format` | `csv` or `json` |
+| `pipeline_id`, `error_code`, `since`, `until` | Same semantics as list |
+
+**Response `200 OK`**
+
+Streamed file with `Content-Disposition: attachment`. For `format=json`:
+
+```json
+{
+  "exported_at": "2025-03-27T15:10:00Z",
+  "count": 2,
+  "entries": [
+    {
+      "id": "dlq_01jq8row001",
+      "pipeline_id": "pl_01hqxyz",
+      "error_code": "destination_constraint_violation",
+      "failed_at": "2025-03-27T13:45:22Z",
+      "payload": { "order_id": "ORD-88421" }
+    }
+  ]
+}
+```
+
+---
+
+## Diagnostics
+
+Pipeline and run diagnostics complement DLQ review: logs, profiles, and downloadable artifacts.
+
+### List diagnostics
+
+```http
+GET /api/diagnostics
+```
+
+**Query parameters (typical)**
+
+| Parameter | Description |
+| --------- | ----------- |
+| `pipeline_id`, `run_id` | Scope to a pipeline or run |
+| `type` | `log_bundle`, `profile`, `heap_dump`, etc. |
+| `limit`, `cursor` | Pagination |
+
+**Response `200 OK`**
+
+```json
+{
+  "data": [
+    {
+      "id": "diag_01jq8log01",
+      "type": "log_bundle",
+      "pipeline_id": "pl_01hqxyz",
+      "run_id": "run_01jq8abc",
+      "created_at": "2025-03-27T12:00:00Z",
+      "size_bytes": 5242880,
+      "expires_at": "2025-04-03T12:00:00Z"
+    }
+  ]
+}
+```
+
+### Diagnostics statistics
+
+```http
+GET /api/diagnostics/stats
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "data": {
+    "total_artifacts": 42,
+    "total_bytes": 268435456,
+    "by_type": [
+      { "type": "log_bundle", "count": 30 },
+      { "type": "profile", "count": 12 }
+    ]
+  }
+}
+```
+
+### Download diagnostic artifact
+
+```http
+GET /api/diagnostics/{id}/download
+```
+
+**Response `200 OK`**
+
+Binary archive (often `application/zip`) with `Content-Disposition` filename. Short-lived signed URLs may be used instead of raw streaming in some deployments.
+
+---
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Dead letter queue" icon="inbox" href="/observability/dead-letter-queue">
+    Product concepts and UI workflows.
+  </Card>
+  <Card title="Diagnostics" icon="stethoscope" href="/observability/diagnostics">
+    Capturing and sharing diagnostic bundles.
+  </Card>
+</CardGroup>
