@@ -1,0 +1,304 @@
+---
+title: "MCP server"
+sidebarTitle: "MCP server"
+description: "Connect Planasonix to Claude, Cursor, Windsurf, and other AI assistants using the Model Context Protocol."
+icon: "robot"
+---
+
+The Planasonix MCP server lets you manage pipelines, create connections, set schedules, and troubleshoot failures through natural language conversations with AI assistants. It uses the open [Model Context Protocol](https://modelcontextprotocol.io) and works with any compatible client.
+
+<CardGroup cols={3}>
+  <Card title="22 tools" icon="wrench">
+    Pipeline operations, schedule management, and connection configuration.
+  </Card>
+  <Card title="AI pipeline creation" icon="wand-magic-sparkles">
+    Describe what you want and the backend AI builds the graph.
+  </Card>
+  <Card title="Full tenant isolation" icon="shield-halved">
+    Every request is scoped to your organization. Cross-org access is impossible.
+  </Card>
+</CardGroup>
+
+## Prerequisites
+
+- A Planasonix account (Growth plan or above)
+- An AI client that supports MCP (Claude Desktop, Cursor, Windsurf, VS Code, or similar)
+- A Planasonix API key with the required scopes
+
+## Generate your API key
+
+<Steps>
+  <Step title="Open API keys">
+    Go to **Settings → API Keys** in your Planasonix dashboard.
+  </Step>
+  <Step title="Create a key">
+    Click **Generate New Key** and select the scopes you need.
+  </Step>
+  <Step title="Copy the key">
+    Copy the full key immediately — it is only shown once.
+  </Step>
+</Steps>
+
+### Available scopes
+
+| Scope | Grants |
+|-------|--------|
+| `pipelines:read` | View pipelines, run history, health metrics |
+| `pipelines:write` | Create, modify, trigger, pause, resume, delete pipelines |
+| `connectors:read` | View and test connectors |
+| `connections:read` | View connections and connection types |
+| `connections:write` | Create, update, delete connections |
+| `schedules:read` | View pipeline schedules |
+| `schedules:write` | Create, update, enable, disable, delete schedules |
+
+<Warning>
+  Keep your API key secure. It grants access to your organization's pipeline data. Do not share it or commit it to source control.
+</Warning>
+
+## Download and install
+
+Download the latest binary from [GitHub Releases](https://github.com/planasonix/mcp-server/releases/latest) or from **Settings → MCP Server** in your dashboard.
+
+| Platform | File |
+|----------|------|
+| macOS (Apple Silicon) | `planasonix-mcp-darwin-arm64` |
+| macOS (Intel) | `planasonix-mcp-darwin-amd64` |
+| Linux (x86_64) | `planasonix-mcp-linux-amd64` |
+| Linux (ARM) | `planasonix-mcp-linux-arm64` |
+| Windows | `planasonix-mcp-windows-amd64.exe` |
+
+```bash
+chmod +x planasonix-mcp-darwin-arm64
+sudo mv planasonix-mcp-darwin-arm64 /usr/local/bin/planasonix-mcp
+```
+
+<Tip>
+  On macOS, if you see a quarantine warning, run: `xattr -d com.apple.quarantine /usr/local/bin/planasonix-mcp`
+</Tip>
+
+## Configure your AI client
+
+<Tabs>
+  <Tab title="Claude Desktop">
+    Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+    ```json
+    {
+      "mcpServers": {
+        "planasonix": {
+          "command": "/usr/local/bin/planasonix-mcp",
+          "args": ["--stdio"],
+          "env": {
+            "PLANASONIX_API_KEY": "flx_your_key_here",
+            "PLANASONIX_API_URL": "https://api.planasonix.com"
+          }
+        }
+      }
+    }
+    ```
+
+    Restart Claude Desktop. A hammer icon confirms MCP tools are active.
+  </Tab>
+  <Tab title="Cursor">
+    Create `.cursor/mcp.json` in your project root or `~/.cursor/mcp.json` globally:
+
+    ```json
+    {
+      "mcpServers": {
+        "planasonix": {
+          "command": "/usr/local/bin/planasonix-mcp",
+          "args": ["--stdio"],
+          "env": {
+            "PLANASONIX_API_KEY": "flx_your_key_here",
+            "PLANASONIX_API_URL": "https://api.planasonix.com"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Windsurf">
+    Edit `~/.codeium/windsurf/mcp_config.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "planasonix": {
+          "command": "/usr/local/bin/planasonix-mcp",
+          "args": ["--stdio"],
+          "env": {
+            "PLANASONIX_API_KEY": "flx_your_key_here",
+            "PLANASONIX_API_URL": "https://api.planasonix.com"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="VS Code">
+    Add to your VS Code `settings.json`:
+
+    ```json
+    {
+      "mcp": {
+        "servers": {
+          "planasonix": {
+            "command": "/usr/local/bin/planasonix-mcp",
+            "args": ["--stdio"],
+            "env": {
+              "PLANASONIX_API_KEY": "flx_your_key_here",
+              "PLANASONIX_API_URL": "https://api.planasonix.com"
+            }
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  **Windows users:** replace `/usr/local/bin/planasonix-mcp` with the full path to the `.exe`, for example `C:\\Program Files\\Planasonix\\planasonix-mcp.exe`.
+</Note>
+
+## Verify the connection
+
+After restarting your AI client, type:
+
+```
+List my Planasonix pipelines
+```
+
+If you see pipeline data, the MCP server is connected.
+
+## Available tools
+
+### Pipeline operations
+
+| Tool | Scope | What it does |
+|------|-------|--------------|
+| `list_pipelines` | `pipelines:read` | List all pipelines with status and schedule |
+| `get_pipeline` | `pipelines:read` | Get details for a specific pipeline |
+| `get_run_history` | `pipelines:read` | View recent run history with error details |
+| `get_pipeline_health` | `pipelines:read` | Error rate, latency, rows processed, SLA status |
+| `trigger_pipeline` | `pipelines:write` | Trigger an immediate pipeline run |
+| `pause_pipeline` | `pipelines:write` | Pause a pipeline's schedule |
+| `resume_pipeline` | `pipelines:write` | Resume a paused pipeline |
+| `create_pipeline` | `pipelines:write` | Create a pipeline from a natural language description |
+| `update_pipeline` | `pipelines:write` | Modify a pipeline using natural language |
+| `delete_pipeline` | `pipelines:write` | Soft-delete a pipeline (recoverable from UI) |
+
+### Schedule management
+
+| Tool | Scope | What it does |
+|------|-------|--------------|
+| `list_schedules` | `schedules:read` | List all pipeline schedules |
+| `create_schedule` | `schedules:write` | Create a cron-based schedule for a pipeline |
+| `update_schedule` | `schedules:write` | Update a schedule's cron, frequency, or timezone |
+| `delete_schedule` | `schedules:write` | Permanently delete a schedule |
+| `enable_schedule` | `schedules:write` | Re-enable a disabled schedule |
+| `disable_schedule` | `schedules:write` | Disable a schedule without deleting it |
+
+### Connection management
+
+| Tool | Scope | What it does |
+|------|-------|--------------|
+| `list_connectors` | `connectors:read` | List configured source/destination connectors |
+| `test_connection` | `connectors:read` | Test connector reachability and latency |
+| `list_connection_types` | `connections:read` | Discover available connector types |
+| `create_connection` | `connections:write` | Create a new data source or destination |
+| `update_connection` | `connections:write` | Update a connection's name or parameters |
+| `delete_connection` | `connections:write` | Delete a saved connection |
+
+## AI-powered pipeline creation
+
+The `create_pipeline` and `update_pipeline` tools use backend AI to generate pipeline graphs from natural language.
+
+**Creating a pipeline:**
+
+```
+Create a pipeline called "Daily Orders Sync" that extracts orders from
+PostgreSQL, filters to the last 7 days, deduplicates by order_id,
+and loads into Snowflake.
+```
+
+The AI generates the complete pipeline with source, transform, and destination nodes.
+
+**Modifying a pipeline:**
+
+```
+Add a step to the Daily Orders Sync pipeline that converts order_date
+from UTC to EST before loading into Snowflake.
+```
+
+The AI determines which nodes and edges to add while preserving the existing structure.
+
+<Info>
+  AI-powered operations can take up to 2 minutes for complex descriptions. The MCP server uses a 120-second timeout for these requests.
+</Info>
+
+## Security and data isolation
+
+The MCP server enforces full tenant isolation. Every request is scoped to your organization based on the API key — client-supplied parameters can never override the server-side identity.
+
+- **Scope-based access control** — read-only keys cannot trigger or modify pipelines
+- **Revocable** — keys can be revoked at any time from **Settings → API Keys**
+- **Audit trail** — all MCP requests are logged
+- **No data passthrough** — the MCP server is a control plane proxy; pipeline data flows directly between sources and destinations
+- **Rate limited** — 60 req/min (Growth), 300 req/min (Enterprise)
+
+## Enterprise: remote deployment
+
+For organizations whose security policies prohibit local binary execution, the MCP server supports a remote HTTP+SSE transport:
+
+```json
+{
+  "mcpServers": {
+    "planasonix": {
+      "type": "url",
+      "url": "https://mcp.planasonix.com/sse",
+      "headers": {
+        "Authorization": "Bearer flx_your_key_here"
+      }
+    }
+  }
+}
+```
+
+Self-hosted Docker deployment is also available:
+
+```bash
+docker run -d \
+  --name planasonix-mcp \
+  -p 8080:8080 \
+  -e PLANASONIX_API_URL=https://your-instance.planasonix.com \
+  -e DATABASE_URL=postgres://user:pass@db:5432/planasonix \
+  planasonix/mcp-server:latest
+```
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| AI client doesn't show MCP tools | Verify config JSON is valid. Check binary path is correct and executable. |
+| "Unauthorized" error | API key may be invalid or revoked. Generate a new one in **Settings → API Keys**. |
+| "Insufficient permissions" error | Key is missing the required scope. Generate a new key with the right scopes. |
+| Pipeline creation times out | AI generation can take up to 2 min. Simplify the description or break into steps. |
+| macOS quarantine warning | Run: `xattr -d com.apple.quarantine /usr/local/bin/planasonix-mcp` |
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="API keys" icon="key" href="/settings/api-keys">
+    Create and manage API keys for Planasonix.
+  </Card>
+  <Card title="Orchestration" icon="clock" href="/orchestration/overview">
+    Schedules, triggers, and pipeline chaining.
+  </Card>
+  <Card title="Connections" icon="plug" href="/connections/overview">
+    Configure data sources and destinations.
+  </Card>
+  <Card title="GitHub repository" icon="github" href="https://github.com/planasonix/mcp-server">
+    Source code and release downloads.
+  </Card>
+</CardGroup>

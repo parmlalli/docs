@@ -179,6 +179,12 @@
               "connectors/custom-connectors",
               "connectors/jdbc-gateway"
             ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/mcp"
+            ]
           }
         ]
       },
