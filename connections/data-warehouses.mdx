@@ -103,9 +103,37 @@ You can connect Planasonix to:
   </Tab>
 </Tabs>
 
+## Staging configuration
+
+Warehouse connections that load data via bulk methods (COPY INTO, LOAD DATA, PolyBase) require a **staging location** where files are temporarily stored before being ingested. Staging is configured directly on the connection so every pipeline that writes to that warehouse inherits the same staging setup automatically.
+
+When you create or edit a warehouse connection, expand the **Staging Configuration** section and choose a provider:
+
+<Tabs>
+  <Tab title="Amazon S3">
+    Select an **AWS credential** and specify the **S3 bucket** and optional **prefix**. Used by Snowflake, Redshift, BigQuery (cross-cloud), Synapse, and Databricks connections.
+  </Tab>
+  <Tab title="Google Cloud Storage">
+    Select a **GCP credential** and specify the **GCS bucket** and optional **prefix**. Primary staging method for BigQuery; also supported by Snowflake and Databricks.
+  </Tab>
+  <Tab title="Azure Blob Storage">
+    Select an **Azure credential** and specify the **container** and optional **blob prefix**. Used by Synapse, Fabric, Snowflake, and Databricks connections.
+  </Tab>
+  <Tab title="Snowflake Internal Stage">
+    Uses Snowflake-managed storage. Optionally specify a **named stage** (for example `@my_stage`) or leave blank to use the user stage (`@~`). No external cloud storage account required.
+  </Tab>
+  <Tab title="Databricks Volumes">
+    Specify a **Unity Catalog volume path** (for example `/Volumes/catalog/schema/volume_name`). No external cloud storage account required.
+  </Tab>
+</Tabs>
+
+<Note>
+  Not every staging provider is available for every warehouse. The connection form shows only the options that apply to the selected warehouse type.
+</Note>
+
 ## Operational tips
 
-Warehouse jobs benefit from explicit **staging areas** (buckets or external stages) and **role separation** between extract, transform, and publish. Use one connection per environment and per major workload (for example `prod-databricks-curated` vs `prod-databricks-raw`) so you can tune warehouse size and cost without cross-contamination.
+Warehouse jobs benefit from **role separation** between extract, transform, and publish. Use one connection per environment and per major workload (for example `prod-databricks-curated` vs `prod-databricks-raw`) so you can tune warehouse size, staging buckets, and cost without cross-contamination.
 
 <Warning>
   Broad warehouse roles (for example `ACCOUNTADMIN` on Snowflake or owner on entire catalogs) should not be used for pipeline service identities. Create narrow roles with explicit grants.

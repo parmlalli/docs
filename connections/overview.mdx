@@ -86,7 +86,7 @@ Use the cards below to open guides for supported systems, authentication options
     If data lives in a transactional or document database, start with [Databases](/connections/databases). Use read replicas or scoped database users for heavy extract workloads.
   </Accordion>
   <Accordion title="Analytics warehouses and lakehouses">
-    For Snowflake, BigQuery, Databricks, or similar, use [Data warehouses](/connections/data-warehouses). Pair with [Cloud storage](/connections/cloud-storage) when you stage files before load.
+    For Snowflake, BigQuery, Databricks, or similar, use [Data warehouses](/connections/data-warehouses). Each warehouse connection includes built-in [staging configuration](/connections/data-warehouses#staging-configuration) for bulk loading via S3, GCS, Azure Blob, or platform-native stages.
   </Accordion>
   <Accordion title="Files and object stores">
     For CSV, Parquet, JSON, or partner drops in buckets, use [Cloud storage](/connections/cloud-storage).

@@ -7,13 +7,14 @@ description: "Write pipeline output to databases, warehouses, cloud storage, and
 
 ## Write
 
-**Write** is the standard relational or warehouse **table writer**.
+**Write** is the standard relational or warehouse **table writer**. For cloud warehouses (Snowflake, BigQuery, Redshift, Synapse, Databricks, Fabric), bulk loading uses the staging configuration from the [warehouse connection](/connections/data-warehouses#staging-configuration) automatically.
 
 **Configuration:**
 
 - **Connection** and **target object**: Database, schema, table (or equivalent).
 - **Write mode**: See [Write modes](#write-modes) below.
 - **Key columns** (for upserts): Primary or business keys used for merge semantics.
+- **Loading method** (warehouse targets): Auto, Bulk, or Standard. Bulk uses cloud staging + COPY INTO; staging credentials come from the connection.
 - **Column map**: Source to target names and casts.
 - **Pre/post SQL** (when supported): Run maintenance statements cautiously—document and review.
 
@@ -21,25 +22,33 @@ description: "Write pipeline output to databases, warehouses, cloud storage, and
 
 ## Cloud Destination
 
-**Cloud Destination** writes to **object stores** (Amazon S3, Google Cloud Storage, Azure Blob) or similar with format options.
+**Cloud Destination** writes to **cloud warehouses** and **object stores** (Amazon S3, Google Cloud Storage, Azure Blob) with bulk-optimized loading and format options.
+
+For cloud warehouse targets (Snowflake, BigQuery, Redshift, Synapse, Databricks, Fabric), staging for bulk loading is configured at the **connection level** — not on the node. Edit the warehouse connection to set up staging provider, bucket, and credentials. See [Staging configuration](/connections/data-warehouses#staging-configuration).
 
 **Configuration:**
 
-- **Path template**: Partition folders (`year=2025/month=03/`) for query engines.
-- **File format**: Parquet, CSV, JSON Lines, Avro—match consumers.
-- **Compression**: Snappy, ZSTD, gzip—balance CPU vs storage.
-- **Credentials**: Via connections; avoid embedding keys in paths.
+- **Connection**: Select a warehouse or cloud storage connection.
+- **Write mode**: Append, truncate and load, or merge (upsert).
+- **Loading method**: Bulk (cloud staging + COPY INTO) or standard INSERT. Some connectors are bulk-only.
+- **Compute scaling**: Override warehouse or cluster size for heavy loads (when the platform supports it).
+- **Path template** (object store targets): Partition folders (`year=2025/month=03/`) for query engines.
+- **File format** (object store targets): Parquet, CSV, JSON Lines, Avro—match consumers.
+- **Compression** (object store targets): Snappy, ZSTD, gzip—balance CPU vs storage.
 
-**Typical use:** Data lake landing zones feeding Iceberg or external tables.
+**Typical use:** Large-scale warehouse loads using COPY INTO, or data lake landing zones feeding Iceberg or external tables.
 
 ## Iceberg Destination (professional+)
 
-**Iceberg Destination** commits **Apache Iceberg** snapshots with ACID properties when your catalog is wired correctly.
+**Iceberg Destination** commits **Apache Iceberg** snapshots with ACID properties. Records are converted to Parquet and uploaded to the warehouse path (S3, GCS, or local storage) configured on the Iceberg connection.
 
 **Configuration:**
 
-- **Table identifier** and **catalog**.
-- **Write mode**: Append vs overwrite partitions vs merge (per support matrix).
+- **Connection**: Select a saved Iceberg connection with catalog and warehouse path.
+- **Table identifier**: Namespace and table name in the catalog.
+- **Write mode**: Append, overwrite, or merge (upsert with key columns).
+- **Batch size**: Records per Parquet file (default 10,000).
+- **Partition columns**: Optional partition layout for query performance.
 - **Schema evolution**: Coordinate with [Schema Evolution](/nodes/advanced) nodes when columns change.
 
 **Typical use:** Lakehouse marts where readers expect snapshot isolation and time travel.
