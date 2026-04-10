@@ -89,10 +89,10 @@ The advisor examines each column and scores partition strategies:
 
 | Column Type | Strategy | When |
 |-------------|----------|------|
-| **Timestamp** (high volume) | `day(col)` or `hour(col)` | >1,000 rows/day |
-| **Timestamp** (low volume) | `month(col)` | <100 rows/day over >90 days |
+| **Timestamp** (high volume) | `day(col)` or `hour(col)` | &gt;1,000 rows/day |
+| **Timestamp** (low volume) | `month(col)` | &lt;100 rows/day over &gt;90 days |
 | **Low cardinality** (≤200 distinct) | Identity (`col`) | Enum-like columns |
-| **High cardinality** (>200 distinct) | `bucket(N, col)` | IDs, hashes |
+| **High cardinality** (&gt;200 distinct) | `bucket(N, col)` | IDs, hashes |
 
 ### Using the Advisor
 
