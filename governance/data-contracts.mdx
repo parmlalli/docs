@@ -57,6 +57,38 @@ Enforcement hooks include:
   Quarantine tables may contain sensitive values. Apply retention, encryption, and access controls identical to production data classes.
 </Warning>
 
+## Lake write enforcement
+
+Contracts can be assigned to **Managed Lakehouse** destination nodes to validate every record before writing to Iceberg and Delta tables. This is configured in the pipeline canvas under the destination's Advanced Settings.
+
+### Enforcement modes on lake writes
+
+| Mode | Valid Records | Invalid Records |
+|---|---|---|
+| **Warn** | Written to lakehouse | Written + violations logged to diagnostics |
+| **Block** | Written to lakehouse | Routed to [Dead Letter Queue](/observability/dead-letter-queue) with error code `CONTRACT_VIOLATION` |
+
+### How it works
+
+1. Each incoming batch is validated against the assigned contract
+2. In **warn** mode, all records are written and violations are logged
+3. In **block** mode, the batch is split — valid records commit to the lakehouse, invalid records are sent to the DLQ with the original payload, failed rule name, and expected vs actual values
+
+### DLQ routing
+
+When enforcement mode is `block`, rejected records appear in the [DLQ page](/observability/dead-letter-queue) and include:
+
+- Original record payload
+- Contract ID and version
+- Failed rule name with expected vs actual
+- Pipeline run ID for traceability
+
+After fixing the source data or relaxing the rule, you can reprocess DLQ entries to land them in the lakehouse.
+
+<Card title="Contract Enforcement on Lake Writes" icon="shield-check" href="/managed-lakehouse/contract-enforcement">
+  Full guide to contract configuration and the partition advisor
+</Card>
+
 ## Related topics
 
 <CardGroup cols={2}>
@@ -65,5 +97,8 @@ Enforcement hooks include:
   </Card>
   <Card title="Impact analysis" icon="chart-network" href="/governance/impact-analysis">
     See who breaks when contracts change.
+  </Card>
+  <Card title="Dead letter queue" icon="inbox" href="/observability/dead-letter-queue">
+    Triage contract-failed records from lake writes.
   </Card>
 </CardGroup>

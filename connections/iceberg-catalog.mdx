@@ -1,0 +1,148 @@
+---
+title: "Hosted Iceberg REST Catalog"
+description: "Connect any query engine to Planasonix-managed Iceberg tables using the hosted REST catalog"
+icon: "database"
+---
+
+## Overview
+
+Planasonix provides a fully managed, spec-compliant [Apache Iceberg REST Catalog](https://iceberg.apache.org/concepts/catalog/) so you can connect any query engine — Snowflake, DuckDB, Spark, Trino — directly to tables managed by your pipelines, without configuring external catalogs like AWS Glue or Hive Metastore.
+
+```mermaid
+flowchart TB
+    subgraph engines ["Query Engines"]
+        Snowflake
+        DuckDB
+        Spark
+        Trino
+    end
+
+    subgraph planasonix ["Planasonix"]
+        CatalogAPI["Iceberg REST Catalog API"]
+        CredVending["Credential Vending"]
+        PipelineEngine["Pipeline Engine"]
+    end
+
+    subgraph storage ["Cloud Storage"]
+        S3["AWS S3"]
+        GCS["Google Cloud Storage"]
+        Azure["Azure Blob Storage"]
+    end
+
+    PipelineEngine -->|"auto-register tables"| CatalogAPI
+    engines -->|"Bearer token"| CatalogAPI
+    CatalogAPI -->|"metadata + temp credentials"| engines
+    CredVending -->|"STS / SAS / signed"| storage
+    engines -->|"read data files"| storage
+```
+
+## How It Works
+
+1. **Pipeline writes** — When a Managed Lakehouse pipeline writes Iceberg data, tables are automatically registered in the hosted catalog
+2. **Query engines connect** — Point any Iceberg-compatible engine to `https://api.planasonix.com/v1` with your API key
+3. **Credential vending** — On each `loadTable` request, the catalog provides temporary, read-only storage credentials so engines can access data files directly
+
+## Authentication
+
+### Direct API Key
+
+Pass your `flx_` API key as a Bearer token:
+
+```
+Authorization: Bearer flx_your_api_key_here
+```
+
+### OAuth2 Token Exchange
+
+For engines that require the Iceberg REST spec's OAuth2 flow (Spark, Trino):
+
+```bash
+curl -X POST https://api.planasonix.com/v1/oauth/tokens \
+  -d "grant_type=client_credentials" \
+  -d "client_id=flx_your_api_key_here"
+```
+
+Response:
+
+```json
+{
+  "access_token": "eyJhbG...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "scope": "catalog"
+}
+```
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/v1/config` | Catalog configuration |
+| `POST` | `/v1/oauth/tokens` | OAuth2 token exchange |
+| `GET` | `/v1/namespaces` | List namespaces |
+| `POST` | `/v1/namespaces` | Create namespace |
+| `GET` | `/v1/namespaces/{ns}` | Get namespace |
+| `DELETE` | `/v1/namespaces/{ns}` | Drop namespace |
+| `POST` | `/v1/namespaces/{ns}/properties` | Update namespace properties |
+| `GET` | `/v1/namespaces/{ns}/tables` | List tables |
+| `POST` | `/v1/namespaces/{ns}/tables` | Create table |
+| `GET` | `/v1/namespaces/{ns}/tables/{table}` | Load table (with credentials) |
+| `POST` | `/v1/namespaces/{ns}/tables/{table}` | Commit table updates |
+| `DELETE` | `/v1/namespaces/{ns}/tables/{table}` | Drop table |
+
+## Credential Vending
+
+When you load a table, the response includes temporary storage credentials in the `config` field:
+
+### AWS S3
+```json
+{
+  "config": {
+    "s3.access-key-id": "ASIA...",
+    "s3.secret-access-key": "...",
+    "s3.session-token": "...",
+    "s3.region": "us-east-1"
+  }
+}
+```
+
+### Google Cloud Storage
+```json
+{
+  "config": {
+    "gcs.credentials": "{\"type\": \"service_account\", ...}"
+  }
+}
+```
+
+### Azure Blob Storage
+```json
+{
+  "config": {
+    "adls.sas-token.account.dfs.core.windows.net": "sv=2022-11-02&ss=b&...",
+    "adls.auth.shared-key.account.name": "mystorageaccount"
+  }
+}
+```
+
+## Tier Limits
+
+| Tier | Max Tables | API Requests/Day |
+|------|-----------|------------------|
+| Professional | 10 | 10,000 |
+| Premium | 50 | 100,000 |
+| Enterprise | Unlimited | Unlimited |
+
+## Setup
+
+<Steps>
+  <Step title="Enable Managed Lakehouse">
+    Create a Managed Lakehouse connection with the **Hosted (Planasonix)** catalog type
+  </Step>
+  <Step title="Run a Pipeline">
+    Configure a pipeline with a Managed Lakehouse destination node and run it. Tables are auto-registered.
+  </Step>
+  <Step title="Connect Your Engine">
+    Use the connection snippets from the connection settings page to configure your query engine
+  </Step>
+</Steps>

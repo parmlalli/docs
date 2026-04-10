@@ -1,0 +1,55 @@
+---
+title: "Table Explorer"
+description: "Navigate managed lakehouse tables with snapshots, branches, column stats, and catalog sync."
+icon: "compass"
+---
+
+## Overview
+
+The Table Explorer provides a comprehensive view of your managed lakehouse tables. Access it by navigating to **Managed Lakehouse** in the sidebar and clicking on a table name.
+
+## Header
+
+The header shows table metadata at a glance:
+
+- **Table name**: Schema and table name (e.g., `default.events`)
+- **Storage**: Provider and path (e.g., `s3 · s3://bucket/warehouse/events`)
+- **Formats**: Active formats — Iceberg (with current snapshot ID) and/or Delta (with current version)
+- **Stats**: Total rows, size, and file count
+
+## Tabs
+
+### Snapshots
+
+A visual timeline of every commit to the table. See [Time Travel](/managed-lakehouse/time-travel) for details.
+
+- Click snapshots to select them for diff comparison
+- Preview data at any snapshot
+- Cumulative row/byte totals show table growth over time
+
+### Branches & Tags
+
+Manage Iceberg branches for safe experimentation and tags for bookmarking. See [Branches & Tags](/managed-lakehouse/branching) for details.
+
+- Create, merge, and delete branches
+- Tag snapshots with human-readable names and notes
+- Branch status tracking (active, merged, abandoned)
+
+### Column Stats
+
+Per-column statistics from the latest committed Parquet files. See column names, types, min/max values, null counts, and distinct estimates.
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/managed-lakehouse/tables` | GET | List all tables |
+| `/api/managed-lakehouse/tables/{id}` | GET | Get table details |
+| `/api/managed-lakehouse/tables/{id}/snapshots` | GET | List snapshots |
+| `/api/managed-lakehouse/tables/{id}/preview` | GET | Preview data at snapshot |
+| `/api/managed-lakehouse/tables/{id}/snapshots/diff` | GET | Compare two snapshots |
+| `/api/managed-lakehouse/tables/{id}/branches` | GET/POST | List/create branches |
+| `/api/managed-lakehouse/tables/{id}/branches/{name}/merge` | POST | Merge branch to main |
+| `/api/managed-lakehouse/tables/{id}/tags` | GET/POST | List/create tags |
+| `/api/managed-lakehouse/tables/{id}/column-stats` | GET | Column statistics |
+| `/api/managed-lakehouse/tables/{id}/catalog-targets` | GET/POST | Catalog sync targets |

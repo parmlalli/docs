@@ -53,6 +53,45 @@ For cloud warehouse targets (Snowflake, BigQuery, Redshift, Synapse, Databricks,
 
 **Typical use:** Lakehouse marts where readers expect snapshot isolation and time travel.
 
+## Delta Lake Destination (professional+)
+
+**Delta Lake Destination** writes standards-compliant Delta Lake tables to cloud object storage (S3, GCS, Azure Blob). Each batch produces a Parquet file and an atomic Delta transaction log commit with column statistics.
+
+**Configuration:**
+
+- **Connection**: Select a Delta Lake connection with cloud provider and storage path.
+- **Write mode**: Append (new versions) or Overwrite (replace table).
+- **Schema evolution**: When enabled, new columns are added automatically.
+- **Column statistics**: Enable for min/max/null count metadata in the Delta log.
+- **Batch size**: Rows per Parquet file (default 50,000).
+
+**Typical use:** Data lake landing zones, analytics marts for Spark/DuckDB/Trino, and any workload requiring an open table format on customer-owned storage.
+
+<Info>
+  For full configuration details, cloud provider setup, performance benchmarks, and troubleshooting, see the dedicated [Delta Lake destination](/connections/delta-lake) page.
+</Info>
+
+## Managed Lakehouse (professional+)
+
+**Managed Lakehouse** writes Parquet data once and commits metadata to **both Apache Iceberg and Delta Lake** simultaneously. Every engine in your stack — whether it reads Iceberg or Delta — can query the same underlying data.
+
+**Configuration:**
+
+- **Connection**: Select a Managed Lakehouse connection with cloud storage and Iceberg catalog settings.
+- **Table name**: Target table name in the catalog.
+- **Write mode**: Append, Overwrite, or Merge (upsert with key columns).
+- **Formats**: Enable Iceberg, Delta, or both (both enabled by default).
+- **Key columns** (merge mode): Columns that identify unique records for upsert semantics.
+- **Partition strategy** (advanced): Identity, year, month, day, hour, bucket, or truncate transforms.
+- **Schema evolution**: Adapts to upstream column changes automatically.
+- **Maintenance settings**: Snapshot retention days and compaction target file size.
+
+**Typical use:** Multi-engine analytics where Spark/Trino read Iceberg while Databricks/DuckDB read Delta — from the same data files.
+
+<Info>
+  For full architecture details, catalog configuration, API reference, and troubleshooting, see the dedicated [Managed Lakehouse](/connections/managed-lakehouse) page.
+</Info>
+
 ## Webhook Action
 
 **Webhook Action** POSTs (or otherwise invokes) an HTTP endpoint with a payload built upstream—often from a [JSON Builder](/nodes/parsers-and-builders).

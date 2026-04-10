@@ -52,6 +52,31 @@ Each asset supports **markdown descriptions**, **column-level notes**, and links
   </Accordion>
 </AccordionGroup>
 
+## Hosted Iceberg REST Catalog
+
+If you use the [Managed Lakehouse](/managed-lakehouse/overview), Planasonix also provides a **hosted Iceberg REST Catalog** that query engines connect to directly. The governance catalog and the Iceberg REST catalog serve complementary roles:
+
+| | Governance Catalog | Iceberg REST Catalog |
+|---|---|---|
+| **Purpose** | Discovery, documentation, stewardship | Query engine access to table metadata |
+| **Scope** | All data assets (warehouses, lakes, SaaS) | Managed lakehouse Iceberg tables only |
+| **Consumers** | Data teams via the Planasonix UI | Snowflake, DuckDB, Spark, Trino |
+| **Auto-harvested** | Schemas, tables, columns from connections | Tables auto-registered on pipeline commit |
+
+<Card title="Hosted Iceberg Catalog" icon="database" href="/connections/iceberg-catalog">
+  Connect query engines to Planasonix-managed Iceberg tables via the REST catalog
+</Card>
+
+## Multi-Catalog Sync
+
+For tables managed by the Managed Lakehouse, you can also push metadata to **external catalog systems** after each commit — keeping tools like AWS Glue, Apache Atlas, Collibra, Alation, and Unity Catalog in sync automatically.
+
+Configure sync targets per table in the [Table Explorer](/managed-lakehouse/table-explorer) under the **Catalog Sync** tab.
+
+<Card title="Multi-Catalog Sync" icon="arrows-rotate" href="/managed-lakehouse/catalog-sync">
+  Automatically sync table metadata to external catalogs after every commit
+</Card>
+
 ## Related topics
 
 <CardGroup cols={2}>
@@ -60,5 +85,8 @@ Each asset supports **markdown descriptions**, **column-level notes**, and links
   </Card>
   <Card title="Lineage" icon="route" href="/governance/lineage">
     See how catalog tables connect to pipelines.
+  </Card>
+  <Card title="Managed Lakehouse" icon="warehouse" href="/managed-lakehouse/overview">
+    End-to-end managed data lakehouse overview.
   </Card>
 </CardGroup>

@@ -37,11 +37,34 @@
             ]
           },
           {
+            "group": "Managed Lakehouse",
+            "pages": [
+              "managed-lakehouse/overview",
+              "connections/managed-lakehouse",
+              "connections/iceberg-catalog",
+              "connections/iceberg-catalog-engines",
+              "managed-lakehouse/table-maintenance",
+              "managed-lakehouse/contract-enforcement",
+              "managed-lakehouse/time-travel",
+              "managed-lakehouse/branching",
+              "managed-lakehouse/streaming",
+              "streaming/lake-streaming",
+              "managed-lakehouse/z-order-sort",
+              "nodes/z-order-sort",
+              "managed-lakehouse/column-stats",
+              "managed-lakehouse/catalog-sync",
+              "managed-lakehouse/table-explorer",
+              "nodes/managed-lakehouse-transforms"
+            ]
+          },
+          {
             "group": "Connections",
             "pages": [
               "connections/overview",
               "connections/databases",
               "connections/data-warehouses",
+              "connections/delta-lake",
+              "connections/onelake",
               "connections/cloud-storage",
               "connections/streaming-platforms",
               "connections/apis-and-webhooks",
@@ -283,6 +306,12 @@
               "api-reference/contracts",
               "api-reference/catalog",
               "api-reference/lineage"
+            ]
+          },
+          {
+            "group": "Iceberg Catalog",
+            "pages": [
+              "api-reference/iceberg-catalog"
             ]
           },
           {

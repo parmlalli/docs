@@ -1,0 +1,380 @@
+---
+title: "Iceberg REST Catalog"
+description: "Spec-compliant Apache Iceberg REST Catalog API for querying Planasonix-managed tables from any engine."
+---
+
+The Iceberg REST Catalog API implements the [Apache Iceberg REST Catalog specification](https://iceberg.apache.org/spec/#iceberg-rest-catalog), enabling query engines like Snowflake, DuckDB, Spark, and Trino to discover and read Planasonix-managed Iceberg tables.
+
+**Base URL:** `https://api.planasonix.com`  
+**Auth:** `Authorization: Bearer` plus your `flx_` API key or a JWT obtained via the OAuth2 token exchange endpoint.
+
+---
+
+## OAuth2 Token Exchange
+
+### `POST /v1/oauth/tokens`
+
+Exchange an `flx_` API key for a short-lived JWT. This endpoint is unauthenticated and follows the Iceberg REST spec's OAuth2 flow.
+
+<ParamField body="grant_type" type="string" required>
+  Must be `client_credentials`.
+</ParamField>
+
+<ParamField body="client_id" type="string" required>
+  Your `flx_` API key.
+</ParamField>
+
+<Expandable title="Example request and response">
+<CodeGroup>
+```bash Token exchange
+curl -X POST https://api.planasonix.com/v1/oauth/tokens \
+  -d "grant_type=client_credentials" \
+  -d "client_id=flx_your_api_key_here"
+```
+
+```json Response body
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "scope": "catalog"
+}
+```
+</CodeGroup>
+</Expandable>
+
+---
+
+## Configuration
+
+### `GET /v1/config`
+
+Returns the catalog configuration, including the default warehouse identifier.
+
+<Expandable title="Example response">
+```json Response body
+{
+  "defaults": {},
+  "overrides": {
+    "warehouse": "planasonix"
+  }
+}
+```
+</Expandable>
+
+---
+
+## Namespaces
+
+### `GET /v1/namespaces`
+
+List namespaces in the catalog.
+
+<ParamField query="parent" type="string">
+  Optional parent namespace for hierarchical namespace listing.
+</ParamField>
+
+<Expandable title="Example response">
+```json Response body
+{
+  "namespaces": [
+    ["default"],
+    ["analytics"],
+    ["staging"]
+  ]
+}
+```
+</Expandable>
+
+---
+
+### `POST /v1/namespaces`
+
+Create a new namespace.
+
+<ParamField body="namespace" type="string[]" required>
+  Namespace identifier as an array of strings.
+</ParamField>
+
+<ParamField body="properties" type="object">
+  Key-value properties for the namespace.
+</ParamField>
+
+<Expandable title="Example request and response">
+<CodeGroup>
+```bash Create namespace
+curl -X POST https://api.planasonix.com/v1/namespaces \
+  -H "Authorization: Bearer flx_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": ["analytics"],
+    "properties": {
+      "owner": "data-team"
+    }
+  }'
+```
+
+```json Response body
+{
+  "namespace": ["analytics"],
+  "properties": {
+    "owner": "data-team"
+  }
+}
+```
+</CodeGroup>
+</Expandable>
+
+---
+
+### `GET /v1/namespaces/{namespace}`
+
+Get metadata for a namespace.
+
+<Expandable title="Example response">
+```json Response body
+{
+  "namespace": ["analytics"],
+  "properties": {
+    "owner": "data-team"
+  }
+}
+```
+</Expandable>
+
+---
+
+### `DELETE /v1/namespaces/{namespace}`
+
+Drop a namespace. The namespace must be empty (no tables).
+
+Returns `204 No Content` on success, `409 Conflict` if the namespace contains tables.
+
+---
+
+### `POST /v1/namespaces/{namespace}/properties`
+
+Update namespace properties.
+
+<ParamField body="updates" type="object">
+  Properties to set or overwrite.
+</ParamField>
+
+<ParamField body="removals" type="string[]">
+  Property keys to remove.
+</ParamField>
+
+<Expandable title="Example request">
+```json Request body
+{
+  "updates": {
+    "owner": "platform-team"
+  },
+  "removals": ["deprecated-key"]
+}
+```
+</Expandable>
+
+---
+
+## Tables
+
+### `GET /v1/namespaces/{namespace}/tables`
+
+List tables in a namespace.
+
+<Expandable title="Example response">
+```json Response body
+{
+  "identifiers": [
+    {
+      "namespace": ["analytics"],
+      "name": "page_views"
+    },
+    {
+      "namespace": ["analytics"],
+      "name": "user_events"
+    }
+  ]
+}
+```
+</Expandable>
+
+---
+
+### `POST /v1/namespaces/{namespace}/tables`
+
+Create a new table.
+
+<ParamField body="name" type="string" required>
+  Table name.
+</ParamField>
+
+<ParamField body="schema" type="object" required>
+  Iceberg schema definition.
+</ParamField>
+
+<ParamField body="partition-spec" type="object">
+  Optional partition specification.
+</ParamField>
+
+<ParamField body="location" type="string">
+  Optional custom storage location.
+</ParamField>
+
+<Expandable title="Example request">
+```json Request body
+{
+  "name": "page_views",
+  "schema": {
+    "type": "struct",
+    "fields": [
+      {"id": 1, "name": "event_id", "type": "string", "required": true},
+      {"id": 2, "name": "user_id", "type": "long", "required": false},
+      {"id": 3, "name": "page_url", "type": "string", "required": false},
+      {"id": 4, "name": "timestamp", "type": "timestamptz", "required": true}
+    ]
+  },
+  "partition-spec": {
+    "fields": [
+      {"source-id": 4, "transform": "day", "name": "day", "field-id": 1000}
+    ]
+  }
+}
+```
+</Expandable>
+
+---
+
+### `GET /v1/namespaces/{namespace}/tables/{table}`
+
+Load a table. Returns the full table metadata and temporary storage credentials for data file access.
+
+<Expandable title="Example response">
+```json Response body
+{
+  "metadata-location": "s3://my-bucket/analytics/page_views/metadata/v1.metadata.json",
+  "metadata": {
+    "format-version": 2,
+    "table-uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "location": "s3://my-bucket/analytics/page_views",
+    "last-sequence-number": 1,
+    "schemas": [...],
+    "current-schema-id": 0,
+    "partition-specs": [...],
+    "default-spec-id": 0,
+    "snapshots": [...],
+    "properties": {}
+  },
+  "config": {
+    "s3.access-key-id": "ASIAIOSFODNN7EXAMPLE",
+    "s3.secret-access-key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    "s3.session-token": "FwoGZXIvYXdzEB...",
+    "s3.region": "us-east-1"
+  }
+}
+```
+</Expandable>
+
+<Note>
+  The `config` field contains temporary, read-only credentials scoped to the table's storage location. These credentials are typically valid for 1 hour (AWS STS) or the duration of the SAS token (Azure).
+</Note>
+
+---
+
+### `POST /v1/namespaces/{namespace}/tables/{table}`
+
+Commit updates to a table. Uses optimistic concurrency — if another commit has occurred since your `loadTable`, the request returns `409 Conflict`.
+
+<ParamField body="requirements" type="object[]" required>
+  Pre-conditions that must be satisfied (e.g., `assert-table-uuid`, `assert-current-schema-id`).
+</ParamField>
+
+<ParamField body="updates" type="object[]" required>
+  Table update actions (e.g., `add-schema`, `add-snapshot`, `set-current-schema`, `set-properties`).
+</ParamField>
+
+<Expandable title="Supported update actions">
+  - `add-schema` — Add a new schema
+  - `set-current-schema` — Set the current schema ID
+  - `add-partition-spec` — Add a partition spec
+  - `set-default-spec` — Set the default partition spec
+  - `add-sort-order` — Add a sort order
+  - `set-default-sort-order` — Set the default sort order
+  - `add-snapshot` — Add a new snapshot
+  - `set-snapshot-ref` — Set a snapshot reference (e.g., `main`)
+  - `set-properties` — Set table properties
+  - `remove-properties` — Remove table properties
+  - `set-location` — Update table location
+  - `remove-snapshots` — Remove snapshots by ID
+  - `remove-snapshot-ref` — Remove a snapshot reference
+</Expandable>
+
+---
+
+### `DELETE /v1/namespaces/{namespace}/tables/{table}`
+
+Drop a table and remove it from the catalog.
+
+Returns `204 No Content` on success.
+
+---
+
+### `POST /v1/tables/rename`
+
+Rename a table within or across namespaces.
+
+<ParamField body="source" type="object" required>
+  Source table identifier (`namespace` and `name`).
+</ParamField>
+
+<ParamField body="destination" type="object" required>
+  Destination table identifier (`namespace` and `name`).
+</ParamField>
+
+---
+
+### `POST /v1/namespaces/{namespace}/tables/{table}/metrics`
+
+Report table scan metrics. Accepts the request and returns `204 No Content`.
+
+---
+
+## Error Responses
+
+All error responses follow the Iceberg REST spec format:
+
+```json
+{
+  "error": {
+    "message": "Table not found: analytics.page_views",
+    "type": "NoSuchTableException",
+    "code": 404
+  }
+}
+```
+
+| Code | Type | Description |
+|------|------|-------------|
+| `400` | `BadRequestException` | Invalid request body or parameters |
+| `401` | `NotAuthorizedException` | Missing or invalid authentication |
+| `403` | `ForbiddenException` | Feature not available for your tier |
+| `404` | `NoSuchNamespaceException` | Namespace not found |
+| `404` | `NoSuchTableException` | Table not found |
+| `409` | `AlreadyExistsException` | Namespace or table already exists |
+| `409` | `CommitFailedException` | Optimistic concurrency conflict |
+| `429` | `TooManyRequestsException` | Rate limit exceeded |
+
+---
+
+## Rate Limits
+
+Catalog API requests are rate-limited per organization by tier:
+
+| Tier | Requests/Day |
+|------|-------------|
+| Professional | 10,000 |
+| Premium | 100,000 |
+| Enterprise | Unlimited |
+
+When the limit is exceeded, the API returns `429 Too Many Requests`.

@@ -58,6 +58,43 @@ Reprocessing sends the stored payload back through the configured path:
   </Tab>
 </Tabs>
 
+## DLQ routing from lake write contract failures
+
+When a [data contract](/governance/data-contracts) is assigned to a Managed Lakehouse destination node in **block** mode, records that fail validation are automatically routed to the DLQ instead of being written to the lakehouse.
+
+### How it works
+
+1. The Managed Lakehouse destination validates each batch against the assigned contract
+2. Valid records are committed to Iceberg + Delta as normal
+3. Invalid records are written to the DLQ with error code `CONTRACT_VIOLATION`
+
+### DLQ entry contents
+
+Each contract-failed DLQ entry includes:
+
+| Field | Description |
+|---|---|
+| **Payload** | The original record that failed validation |
+| **Error code** | `CONTRACT_VIOLATION` |
+| **Contract ID** | The contract that rejected the record |
+| **Failed rule** | Specific rule name (e.g., `amount >= 0`) |
+| **Expected** | What the contract expected |
+| **Actual** | What the record contained |
+| **Run ID** | Pipeline run that produced the failure |
+
+### Reprocessing contract failures
+
+After fixing the upstream data or updating the contract:
+
+1. Filter DLQ entries by error code `CONTRACT_VIOLATION`
+2. Review sample payloads to confirm the fix
+3. Select entries and click **Reprocess**
+4. The records re-enter the pipeline and are validated against the current contract version
+
+<Card title="Contract enforcement on lake writes" icon="shield-check" href="/managed-lakehouse/contract-enforcement">
+  Configure contracts on Managed Lakehouse destinations
+</Card>
+
 ## Related topics
 
 <CardGroup cols={2}>
@@ -66,5 +103,8 @@ Reprocessing sends the stored payload back through the configured path:
   </Card>
   <Card title="Alerts" icon="bell" href="/observability/alerts">
     Page when DLQ depth crosses thresholds.
+  </Card>
+  <Card title="Data contracts" icon="file-contract" href="/governance/data-contracts">
+    Define and enforce data quality contracts.
   </Card>
 </CardGroup>
