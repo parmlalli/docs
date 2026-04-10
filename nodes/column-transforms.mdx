@@ -58,6 +58,23 @@ description: "Transform column values with date formatting, window functions, an
 
 **Typical use:** Normalize third-party feeds before unioning multiple vendors into one canonical model.
 
+## Type Inference
+
+**Type Inference** automatically detects and casts data types from string values — ideal for CSV files, flat file ingestion, or any source where all columns arrive as strings.
+
+**Configuration:**
+
+- **Columns**: Specific columns to infer (leave empty to infer all).
+- **Date formats**: Custom date format patterns for non-standard formats.
+
+**Detection order** (first match wins): Boolean → Null → Integer → Float → Date/Time → JSON → String.
+
+**Typical use:** After CSV or flat file sources, apply Type Inference so downstream aggregation and join nodes operate on properly typed numeric, boolean, and date values rather than strings.
+
+<Tip>
+  Apply Type Inference early in the pipeline — before aggregation or calculations that depend on numeric types.
+</Tip>
+
 ## Ordering with other transforms
 
 <AccordionGroup>
@@ -80,5 +97,8 @@ description: "Transform column values with date formatting, window functions, an
   </Card>
   <Card title="Parsers and builders" icon="file-code" href="/nodes/parsers-and-builders">
     Turn raw payloads into typed columns first when data is not flat.
+  </Card>
+  <Card title="Type Inference reference" icon="magnifying-glass" href="/nodes/type-inference">
+    Full guide to type detection, date formats, and troubleshooting.
   </Card>
 </CardGroup>

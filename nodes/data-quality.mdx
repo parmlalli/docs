@@ -73,6 +73,32 @@ description: "Validate, profile, and protect data quality within your pipelines.
 
 **Typical use:** When **Validation** rejects more than 1% of rows, notify the data owner with a sample of offending keys.
 
+## Anomaly Detection (professional+)
+
+**Anomaly Detection** identifies statistical outliers in numeric columns using configurable methods.
+
+**Configuration:**
+
+- **Columns**: Numeric columns to analyze.
+- **Method**: Detection algorithm — Z-Score, IQR (Interquartile Range), Percentile, or Modified Z-Score.
+- **Threshold**: Sensitivity level (e.g. Z-Score of 3.0 flags values beyond 3 standard deviations).
+- **Window size**: Number of recent rows to consider for rolling statistics.
+
+**Actions:**
+
+| Action | Behavior |
+|---|---|
+| **Flag** | Adds a boolean `_anomaly` column (TRUE = anomaly) |
+| **Remove** | Drops anomalous rows from the output |
+| **Cap** | Clamps values to the boundary thresholds |
+| **Replace** | Sets anomalous values to NULL |
+
+**Typical use:** Before loading financial metrics, flag or cap extreme outliers that would skew dashboard averages.
+
+<Tip>
+  Use the **Flag** action first to review detected anomalies before committing to removal or capping.
+</Tip>
+
 ## Recommended layout
 
 <Steps>
@@ -95,5 +121,8 @@ description: "Validate, profile, and protect data quality within your pipelines.
   </Card>
   <Card title="Observability" icon="gauge" href="/observability/overview">
     Dashboards, diagnostics, and DLQ patterns.
+  </Card>
+  <Card title="Anomaly Detection reference" icon="triangle-exclamation" href="/nodes/anomaly-detection">
+    Full guide to detection methods, thresholds, and patterns.
   </Card>
 </CardGroup>

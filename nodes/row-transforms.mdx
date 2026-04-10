@@ -70,6 +70,35 @@ event_name = 'purchase_completed' AND currency = 'USD'
   If you need “best record wins” logic beyond first/last (for example, prefer non-null email), use a **Window** or **Summarize** pattern upstream of **Unique**, or move the rule to **Custom SQL** for clarity.
 </Tip>
 
+## Explode
+
+**Explode** converts array elements into separate rows, duplicating non-array columns for each element.
+
+**Configuration:**
+
+- **Explode column**: The array column to expand (e.g. `tags`, `line_items`).
+- **Keep original**: Optionally retain the original array column alongside the exploded rows.
+
+**Example:** A row with `tags: ["a", "b", "c"]` produces three output rows — one per tag — with all other columns duplicated.
+
+**When to use:** After parsing JSON arrays from REST APIs or event payloads, before aggregating per-element.
+
+<Tip>
+  Explode multiplies row count — one input row produces N output rows. Place **Filter** before Explode when possible to limit the expansion.
+</Tip>
+
+## Z-Order Sort (professional+)
+
+**Z-Order Sort** reorders rows using a space-filling curve that preserves multi-dimensional data locality. Query engines that read the output files can skip large ranges when filtering on any combination of the sorted columns.
+
+**Configuration:**
+
+- **Columns**: Two or more columns to include in the z-order sort.
+
+**Example:** For an orders table filtered by `region` and `order_date`, z-ordering on both columns keeps related data co-located so queries skip 70–85% of files.
+
+**When to use:** Before writing to Iceberg or Delta Lake destinations, especially when downstream queries filter on multiple columns simultaneously. See the [full Z-Order Sort reference](/nodes/z-order-sort) for column selection tips and performance impact.
+
 ## Patterns on the canvas
 
 <Steps>
@@ -92,5 +121,11 @@ event_name = 'purchase_completed' AND currency = 'USD'
   </Card>
   <Card title="Aggregation" icon="chart-column" href="/nodes/aggregation">
     Roll up after you have narrowed and cleaned rows.
+  </Card>
+  <Card title="Z-Order Sort reference" icon="arrow-up-arrow-down" href="/nodes/z-order-sort">
+    Full guide to multi-dimensional sort configuration and performance.
+  </Card>
+  <Card title="Explode reference" icon="arrows-split-up-and-left" href="/nodes/explode">
+    Detailed explode configuration and patterns.
   </Card>
 </CardGroup>

@@ -65,6 +65,32 @@ description: "Use SQL, Python, notebooks, UDFs, and AI models within your pipeli
 
 **Typical use:** Generate product descriptions from attributes—*never* send unreviewed PII without policy approval.
 
+## Embedding Generator (professional+)
+
+**Embedding Generator** produces vector embeddings from text columns using a connected AI/LLM provider.
+
+**Configuration:**
+
+- **Source column**: Text column to generate embeddings from.
+- **Output column**: Name for the resulting embedding vector column.
+- **Model**: Embedding model (e.g. OpenAI `text-embedding-3-small`).
+- **Dimensions**: Vector dimensionality (model-dependent).
+- **API endpoint**: Provider endpoint (auto-filled from connection).
+
+**Supported providers:**
+
+| Provider | Model | Dimensions |
+|---|---|---|
+| **OpenAI** | text-embedding-3-small | 1,536 |
+| **OpenAI** | text-embedding-3-large | 3,072 |
+| **Google** | text-embedding-004 | 768 |
+
+**Typical use:** Generate embeddings for product descriptions to enable semantic search in a vector database downstream.
+
+<Warning>
+  Embedding generation calls an external API — costs apply per token. Use **Sample** upstream during development to control costs.
+</Warning>
+
 ## Warehouse SQL (professional+)
 
 **Warehouse SQL** pushes work **natively** into the warehouse optimizer—minimal data movement through Planasonix compute.
@@ -157,5 +183,8 @@ description: "Use SQL, Python, notebooks, UDFs, and AI models within your pipeli
   </Card>
   <Card title="Streaming and CDC" icon="radio" href="/streaming/overview">
     End-to-end streaming patterns.
+  </Card>
+  <Card title="Embedding Generator reference" icon="binary" href="/nodes/embedding-generator">
+    Full guide to embedding models, providers, and patterns.
   </Card>
 </CardGroup>

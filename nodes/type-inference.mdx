@@ -1,0 +1,135 @@
+---
+title: "Type Inference Transform"
+description: "Automatically detect and cast data types from string values for CSV, flat file, and text-based API ingestion."
+icon: "magnifying-glass"
+---
+
+## Overview
+
+The Type Inference transform automatically detects and casts data types from string values. When data arrives as strings — common with CSV files, flat file sources, or text-based APIs — this transform analyzes each value and converts it to the appropriate native type (integer, float, boolean, date, or JSON).
+
+## When to Use
+
+- After **CSV** or flat file sources where all columns arrive as strings
+- After **REST API** sources that return numeric values as quoted strings
+- Before **Aggregation** or **Window Function** nodes that require properly typed numeric columns
+- When migrating from legacy systems that store everything as varchar
+
+## Type Detection Order
+
+Values are tested in this priority order (first match wins):
+
+| Priority | Type | Examples |
+|---|---|---|
+| 1 | **Boolean** | `true`, `false`, `TRUE`, `FALSE` |
+| 2 | **Null** | `null`, `nil`, `""` (empty string) |
+| 3 | **Integer** | `42`, `-100`, `0` |
+| 4 | **Float** | `3.14`, `-0.5`, `1.23e4` |
+| 5 | **Date/Time** | `2024-01-15`, `2024-01-15T10:30:00Z` |
+| 6 | **JSON** | `{"key": "value"}`, `[1, 2, 3]` |
+| 7 | **String** | Everything else (fallback) |
+
+## Configuration
+
+| Field | Description | Default |
+|---|---|---|
+| **Columns** | Specific columns to infer types for (empty = all columns) | All columns |
+| **Date Formats** | Custom date format patterns for non-standard formats | Standard formats |
+
+### Built-in Date Formats
+
+The following date formats are recognized automatically:
+
+- `2006-01-02` (ISO date)
+- `2006-01-02T15:04:05Z` (ISO datetime / RFC 3339)
+- `2006-01-02 15:04:05` (datetime with space)
+- `01/02/2006` (US format)
+- `02-01-2006` (EU format)
+
+Add custom patterns in the **Date Formats** field for non-standard sources.
+
+## Example
+
+### Input (all strings from CSV)
+
+| id | price | active | created |
+|---|---|---|---|
+| "1" | "29.99" | "true" | "2024-01-15" |
+| "2" | "45" | "false" | "2024-01-16" |
+
+### Output (typed values)
+
+| id (int64) | price (float64) | active (bool) | created (timestamp) |
+|---|---|---|---|
+| 1 | 29.99 | true | 2024-01-15T00:00:00Z |
+| 2 | 45.0 | false | 2024-01-16T00:00:00Z |
+
+## Pipeline Patterns
+
+### CSV Processing
+
+```
+CSV Source → Type Inference → Validation → Warehouse Write
+```
+
+### Pre-Aggregation Typing
+
+```
+Source → Type Inference → Aggregate (numeric columns now work) → Dashboard
+```
+
+### JSON Parsing Chain
+
+```
+Source → JSON Parser → Type Inference → Flatten → Destination
+```
+
+### Legacy System Migration
+
+```
+Legacy DB (varchar) → Type Inference → Modern DB (proper types)
+```
+
+## Troubleshooting
+
+### Wrong Type Detected
+
+**Problem:** `"123.0"` detected as a string instead of float.
+
+**Solution:** Check for trailing whitespace. Add a **Cleanse** or trim step upstream.
+
+### Date Not Parsed
+
+**Problem:** `"15/01/2024"` not recognized as a date.
+
+**Solution:** Add the custom format `02/01/2006` to the **Date Formats** configuration.
+
+### Integer Overflow
+
+**Problem:** Very large numbers fail to parse.
+
+**Solution:** Values are parsed as `int64` (max ~9.2 quintillion). Values exceeding this range fall through to float or string.
+
+## Tips
+
+- **Apply early** in the pipeline — before transforms that require specific types (aggregation, calculations, window functions)
+- **Specify columns** for large datasets to avoid unnecessary type detection overhead on columns you know are strings
+- **Empty strings become null** — plan for this in downstream logic
+- **Combine with Validation** — after type inference, validate that inferred types match your expected schema
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Column Transforms" icon="table-columns" href="/nodes/column-transforms">
+    Date formatting, windowing, and schema mapping
+  </Card>
+  <Card title="Parsers" icon="file-code" href="/nodes/parsers-and-builders">
+    Parse raw CSV/JSON before type inference
+  </Card>
+  <Card title="Data Quality" icon="circle-check" href="/nodes/data-quality">
+    Validate types and values after inference
+  </Card>
+  <Card title="Schema Mapping" icon="table-columns" href="/nodes/column-transforms#schema-mapping">
+    Explicitly map and rename columns after typing
+  </Card>
+</CardGroup>

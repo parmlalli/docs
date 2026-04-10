@@ -58,9 +58,21 @@ flowchart TD
 
 ## Configuration
 
-The Z-Order Sort is configured on the **Managed Lakehouse destination node**, not as a standalone pipeline node.
+Z-Order Sort can be configured in two ways:
 
-### UI
+### Option A: Standalone Transform Node
+
+Drag the **Z-Order Sort** node from the **Row Transforms** section of the sidebar onto the canvas. Place it before any destination node.
+
+1. Connect the upstream transform output to the Z-Order Sort node
+2. In the config panel, enter the **columns** to z-order (e.g. `region, event_date, user_id`)
+3. Connect the Z-Order Sort output to the destination node
+
+This option works with any destination, not just Managed Lakehouse.
+
+### Option B: Managed Lakehouse Destination Setting
+
+The Managed Lakehouse destination has a built-in sort strategy:
 
 1. Open the Managed Lakehouse destination node settings
 2. Scroll to **Sort Strategy** and select **Z-Order**
@@ -69,6 +81,13 @@ The Z-Order Sort is configured on the **Managed Lakehouse destination node**, no
 ### Pipeline JSON
 
 ```json
+// Standalone node
+{
+  "type": "z_order_sort",
+  "columns": ["region", "event_date", "user_id"]
+}
+
+// Or as a destination setting
 {
   "managedLakehouseSettings": {
     "sortStrategy": "z_order",
@@ -76,6 +95,10 @@ The Z-Order Sort is configured on the **Managed Lakehouse destination node**, no
   }
 }
 ```
+
+<Info>
+  When using both a standalone Z-Order Sort node **and** the Managed Lakehouse sort strategy, the standalone node's sort is applied first. The destination setting is redundant in this case — use one or the other.
+</Info>
 
 ## Supported Column Types
 
@@ -134,4 +157,3 @@ Z-ordering adds CPU cost during writes (normalization + sort) but significantly 
     Other transforms to apply before lakehouse writes
   </Card>
 </CardGroup>
-

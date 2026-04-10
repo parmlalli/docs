@@ -70,6 +70,24 @@ description: "Parse incoming data formats and build outgoing payloads."
 
 **Typical use:** Enterprise partners that only accept XML batch uploads to SFTP or HTTPS endpoints.
 
+## Flatten
+
+**Flatten** converts nested JSON objects into flat columns by concatenating parent and child key names with a separator.
+
+**Configuration:**
+
+- **Source column**: The nested object column to flatten.
+- **Separator**: Character between parent and child names (default: `_`).
+- **Max depth**: Maximum nesting levels to flatten (0 = unlimited).
+
+**Example:** `{"address": {"city": "NYC", "zip": "10001"}}` becomes columns `address_city` and `address_zip`.
+
+**Typical use:** After JSON Parser or REST API sources that return deeply nested objects, flatten to a tabular shape before joins, aggregations, or warehouse writes.
+
+<Tip>
+  For array columns, use the [Explode](/nodes/explode) node instead. Flatten handles objects; Explode handles arrays.
+</Tip>
+
 ## Parser vs builder placement
 
 <Steps>
@@ -92,5 +110,11 @@ description: "Parse incoming data formats and build outgoing payloads."
   </Card>
   <Card title="Destinations" icon="share-from-square" href="/nodes/destinations">
     Deliver built payloads or curated tables.
+  </Card>
+  <Card title="Flatten reference" icon="bars-staggered" href="/nodes/flatten">
+    Full guide to flatten configuration and nesting depth.
+  </Card>
+  <Card title="Explode" icon="arrows-split-up-and-left" href="/nodes/explode">
+    Expand array columns into separate rows.
   </Card>
 </CardGroup>
