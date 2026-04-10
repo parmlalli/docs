@@ -75,9 +75,9 @@ When storage upload latency increases — due to network congestion, throttling,
 
 | Avg Commit Latency | Batch Size | Action |
 |---|---|---|
-| < 2 seconds | 10,000 (default) | Normal operation |
+| &lt; 2 seconds | 10,000 (default) | Normal operation |
 | 2–5 seconds | 5,000 | Moderate backpressure — halved batch |
-| > 5 seconds | 2,000 | Heavy backpressure — warning logged |
+| &gt; 5 seconds | 2,000 | Heavy backpressure — warning logged |
 
 The `GetBackpressureProfile()` method on the destination provides these signals to the pipeline engine, which adjusts `ArrowTuning` accordingly.
 

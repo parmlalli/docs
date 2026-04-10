@@ -36,9 +36,9 @@ When storage upload latency increases, the system automatically reduces batch si
 
 | Avg Commit Latency | Batch Size | Action |
 |---|---|---|
-| < 2 seconds | 10,000 (default) | Normal operation |
+| &lt; 2 seconds | 10,000 (default) | Normal operation |
 | 2–5 seconds | 5,000 | Moderate backpressure |
-| > 5 seconds | 2,000 | Heavy backpressure, warning logged |
+| &gt; 5 seconds | 2,000 | Heavy backpressure, warning logged |
 
 The engine queries the destination's `GetBackpressureProfile()` to adjust `ArrowTuning` accordingly.
 
