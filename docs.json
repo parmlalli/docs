@@ -109,6 +109,7 @@
               "nodes/data-quality",
               "nodes/anomaly-detection",
               "nodes/advanced",
+              "nodes/custom-sql",
               "nodes/embedding-generator",
               "nodes/destinations"
             ]

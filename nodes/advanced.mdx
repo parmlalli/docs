@@ -7,15 +7,43 @@ description: "Use SQL, Python, notebooks, UDFs, and AI models within your pipeli
 
 ## Custom SQL
 
-**Custom SQL** runs a SQL statement or script against the configured engine, using upstream datasets as inputs (per product semantics).
+**Custom SQL** executes a SQL query against your data stream using **PostgreSQL-compatible syntax** powered by [Apache DataFusion](https://datafusion.apache.org/). The upstream dataset is available as a table called `input`.
+
+**SQL dialect:** PostgreSQL-compatible — CTEs, window functions, JOINs, aggregations, subqueries, `CASE` expressions, `FILTER` clauses, `UNION ALL`, `INTERSECT`, and `EXCEPT` are all supported.
 
 **Configuration:**
 
-- **Dialect**: Match your warehouse or lake query engine.
-- **Inputs**: Named references to parent nodes or temporary views.
-- **Output schema**: Explicit column list when the planner cannot infer it.
+- **Execution engine**: Choose where the query runs:
+  - **Local (DataFusion)** — default, free, runs in Planasonix infrastructure. Best for most queries.
+  - **Warehouse** — pushes SQL to your data warehouse (Snowflake, BigQuery, etc.). Best when joining pipeline data with warehouse tables.
+  - **Spark Connect** — distributed compute for very large datasets.
+- **SQL query**: Write your query referencing data as `FROM input`.
+- **AI assistance**: Use the AI prompt box to generate SQL from natural language, or "Check with AI" to validate syntax.
 
-**Typical use:** Complex multi-step CTEs that would clutter the canvas with dozens of nodes.
+**Commonly used functions:**
+
+| Category | Functions |
+|----------|-----------|
+| **Aggregate** | `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `STRING_AGG`, `PERCENTILE_CONT`, `STDDEV` |
+| **String** | `UPPER`, `LOWER`, `TRIM`, `SUBSTRING`, `REPLACE`, `CONCAT`, `SPLIT_PART`, `LENGTH` |
+| **Date/Time** | `DATE_TRUNC`, `DATE_PART`, `EXTRACT`, `TO_CHAR`, `NOW()`, `CURRENT_DATE`, `INTERVAL` |
+| **Window** | `ROW_NUMBER`, `RANK`, `DENSE_RANK`, `LAG`, `LEAD`, `NTILE`, `FIRST_VALUE`, `LAST_VALUE` |
+| **Type** | `CAST`, `TRY_CAST`, `COALESCE`, `NULLIF` |
+
+**Example — deduplicate keeping latest:**
+```sql
+SELECT * FROM (
+  SELECT *, ROW_NUMBER() OVER (
+    PARTITION BY email ORDER BY updated_at DESC
+  ) AS rn FROM input
+) sub WHERE rn = 1
+```
+
+<Tip>
+  `PIVOT` / `UNPIVOT` SQL syntax is not supported. Use `CASE WHEN` with aggregation for pivoting, or `UNION ALL` for unpivoting.
+</Tip>
+
+**Typical use:** Complex multi-step CTEs, deduplication, running totals, pivoting, outlier detection, and any transformation that's more natural in SQL than visual nodes.
 
 ## Python / R / Scala scripts
 

@@ -16,8 +16,10 @@ Select a SQL editor surface (for example, a transform or warehouse query node) a
 
 Copilot returns a draft query using the dialect detected from the connection. Replace table names with your actual schema objects and run **Preview** to validate row counts.
 
+For **Custom SQL** nodes, Copilot generates **PostgreSQL-compatible** SQL that runs on the local DataFusion engine. Ask for common patterns like CTEs, window functions, deduplication, or pivoting via `CASE WHEN` and Copilot will use the right syntax.
+
 <Tip>
-  Name the warehouse dialect in your prompt when you use uncommon functions so the assistant picks the right built-ins.
+  Name the warehouse dialect in your prompt when you use uncommon functions so the assistant picks the right built-ins. For Custom SQL nodes, standard PostgreSQL syntax is always used.
 </Tip>
 
 ## Optimization suggestions

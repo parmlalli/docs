@@ -43,6 +43,25 @@ When a pipeline fails, you want three answers: **which node**, **why**, and **wh
   Some failures are **transient** (network blips). Use **retry policies** on idempotent branches instead of manual reruns for every flake.
 </Info>
 
+## Custom SQL engine errors
+
+Custom SQL nodes use **Apache DataFusion** (PostgreSQL-compatible) as the local engine. Common issues:
+
+<AccordionGroup>
+  <Accordion title="Unsupported function">
+    DataFusion supports standard PostgreSQL functions. DuckDB-specific functions like `MEDIAN`, `LIST`, `EPOCH`, `STRFTIME`, and `REGEXP_MATCHES` are not available. Use standard equivalents: `PERCENTILE_CONT(0.5)` for median, `ARRAY_AGG` for list aggregation, `EXTRACT(EPOCH FROM ...)` for epoch, `TO_CHAR` for date formatting, and `~` operator for regex.
+  </Accordion>
+  <Accordion title="PIVOT / UNPIVOT not supported">
+    DataFusion does not support `PIVOT` or `UNPIVOT` SQL syntax. Use `CASE WHEN` with aggregation for pivoting, or `UNION ALL` for unpivoting. See the [Custom SQL reference](/nodes/custom-sql) for examples.
+  </Accordion>
+  <Accordion title="Type cast errors">
+    Use `TRY_CAST(value AS type)` instead of `CAST` when the input may contain invalid values. `TRY_CAST` returns `NULL` on failure instead of raising an error.
+  </Accordion>
+  <Accordion title="Query timeout">
+    Large queries may exceed the context deadline. Reduce the dataset with filters, or switch the execution engine to **Warehouse** to leverage distributed compute.
+  </Accordion>
+</AccordionGroup>
+
 ## Performance optimization tips
 
 <AccordionGroup>
