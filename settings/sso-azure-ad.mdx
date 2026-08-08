@@ -1,17 +1,17 @@
 ---
 title: "Azure AD SSO setup"
-description: "Configure Azure AD (Entra ID) as your SAML identity provider."
+description: "Configure Microsoft Entra ID (Azure AD) as your SAML identity provider."
 ---
 
 This guide walks you through registering Planasonix as an **enterprise application** in Microsoft Entra ID (formerly Azure AD) using **SAML-based single sign-on**. You need **Cloud Application Administrator** or **Application Administrator** (or a custom role that can manage enterprise apps) plus **organization admin** in Planasonix.
 
 <Info>
-  Entra ID labels and menus change over time. If a step does not match your portal exactly, search for **Enterprise applications** and **Single sign-on** within **Microsoft Entra admin center**.
+  SSO is an **Enterprise** feature. Sign-in is **SP-initiated**: users start at Planasonix, then Entra ID, then return to the ACS. Entra ID labels change over time—if a step does not match, search for **Enterprise applications** and **Single sign-on** in the Microsoft Entra admin center. See [SSO](/settings/sso) for the overall flow.
 </Info>
 
 ## Values you copy from Planasonix
 
-From **Settings → Security → SSO** in Planasonix, copy:
+From **Settings → SSO** in Planasonix, copy:
 
 - **Identifier (Entity ID)** — Azure calls this **Identifier** in basic SAML configuration.
 - **Reply URL (Assertion Consumer Service URL)** — Azure calls this **Reply URL**.
@@ -48,45 +48,19 @@ Azure AD compares **Identifier** and **Reply URL** strings literally. A trailing
 
 ## User and group assignment
 
-Under **Enterprise application → Users and groups**, assign **users** or **groups** who may sign in. Unassigned users cannot start SSO even if the SAML configuration is correct.
+Assign users or groups under **Users and groups** so they can complete SSO. Then upload the **Federation Metadata XML** (or paste Login URL, identifier, and signing certificate) into Planasonix **Settings → SSO**.
 
 <Tip>
-  Prefer **group-based assignment** for production so you manage access through Entra ID group membership instead of per-user adds.
+  Test from the Planasonix sign-in page (SP-initiated). App-tile / IdP-initiated launch into Planasonix is not supported at launch.
 </Tip>
-
-## Group claims for Planasonix
-
-If Planasonix maps **groups** to roles or projects:
-
-<Steps>
-  <Step title="Configure optional claims">
-    In the enterprise app, open **Single sign-on → Attributes & Claims → Edit**. Add a **groups** claim (or the claim name Planasonix documents) so the token includes security groups or **Groups assigned to the application**, depending on your design.
-  </Step>
-  <Step title="Limit token size">
-    Large group memberships can exceed SAML assertion limits. Use **Groups assigned to the application** scoped to this enterprise app, or filter groups, so only relevant groups are emitted.
-  </Step>
-</Steps>
-
-<AccordionGroup>
-  <Accordion title="Conditional Access">
-    Apply **Conditional Access** policies to the Planasonix enterprise application to require compliant devices, MFA at the IdP, or named locations. Test policies with a pilot group before broad rollout. Failed CA shows as access denied at Microsoft before Planasonix receives an assertion.
-  </Accordion>
-  <Accordion title="Certificate renewal">
-    When Entra ID rotates signing certificates, upload the new metadata or certificate in Planasonix before the old cert expires. Coordinate with your Planasonix admin if you use automatic rollover versus manual uploads.
-  </Accordion>
-</AccordionGroup>
-
-## Finish in Planasonix
-
-Upload the **Federation Metadata XML** or paste **SSO URL**, **issuer**, and **signing certificate** into Planasonix. Validate sign-in, then enable **Require SSO** when your change window allows.
 
 ## Related topics
 
 <CardGroup cols={2}>
   <Card title="SSO overview" icon="shield-halved" href="/settings/sso">
-    End-to-end SAML setup and certificate rotation.
+    ACS, Entity ID, and SP-initiated flow.
   </Card>
-  <Card title="MFA" icon="mobile-screen" href="/settings/mfa">
-    Layering step-up auth with IdP policies.
+  <Card title="Session policy" icon="clock" href="/settings/session-policy">
+    Session length after Entra ID login.
   </Card>
 </CardGroup>

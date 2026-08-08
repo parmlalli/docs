@@ -5,9 +5,13 @@ description: "Configure Auth0 as your SAML identity provider."
 
 Auth0 can broker SAML sign-in to Planasonix. You configure a **SAML** addon (or SAML2 Web App integration) on an Auth0 **Application** and then paste Auth0’s metadata or endpoints into Planasonix. You need Auth0 **Dashboard** access (Administrator or a role that can manage applications and rules) and **organization admin** in Planasonix.
 
+<Info>
+  SSO is an **Enterprise** feature. Sign-in is **SP-initiated** (start at Planasonix). See [SSO](/settings/sso).
+</Info>
+
 ## Collect Planasonix SAML endpoints
 
-From **Settings → Security → SSO** in Planasonix, copy:
+From **Settings → SSO** in Planasonix, copy:
 
 - **ACS URL** (Assertion Consumer Service / callback URL for SAML responses)
 - **Entity ID** (audience / SP entity identifier)
@@ -76,7 +80,7 @@ If users reach Planasonix through an Auth0 **Database**, **Enterprise**, or **So
 
 ## Finish in Planasonix
 
-Upload Auth0’s **IdP metadata** or paste **SSO URL**, **issuer**, and **signing certificate** into Planasonix. Test login, then coordinate **Require SSO** with your change management process.
+Upload Auth0’s **IdP metadata** or paste **SSO URL**, **issuer**, and **signing certificate** into Planasonix. Test login from the Planasonix sign-in page before you cut over users.
 
 ## Related topics
 

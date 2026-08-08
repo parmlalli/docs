@@ -6,12 +6,12 @@ description: "Configure Okta as your SAML identity provider for Planasonix."
 Use this guide when you register Planasonix as a SAML 2.0 application in Okta. You need **organization admin** access in Planasonix and **application administrator** (or equivalent) rights in Okta.
 
 <Info>
-  If you have not enabled SSO yet, read [SSO](/settings/sso) for workspace eligibility and the high-level flow before you follow the steps below.
+  SSO is an **Enterprise** feature. Sign-in is **SP-initiated**: users start at Planasonix, then Okta, then return to the ACS. Read [SSO](/settings/sso) for the overall flow before you follow the steps below.
 </Info>
 
 ## Copy values from Planasonix
 
-Open **Settings → Security → SSO** in Planasonix and copy:
+Open **Settings → SSO** in Planasonix and copy:
 
 - **ACS URL** (Assertion Consumer Service URL)
 - **Entity ID** (sometimes called SP Entity ID or Audience URI)
@@ -32,7 +32,7 @@ You paste these into Okta when you create the SAML integration. Keep the window 
 
     - **Single sign on URL**: paste the **ACS URL** from Planasonix exactly as shown.
     - **Audience URI (SP Entity ID)**: paste the **Entity ID** from Planasonix exactly as shown.
-    - **Name ID format**: choose **EmailAddress** unless your Planasonix tenant documentation specifies **Unspecified** or another format your admin agreed on.
+    - **Name ID format**: choose **EmailAddress** unless your Planasonix admin agreed on another format.
 
     Under **Advanced Sign-on Settings**, enable **Response** and **Assertion** signing as your security team requires. Planasonix expects a signed assertion in typical enterprise setups.
   </Step>
@@ -54,7 +54,7 @@ Map Okta profile and group attributes to SAML assertions so Planasonix can ident
     | Last name | `lastName` | Display and directory |
     | Groups | `groups` or a custom claim | [Teams and permissions](/settings/teams-and-permissions) when group sync is enabled |
 
-    Use the exact attribute names your Planasonix SSO screen lists under **Required** and **Optional** claims.
+    Use the exact attribute names your Planasonix SSO screen lists under required and optional claims when present.
   </Tab>
   <Tab title="Group assignment">
     Assign users or **Okta groups** to the application under **Assignments**. If you rely on group-based roles in Planasonix, ensure the same groups appear in the SAML assertion (expression or **Group Filter** in the SAML settings) so membership is consistent.
@@ -62,7 +62,7 @@ Map Okta profile and group attributes to SAML assertions so Planasonix can ident
 </Tabs>
 
 <Tip>
-  Pilot with a small Okta group before you toggle **Require SSO** org-wide. Confirm login, attribute values, and group claims in Planasonix audit or admin diagnostics if available.
+  Pilot with a small Okta group first. Always test login from the Planasonix sign-in page (SP-initiated), not from an Okta app tile.
 </Tip>
 
 ## Name ID format
@@ -75,15 +75,15 @@ Planasonix usually expects the **Name ID** to be a stable, unique identifier tie
 
 ## Finish in Planasonix
 
-Upload Okta’s **metadata XML** or paste **SSO URL**, **issuer**, and **X.509 signing certificate** into Planasonix. Run a test login from an incognito window, then enforce SSO when you are ready.
+Upload Okta’s **metadata XML** or paste **SSO URL**, **issuer**, and **X.509 signing certificate** into Planasonix. Run a test login from an private/incognito window starting at Planasonix.
 
 ## Related topics
 
 <CardGroup cols={2}>
   <Card title="SSO overview" icon="shield-halved" href="/settings/sso">
-    SAML vs OIDC, certificate rotation, and org-wide enforcement.
+    ACS, Entity ID, and SP-initiated flow.
   </Card>
-  <Card title="Teams and permissions" icon="users" href="/settings/teams-and-permissions">
-    How group claims map to workspace access.
+  <Card title="Session policy" icon="clock" href="/settings/session-policy">
+    Session length after Okta login.
   </Card>
 </CardGroup>
