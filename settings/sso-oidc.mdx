@@ -6,7 +6,7 @@ description: "Configure any OpenID Connect provider for Planasonix authenticatio
 OpenID Connect (OIDC) lets Planasonix delegate sign-in to an IdP that speaks OAuth 2.0 and OIDC discovery. Use this guide when your provider is **not** covered by a vendor-specific SAML page but supports **authorization code** flow with a **discovery document**.
 
 <Info>
-  OIDC availability depends on your Planasonix deployment and contract. If you only see SAML fields in **Settings → Security → SSO**, contact your account team before you invest in OIDC configuration.
+  SSO (including OIDC providers) is an **Enterprise** feature. If you only see SAML fields in **Settings → SSO**, contact your account team before you invest in OIDC configuration.
 </Info>
 
 ## Prerequisites
@@ -22,7 +22,7 @@ OpenID Connect (OIDC) lets Planasonix delegate sign-in to an IdP that speaks OAu
     In your IdP’s admin console, create an application of type **Web**, **Regular**, or **Confidential** (not a public mobile client without a secret, unless Planasonix explicitly supports public clients).
   </Step>
   <Step title="Set redirect URI">
-    Add the **Redirect URI** from Planasonix **Settings → Security → SSO** (OIDC section). The value must match **exactly**, including path and trailing slash if shown.
+    Add the **Redirect URI** from Planasonix **Settings → SSO** (OIDC section). The value must match **exactly**, including path and trailing slash if shown.
   </Step>
   <Step title="Note client credentials">
     Copy **Client ID** and **Client secret** into a secure channel. Some IdPs show the secret only once at creation.

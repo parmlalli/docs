@@ -5,9 +5,13 @@ description: "Configure Google Workspace as your SAML identity provider."
 
 Google Workspace can act as a SAML IdP for Planasonix through a **custom SAML app**. You need **Google Workspace super admin** (or delegated admin with **Services → Settings** for SAML apps) and **organization admin** in Planasonix.
 
+<Info>
+  SSO is an **Enterprise** feature. Sign-in is **SP-initiated** (start at Planasonix). See [SSO](/settings/sso).
+</Info>
+
 ## Gather Planasonix URLs
 
-From **Settings → Security → SSO**, copy:
+From **Settings → SSO**, copy:
 
 - **ACS URL** (Assertion Consumer Service URL)
 - **Entity ID** (SP entity identifier)
