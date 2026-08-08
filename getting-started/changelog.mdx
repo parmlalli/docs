@@ -1,0 +1,55 @@
+---
+title: "Changelog"
+description: "Customer-facing product updates for Planasonix."
+---
+
+Highlights from recent Planasonix releases. Parm may adjust framing before publish; this page tracks what customers can use, not every internal fix.
+
+## August 2026
+
+### Webhook Source and HMAC signing
+
+- **Webhook Source** nodes mint a unique ingest URL when you **save** the pipeline, then run the graph end-to-end when production is promoted.
+- Optional **HMAC** verification (`X-Planasonix-Timestamp` / `X-Planasonix-Signature`) with a documented signing contract for integrators.
+- See [Webhooks](/orchestration/webhooks) and [Webhook HMAC signing](/orchestration/webhook-hmac).
+
+### Payload typing and parsers
+
+- Payload typing with **confirm-before-coerce** so unexpected shapes do not silently coerce without review.
+- Fixes for **CSV**, **XML**, and **JSON** parser nodes used on webhook and related ingest paths.
+
+<Note>
+  Detailed docs for the CSV/XML payload-type selector and confirm-before-coerce UI land after that webhook lane ships to `dev`. Prefer the in-product controls until those pages update.
+</Note>
+
+### SAML SSO (Enterprise)
+
+- **Enterprise** organizations can configure SAML SSO with real assertion signature and audience verification.
+- Sign-in is **SP-initiated** (start at Planasonix → IdP → ACS). IdP app-tile launch is not available at launch.
+- See [SSO](/settings/sso).
+
+### Tier entitlements
+
+- Feature gates align with plan cards: SSO and other Enterprise capabilities no longer appear as Professional/Premium entitlements in docs or product gating.
+- See [Plans and pricing](/settings/plans-and-pricing).
+
+### Development → production promotion
+
+- Clear **save vs promote** lifecycle: production schedules and webhook-driven runs use the promoted version, not every canvas save.
+- **Unpromote** takes production offline and pauses schedules until you promote again.
+- See [Environments](/pipelines/environments).
+
+### Reliability and security improvements
+
+Platform hardening, reliability fixes, and infrastructure work across the control plane and run paths.
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
+    First pipeline in minutes.
+  </Card>
+  <Card title="Concepts" icon="book" href="/getting-started/concepts">
+    Core platform vocabulary.
+  </Card>
+</CardGroup>
