@@ -1,0 +1,197 @@
+---
+title: "Webhook HMAC signing"
+description: "Sign inbound webhook_source requests with X-Planasonix-Timestamp and X-Planasonix-Signature (HMAC-SHA256)."
+sidebarTitle: "Webhook HMAC"
+---
+
+Use this page when your sender must **sign** requests to a Planasonix **Webhook Source** URL. The contract below matches the production verifier (`HMAC-SHA256`, headers, signed payload shape, and time window).
+
+If you only need the URL and fire path without signatures, start with [Webhooks](/orchestration/webhooks).
+
+## When HMAC applies
+
+On a **Webhook Source** node you choose authentication:
+
+| Setting | What Planasonix requires |
+| ------- | ------------------------ |
+| **URL token only** | A valid minted URL. Signature headers are not required. |
+| **HMAC Signature** | Valid URL **and** `X-Planasonix-Timestamp` + `X-Planasonix-Signature`. Missing or wrong signatures return **401**. |
+
+Save the pipeline (auto-save counts) after you switch to **HMAC Signature**. The UI then shows the **signing secret** for that source. Treat the URL path token and the signing secret as secrets.
+
+<Note>
+  Older webhook triggers that use a UUID URL (not `/api/webhooks/source/…`) always require HMAC when a secret is configured. This page documents the same signature format for both paths.
+</Note>
+
+## Contract summary
+
+| Item | Value |
+| ---- | ----- |
+| Algorithm | HMAC-SHA256 |
+| Timestamp header | `X-Planasonix-Timestamp` — Unix seconds as a decimal string |
+| Signature header | `X-Planasonix-Signature` — `v1=` + lowercase hex digest |
+| Signed payload (non-empty body) | `{timestamp}.{raw_body}` (literal period separator) |
+| Signed payload (empty body) | `{timestamp}` only |
+| Secret encoding | UTF-8 bytes of the secret **string** as shown in the UI (do not hex-decode it) |
+| Max age | **300** seconds (5 minutes) after the timestamp |
+| Future clock skew | Reject if timestamp is more than **60** seconds ahead of Planasonix |
+| Body for signing | Exact raw request bytes Planasonix reads (before JSON parse) |
+
+## Mint the URL and secret
+
+<Steps>
+  <Step title="Add a Webhook Source node">
+    On the pipeline canvas, add a **Webhook Source** node. Set **Allowed method** (`POST`, `PUT`, or `PATCH`) and **Authentication** to **HMAC Signature**.
+  </Step>
+  <Step title="Save the pipeline">
+    Save or wait for auto-save. Planasonix provisions a linked trigger and fills **Your Webhook URL** with an absolute URL of the form:
+
+    `https://<your-app-host>/api/webhooks/source/<ingest-token>`
+  </Step>
+  <Step title="Copy the signing secret">
+    With HMAC enabled, copy **Signing secret** from the node config. Store it in your sender’s secret manager. Re-save after rotating auth settings so the UI and trigger stay in sync.
+  </Step>
+</Steps>
+
+## Build the signature
+
+1. Read the **raw body** bytes you will send (or empty bytes for no body).
+2. Set `timestamp` to the current Unix time in seconds (string form, for example `1712345678`).
+3. Build the signed string:
+   - Non-empty body: `timestamp + "." + body` as UTF-8
+   - Empty body: `timestamp` only
+4. Compute `HMAC-SHA256(key=secret_utf8_bytes, message=signed_string)`.
+5. Hex-encode the digest (lowercase).
+6. Set headers:
+   - `X-Planasonix-Timestamp: <timestamp>`
+   - `X-Planasonix-Signature: v1=<hex>`
+
+<Warning>
+  Sign the **byte-identical** body you transmit. Pretty-printing JSON, changing key order, adding a trailing newline, or re-serializing after parse produces a different digest and **401**. Prefer signing the exact buffer you write to the socket.
+</Warning>
+
+### Clock skew
+
+- Timestamps older than **300** seconds are rejected (`signature expired`).
+- Timestamps more than **60** seconds in the future are rejected (`clock skew detected`).
+- Sync sender clocks with NTP. If your worker buffers jobs, sign at send time—not at enqueue time.
+
+## Examples
+
+Replace `WEBHOOK_URL` and `SIGNING_SECRET` with values from the node config.
+
+<CodeGroup>
+
+```bash curl
+#!/usr/bin/env bash
+set -euo pipefail
+
+URL="${WEBHOOK_URL:?}"
+SECRET="${SIGNING_SECRET:?}"
+BODY='{"event":"order.created","order_id":"ord_8f3c21","amount":"42.50"}'
+
+TS="$(date +%s)"
+# macOS: use openssl; Linux: openssl or sha256hmac
+SIG="v1=$(printf '%s.%s' "$TS" "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')"
+
+curl -sS -X POST "$URL" \
+  -H "Content-Type: application/json" \
+  -H "X-Planasonix-Timestamp: $TS" \
+  -H "X-Planasonix-Signature: $SIG" \
+  --data-binary "$BODY"
+```
+
+```python Python
+import hashlib
+import hmac
+import json
+import os
+import time
+import urllib.request
+
+url = os.environ["WEBHOOK_URL"]
+secret = os.environ["SIGNING_SECRET"].encode("utf-8")  # raw UTF-8 of the secret string
+body_obj = {"event": "order.created", "order_id": "ord_8f3c21", "amount": "42.50"}
+# Stable bytes: dump once, sign that buffer, send the same buffer
+body = json.dumps(body_obj, separators=(",", ":")).encode("utf-8")
+
+ts = str(int(time.time()))
+signed = f"{ts}.".encode("utf-8") + body
+digest = hmac.new(secret, signed, hashlib.sha256).hexdigest()
+signature = f"v1={digest}"
+
+req = urllib.request.Request(
+    url,
+    data=body,
+    method="POST",
+    headers={
+        "Content-Type": "application/json",
+        "X-Planasonix-Timestamp": ts,
+        "X-Planasonix-Signature": signature,
+    },
+)
+with urllib.request.urlopen(req) as resp:
+    print(resp.status, resp.read().decode())
+```
+
+```javascript Node.js
+import crypto from "node:crypto";
+import process from "node:process";
+
+const url = process.env.WEBHOOK_URL;
+const secret = process.env.SIGNING_SECRET; // UTF-8 string as shown in the UI
+const bodyObj = { event: "order.created", order_id: "ord_8f3c21", amount: "42.50" };
+const body = Buffer.from(JSON.stringify(bodyObj), "utf8");
+
+const ts = Math.floor(Date.now() / 1000).toString();
+const signed = Buffer.concat([Buffer.from(`${ts}.`, "utf8"), body]);
+const digest = crypto.createHmac("sha256", secret).update(signed).digest("hex");
+const signature = `v1=${digest}`;
+
+const res = await fetch(url, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-Planasonix-Timestamp": ts,
+    "X-Planasonix-Signature": signature,
+  },
+  body,
+});
+console.log(res.status, await res.text());
+```
+
+</CodeGroup>
+
+Successful ingest returns **200** with a short JSON acknowledgement (for example `"Webhook processed"`). Planasonix then runs the pipeline asynchronously.
+
+## Status codes
+
+| HTTP | Typical cause |
+| ---- | ------------- |
+| **200** | Accepted |
+| **401** | Bad/missing token, or bad/missing HMAC headers/signature |
+| **403** | Client IP not on the trigger allowlist (when configured) |
+| **405** | Method not in the node’s allowed method |
+| **400** | Invalid JSON body (when the source expects JSON) |
+| **413** | Body exceeds the platform size limit |
+| **429** | Webhook run capacity saturated — retry with backoff |
+
+## Common failures
+
+| Symptom | Fix |
+| ------- | --- |
+| **401** after “correct” signing | Confirm you signed the raw bytes on the wire; do not re-`JSON.stringify` after signing. Confirm `v1=` prefix and lowercase hex. |
+| **401** intermittently | Clock skew — check NTP; keep the 300s window in mind for retries that reuse an old timestamp (always resign). |
+| Signature works in unit tests, fails in prod | Framework may alter the body (middleware JSON parse/re-encode). Sign after the final serialization, or capture the outbound buffer. |
+| Secret “looks like hex” | Still use it as a **UTF-8 string** key. Do not `Buffer.from(secret, "hex")` unless Planasonix documents binary secrets (it does not for this UI secret). |
+
+## Related topics
+
+<CardGroup cols={2}>
+  <Card title="Webhooks" icon="webhook" href="/orchestration/webhooks">
+    Mint the URL, choose method/auth, and fire a pipeline.
+  </Card>
+  <Card title="Triggers" icon="bolt" href="/orchestration/triggers">
+    Event-based alternatives (S3, GCS, Azure, file watcher).
+  </Card>
+</CardGroup>

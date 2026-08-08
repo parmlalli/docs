@@ -154,6 +154,7 @@
               "orchestration/trigger-gcs",
               "orchestration/trigger-file-watcher",
               "orchestration/webhooks",
+              "orchestration/webhook-hmac",
               "orchestration/pipeline-chaining",
               "orchestration/airflow-integration",
               "orchestration/backfill"
