@@ -1,60 +1,99 @@
 ---
 title: "SSO"
-description: "Configure SAML-based single sign-on for your organization."
+description: "Configure enterprise single sign-on (SAML) so users sign in through your identity provider."
 ---
 
-**Single sign-on (SSO)** lets users sign in through your identity provider (IdP) instead of separate Planasonix passwords. SAML is the most common enterprise protocol; OIDC may be available depending on your deployment.
+**Single sign-on (SSO)** lets users sign in through your identity provider (IdP) instead of a separate Planasonix password. Planasonix supports SAML 2.0 for enterprise IdPs, plus OIDC-based providers (Okta, Microsoft Entra ID, Google Workspace, Auth0, OneLogin, and generic OIDC) where configured.
 
-## Enterprise feature
+<Info>
+  SSO is available on the **Enterprise** plan. Organization admins configure providers under **Settings → SSO**.
+</Info>
 
-SSO configuration is limited to **Enterprise** (or equivalent) workspaces and requires **organization admin** rights. End users only see the SSO button once the integration is live.
+## How sign-in works (SP-initiated)
 
-## SAML setup steps
+Planasonix uses **service provider (SP)–initiated** SAML for launch:
+
+1. The user starts at the Planasonix sign-in page and chooses SSO for your organization.
+2. Planasonix redirects the browser to your IdP with a SAML authentication request.
+3. After the user authenticates at the IdP, the IdP posts the assertion back to Planasonix’s **Assertion Consumer Service (ACS)**.
+4. Planasonix validates the response and establishes the session.
+
+Users always begin in Planasonix for this flow. Launching Planasonix from an IdP app tile (**IdP-initiated** SSO) is not supported at launch; support is planned for a later release.
+
+## Values your IdP needs
+
+Open **Settings → SSO**, add or edit your SAML provider, and copy:
+
+| Value | Typical IdP label | What it is |
+| ----- | ----------------- | ---------- |
+| **ACS URL** | Single sign-on URL, Reply URL, Assertion Consumer Service | Where the IdP posts the SAML response. Default shape: `{your Planasonix app URL}/api/auth/saml/acs` |
+| **Entity ID** | Audience URI, SP Entity ID, Identifier | The Planasonix audience the assertion must target. Often `{your Planasonix app URL}/saml/{org-slug}` unless you set a custom Entity ID |
+
+Copy these values exactly (including scheme and path). Trailing-slash mismatches are a common cause of login failures.
+
+You can also download **SP metadata** from Planasonix when your IdP accepts a metadata URL or XML upload.
+
+## Configure SAML
 
 <Steps>
   <Step title="Create the SAML app in your IdP">
-    Register Planasonix as a service provider. Your IdP asks for an **ACS URL** and **Entity ID**—copy the values from the Planasonix SSO setup screen.
+    Register Planasonix as a service provider. Paste the **ACS URL** and **Entity ID** from Planasonix. Prefer signed assertions; Planasonix validates audience, issuer, signatures, and replay protections on the ACS response.
   </Step>
-  <Step title="Exchange metadata">
-    Upload the IdP **metadata XML** or paste **SSO URL**, **issuer**, and **signing certificate** into Planasonix. Download SP metadata if your IdP requires it.
+  <Step title="Exchange IdP metadata">
+    In Planasonix, upload IdP **metadata XML**, or paste **SSO URL**, signing **certificate**, and related fields. Assign users or groups in the IdP so they can complete SSO.
   </Step>
   <Step title="Map attributes">
-    Map `email`, `firstName`, `lastName`, and **group** claims if you use them for [teams and permissions](/settings/teams-and-permissions).
+    Map email (and optional name / group claims) so Planasonix can identify users. Email-format Name ID is the usual choice.
   </Step>
-  <Step title="Enforce SSO">
-    Toggle **Require SSO** so password logins are disabled for the domain after a cutover window you communicate to users.
+  <Step title="Test from Planasonix">
+    Use **Verify** on the provider (when available), then sign in from an private/incognito window starting at the Planasonix login page. Confirm the user lands in the correct organization.
   </Step>
 </Steps>
 
-## Identity provider configuration
+## Identity provider guides
 
-<Tabs>
-  <Tab title="Okta">
-    Use SAML 2.0 app integration; assign groups and set **Name ID** to email format the product expects.
-  </Tab>
-  <Tab title="Azure AD / Entra ID">
-    Enterprise application → SAML; verify identifier and reply URL match Planasonix exactly (trailing slashes matter).
-  </Tab>
-  <Tab title="Google Workspace">
-    SAML app with manual ACS and entity URLs; upload the X.509 cert renewal before expiry.
-  </Tab>
-</Tabs>
+<CardGroup cols={2}>
+  <Card title="Okta" icon="okta" href="/settings/sso-okta">
+    SAML 2.0 app integration.
+  </Card>
+  <Card title="Microsoft Entra ID" icon="microsoft" href="/settings/sso-azure-ad">
+    Enterprise application + SAML.
+  </Card>
+  <Card title="Google Workspace" icon="google" href="/settings/sso-google">
+    Custom SAML app.
+  </Card>
+  <Card title="Auth0" icon="key" href="/settings/sso-auth0">
+    SAML or OIDC applications.
+  </Card>
+  <Card title="OneLogin" icon="right-to-bracket" href="/settings/sso-onelogin">
+    SAML application setup.
+  </Card>
+  <Card title="Generic OIDC" icon="fingerprint" href="/settings/sso-oidc">
+    Issuer, client ID, and discovery.
+  </Card>
+</CardGroup>
 
 ## Certificate rotation
 
-Plan **certificate rotation** before IdP certs expire. Upload the new signing certificate, test with a pilot group, then remove the old cert. Failed rotation surfaces as login errors for all users.
+Plan certificate rotation before IdP signing certificates expire. Upload the new certificate (or refreshed metadata), test with a pilot user from the Planasonix login page, then retire the old certificate. Failed rotation surfaces as login errors for all SSO users.
 
 <Info>
-  JIT (just-in-time) provisioning creates users on first SSO login when enabled; otherwise you must pre-provision accounts or use SCIM if your contract includes it.
+  Just-in-time (JIT) provisioning can create users on first successful SSO login when enabled on the provider. Otherwise, pre-provision accounts in Planasonix before cutover.
 </Info>
 
 ## Related topics
 
 <CardGroup cols={2}>
   <Card title="Session policy" icon="clock" href="/settings/session-policy">
-    Timeouts and IP rules after SSO.
+    Timeouts and related session controls after SSO.
   </Card>
   <Card title="MFA" icon="mobile-screen" href="/settings/mfa">
-    Step-up factors layered on top of IdP policies.
+    MFA when you are not using IdP-managed factors.
+  </Card>
+  <Card title="Plans and pricing" icon="tags" href="/settings/plans-and-pricing">
+    Enterprise tier features.
+  </Card>
+  <Card title="Teams and permissions" icon="user-group" href="/settings/teams-and-permissions">
+    Roles after users are provisioned.
   </Card>
 </CardGroup>
