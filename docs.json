@@ -70,6 +70,7 @@
               "connections/streaming-platforms",
               "connections/apis-and-webhooks",
               "connections/saas-applications",
+              "connections/salesforce",
               "connections/ai-providers",
               "connections/credentials"
             ]
